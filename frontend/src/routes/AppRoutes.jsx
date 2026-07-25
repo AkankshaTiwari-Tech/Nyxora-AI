@@ -9,21 +9,30 @@ import ForgotPassword from "../pages/ForgotPassword";
 import Dashboard from "../pages/Dashboard";
 import NotFound from "../pages/NotFound";
 
+import ProtectedRoute from "./ProtectedRoute";
+
 export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Authentication Routes */}
+        {/* Authentication */}
         <Route element={<AuthLayout />}>
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
         </Route>
 
-        {/* Main Application Routes */}
-        <Route element={<MainLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-        </Route>
+        {/* Protected Routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Dashboard />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
