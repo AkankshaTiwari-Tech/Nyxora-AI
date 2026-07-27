@@ -1,9 +1,9 @@
-import { Outlet } from "react-router-dom";
+import React from "react";
 
-export default function MainLayout() {
+export default function MainLayout({ children }) {
   return (
     <div className="min-h-screen bg-[#050816] text-white">
-      <Outlet />
+      {children}
     </div>
   );
 }

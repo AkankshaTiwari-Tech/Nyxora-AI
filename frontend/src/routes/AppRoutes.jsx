@@ -9,12 +9,15 @@ import ForgotPassword from "../pages/ForgotPassword";
 import Dashboard from "../pages/Dashboard";
 import NotFound from "../pages/NotFound";
 
+import Chat from "../pages/chat/Chat";
+
 import ProtectedRoute from "./ProtectedRoute";
 
 export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
+
         {/* Authentication */}
         <Route element={<AuthLayout />}>
           <Route path="/" element={<Login />} />
@@ -22,7 +25,7 @@ export default function AppRoutes() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
         </Route>
 
-        {/* Protected Routes */}
+        {/* Dashboard */}
         <Route
           path="/dashboard"
           element={
@@ -34,8 +37,21 @@ export default function AppRoutes() {
           }
         />
 
+        {/* AI Chat */}
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Chat />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
+
       </Routes>
     </BrowserRouter>
   );
