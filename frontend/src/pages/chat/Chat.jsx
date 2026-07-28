@@ -1,74 +1,90 @@
 import { useState } from "react";
-import { sendMessage } from "../../services/chatService";
+import ChatSidebar from "../../components/chat/ChatSidebar";
+import ChatHeader from "../../components/chat/ChatHeader";
+import ChatWindow from "../../components/chat/ChatWindow";
+import MessageInput from "../../components/chat/MessageInput";
 
 export default function Chat() {
-  const [message, setMessage] = useState("");
-  const [reply, setReply] = useState("");
+  const [messages, setMessages] = useState([
+    {
+      role: "assistant",
+      content: "👋 Hello! I'm Nyxora AI.\nHow can I help you today?",
+    },
+  ]);
+
   const [loading, setLoading] = useState(false);
 
-  const handleSend = async () => {
+  const handleSend = async (message) => {
     if (!message.trim()) return;
+
+    // Show user message
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        content: message,
+      },
+    ]);
 
     setLoading(true);
 
-    try {
-      const aiReply = await sendMessage(message);
-      setReply(aiReply);
-    } catch (error) {
-      setReply("❌ Failed to connect to backend.");
-    }
+    // Temporary typing message
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: "⏳ Nyxora AI is thinking...",
+      },
+    ]);
 
-    setLoading(false);
+    try {
+      const response = await fetch("http://localhost:5000/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message }),
+      });
+
+      const data = await response.json();
+
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content: data.reply,
+        };
+        return updated;
+      });
+    } catch (error) {
+      console.error(error);
+
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content: "❌ Failed to connect to AI.",
+        };
+        return updated;
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div
-      style={{
-        padding: "40px",
-        maxWidth: "700px",
-        margin: "40px auto",
-        fontFamily: "Arial",
-      }}
-    >
-      <h1>🤖 Nyxora AI Chat</h1>
+    <div className="h-screen bg-[#050816] text-white flex">
+      <ChatSidebar />
 
-      <textarea
-        rows="5"
-        placeholder="Ask anything..."
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        style={{
-          width: "100%",
-          padding: "10px",
-          fontSize: "16px",
-          marginBottom: "15px",
-        }}
-      />
+      <div className="flex-1 flex flex-col">
+        <ChatHeader />
 
-      <button
-        onClick={handleSend}
-        disabled={loading}
-        style={{
-          padding: "10px 20px",
-          cursor: "pointer",
-          fontSize: "16px",
-        }}
-      >
-        {loading ? "Thinking..." : "Send"}
-      </button>
+        <ChatWindow messages={messages} />
 
-      <div
-        style={{
-          marginTop: "30px",
-          padding: "20px",
-          background: "#f4f4f4",
-          borderRadius: "10px",
-          minHeight: "120px",
-        }}
-      >
-        <strong>AI Reply:</strong>
-
-        <p>{reply}</p>
+        <MessageInput
+          onSend={handleSend}
+          disabled={loading}
+        />
       </div>
     </div>
   );
