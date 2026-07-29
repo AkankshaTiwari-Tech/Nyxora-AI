@@ -1,15 +1,25 @@
 export async function generateResponse(prompt) {
-  // Temporary placeholder
+  try {
+    const response = await fetch("http://localhost:5000/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: prompt,
+      }),
+    });
 
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(
-        `This is a temporary AI response for:
+    const data = await response.json();
 
-"${prompt}"
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Failed to generate response");
+    }
 
-Next we'll connect Gemini API.`
-      );
-    }, 1500);
-  });
+    return data.reply;
+  } catch (error) {
+    console.error("Frontend AI Error:", error);
+
+    return "❌ Unable to connect to Nyxora AI backend.";
+  }
 }

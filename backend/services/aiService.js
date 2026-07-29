@@ -1,34 +1,23 @@
-import axios from "axios";
+import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-const API_KEY = process.env.GEMINI_API_KEY;
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
-export async function generateAIResponse(message) {
-  try {
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`,
-      {
-        contents: [
-          {
-            parts: [
-              {
-                text: message,
-              },
-            ],
-          },
-        ],
-      }
-    );
+export async function* generateAIResponseStream(message) {
+  const response = await ai.models.generateContentStream({
+    model: "gemini-2.5-flash",
+    contents: message,
+  });
 
-    return response.data.candidates[0].content.parts[0].text;
-  } catch (error) {
-    console.error(
-      "Gemini Error:",
-      JSON.stringify(error.response?.data, null, 2)
-    );
+  for await (const chunk of response) {
+    const text = chunk.text;
 
-    return "❌ Unable to generate response.";
+    if (text) {
+      yield text;
+    }
   }
 }

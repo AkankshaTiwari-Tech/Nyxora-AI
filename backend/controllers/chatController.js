@@ -1,4 +1,4 @@
-import { generateAIResponse } from "../services/aiService.js";
+import { generateAIResponseStream } from "../services/aiService.js";
 
 export async function chatWithAI(req, res) {
   try {
@@ -11,18 +11,27 @@ export async function chatWithAI(req, res) {
       });
     }
 
-    const reply = await generateAIResponse(message);
+    // Streaming headers
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Transfer-Encoding", "chunked");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
 
-    res.json({
-      success: true,
-      reply,
-    });
+    for await (const chunk of generateAIResponseStream(message)) {
+      res.write(chunk);
+    }
+
+    res.end();
   } catch (error) {
     console.error(error);
 
-    res.status(500).json({
-      success: false,
-      message: "AI Server Error",
-    });
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: "AI Server Error",
+      });
+    } else {
+      res.end();
+    }
   }
 }
