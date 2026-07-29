@@ -6,10 +6,10 @@ import MainLayout from "../layouts/MainLayout";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 import ForgotPassword from "../pages/ForgotPassword";
-import Dashboard from "../pages/Dashboard";
 import NotFound from "../pages/NotFound";
 
-import Chat from "../pages/chat/Chat";
+import Home from "../modules/home/pages/Home";
+import Chat from "../modules/chat/pages/Chat";
 
 import ProtectedRoute from "./ProtectedRoute";
 
@@ -17,7 +17,6 @@ export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* Authentication */}
         <Route element={<AuthLayout />}>
           <Route path="/" element={<Login />} />
@@ -31,7 +30,7 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute>
               <MainLayout>
-                <Dashboard />
+                <Home />
               </MainLayout>
             </ProtectedRoute>
           }
@@ -42,16 +41,13 @@ export default function AppRoutes() {
           path="/chat"
           element={
             <ProtectedRoute>
-              <MainLayout>
-                <Chat />
-              </MainLayout>
+              <Chat />
             </ProtectedRoute>
           }
         />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
-
       </Routes>
     </BrowserRouter>
   );
