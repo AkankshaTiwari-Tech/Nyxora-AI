@@ -1,91 +1,82 @@
-import { useState } from "react";
-import ChatSidebar from "../../components/chat/ChatSidebar";
-import ChatHeader from "../../components/chat/ChatHeader";
-import ChatWindow from "../../components/chat/ChatWindow";
-import MessageInput from "../../components/chat/MessageInput";
+import { useEffect, useRef } from "react";
+
+import ChatLayout from "../../components/chat/ChatLayout";
+
+import useChat from "../../hooks/useChat";
+import useChatHistory from "../../hooks/useChatHistory";
 
 export default function Chat() {
-  const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      content: "👋 Hello! I'm Nyxora AI.\nHow can I help you today?",
-    },
-  ]);
+  const {
+    messages,
+    setMessages,
+    loading,
+    send,
+    regenerate,
+    stop,
+  } = useChat();
 
-  const [loading, setLoading] = useState(false);
+  const {
+    chats,
+    activeChatId,
+    setActiveChatId,
+    newChat,
+    openChat,
+    saveChat,
+    rename,
+    remove,
+    reloadChats,
+  } = useChatHistory();
 
-  const handleSend = async (message) => {
-    if (!message.trim()) return;
+  const previousMessageCount = useRef(0);
 
-    // Show user message
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "user",
-        content: message,
-      },
-    ]);
+  useEffect(() => {
+    if (!activeChatId) return;
 
-    setLoading(true);
+    saveChat(activeChatId, messages);
 
-    // Temporary typing message
-    setMessages((prev) => [
-      ...prev,
+    const hasNewMessage =
+      messages.length > previousMessageCount.current;
+
+    if (hasNewMessage) {
+      reloadChats();
+    }
+
+    previousMessageCount.current = messages.length;
+  }, [messages, activeChatId]);
+
+  const handleNewChat = async () => {
+    const id = await newChat();
+
+    if (!id) return;
+
+    setActiveChatId(id);
+
+    setMessages([
       {
         role: "assistant",
-        content: "⏳ Nyxora AI is thinking...",
+        content: "👋 Hello! I'm Nyxora AI.\nHow can I help you today?",
       },
     ]);
+  };
 
-    try {
-      const response = await fetch("http://localhost:5000/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message }),
-      });
-
-      const data = await response.json();
-
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: "assistant",
-          content: data.reply,
-        };
-        return updated;
-      });
-    } catch (error) {
-      console.error(error);
-
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: "assistant",
-          content: "❌ Failed to connect to AI.",
-        };
-        return updated;
-      });
-    } finally {
-      setLoading(false);
-    }
+  const handleOpenChat = async (chatId) => {
+    const data = await openChat(chatId);
+    setMessages(data);
   };
 
   return (
-    <div className="h-screen bg-[#050816] text-white flex">
-      <ChatSidebar />
-
-      <div className="flex-1 flex flex-col">
-        <ChatHeader />
-
-        <ChatWindow messages={messages} />
-
-        <MessageInput
-          onSend={handleSend}
-          disabled={loading}
-        />
-      </div>
-    </div>
+    <ChatLayout
+      chats={chats}
+      activeChatId={activeChatId}
+      messages={messages}
+      loading={loading}
+      onSend={send}
+      onStop={stop}
+      onRegenerate={regenerate}
+      onNewChat={handleNewChat}
+      onOpenChat={handleOpenChat}
+      onRenameChat={rename}
+      onDeleteChat={remove}
+    />
   );
 }
