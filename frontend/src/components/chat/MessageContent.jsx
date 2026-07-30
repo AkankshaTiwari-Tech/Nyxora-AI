@@ -11,13 +11,17 @@ export default function MessageContent({ message, role }) {
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw]}
         components={{
-          code({ inline, className, children }) {
+          pre({ children }) {
+            return <>{children}</>;
+          },
+
+          code({ className, children }) {
             const match = /language-(\w+)/.exec(className || "");
 
-            if (!inline) {
+            if (match) {
               return (
                 <CodeBlock
-                  language={match?.[1]}
+                  language={match[1]}
                   value={String(children).replace(/\n$/, "")}
                 />
               );
@@ -61,9 +65,7 @@ export default function MessageContent({ message, role }) {
       </ReactMarkdown>
 
       {role === "assistant" && (
-        <span className="animate-pulse text-violet-400">
-          ▌
-        </span>
+        <span className="animate-pulse text-violet-400">▌</span>
       )}
     </div>
   );

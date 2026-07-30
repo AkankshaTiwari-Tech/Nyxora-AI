@@ -31,6 +31,9 @@ export default function useChat() {
 
     setLoading(true);
 
+    // 👇 Give React one frame to render the Stop button
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
     try {
       await sendMessage(message, (streamedText) => {
         setMessages((prev) => {
@@ -70,6 +73,8 @@ export default function useChat() {
     if (!previousUser || previousUser.role !== "user") return;
 
     setLoading(true);
+
+    await new Promise((resolve) => requestAnimationFrame(resolve));
 
     setMessages((prev) => {
       const updated = [...prev];
