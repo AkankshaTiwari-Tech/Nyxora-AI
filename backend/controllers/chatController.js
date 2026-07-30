@@ -4,14 +4,12 @@ export async function chatWithAI(req, res) {
   try {
     const { message } = req.body;
 
-    if (!message) {
+    if (!message || message.trim() === "") {
       return res.status(400).json({
-        success: false,
-        message: "Message is required",
+        reply: "Message is required.",
       });
     }
 
-    // Streaming headers
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.setHeader("Transfer-Encoding", "chunked");
     res.setHeader("Cache-Control", "no-cache");
@@ -23,15 +21,25 @@ export async function chatWithAI(req, res) {
 
     res.end();
   } catch (error) {
-    console.error(error);
+    console.error("Chat Controller Error:", error);
 
-    if (!res.headersSent) {
-      res.status(500).json({
-        success: false,
-        message: "AI Server Error",
+    if (error.status === 503) {
+      return res.status(503).json({
+        reply:
+          "🚦 Nyxora AI is currently experiencing high demand. Please try again in a few moments.",
       });
-    } else {
-      res.end();
     }
+
+    if (error.status === 404) {
+      return res.status(404).json({
+        reply:
+          "⚠️ The selected AI model is unavailable. Please contact the administrator or try again later.",
+      });
+    }
+
+    return res.status(500).json({
+      reply:
+        "❌ Something went wrong while generating the response. Please try again.",
+    });
   }
 }
