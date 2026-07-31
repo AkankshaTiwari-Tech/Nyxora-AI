@@ -1,51 +1,202 @@
-import { Paperclip, SendHorizontal } from "lucide-react";
 import { useState } from "react";
+import {
+  Send,
+  Square,
+  X,
+} from "lucide-react";
 
-export default function ChatInput({ onSend }) {
-  const [message, setMessage] = useState("");
+import FileUploadButton from "./FileUploadButton";
 
-  const handleSend = () => {
-    if (!message.trim()) return;
 
-    onSend(message);
+export default function ChatInput({
+  onSend,
+  onStop,
+  loading,
+}) {
+
+  const [message, setMessage] =
+    useState("");
+
+  const [selectedFile, setSelectedFile] =
+    useState(null);
+
+
+  const handleSubmit = (e) => {
+
+    e.preventDefault();
+
+
+    if(
+      !message.trim() &&
+      !selectedFile
+    )
+      return;
+
+
+    onSend({
+      message,
+      file:selectedFile,
+    });
+
 
     setMessage("");
+
+    setSelectedFile(null);
+
   };
 
+
+  const removeFile = () => {
+
+    setSelectedFile(null);
+
+  };
+
+
   return (
-    <div className="border-t border-[#20263B] bg-[#050816] p-6">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-center gap-3 bg-[#151B2F] border border-[#2B3350] rounded-3xl px-5 py-3 focus-within:border-indigo-500 transition-all duration-300">
 
-          <button className="w-11 h-11 rounded-full hover:bg-[#202845] flex items-center justify-center transition">
-            <Paperclip className="text-gray-400" size={20} />
-          </button>
+    <div className="border-t border-slate-800 bg-[#050816] p-5">
 
-          <input
-            type="text"
-            placeholder="Ask Nyxora AI anything..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleSend();
-              }
-            }}
-            className="flex-1 bg-transparent outline-none text-white placeholder-gray-500 text-lg"
-          />
 
-          <button
-            onClick={handleSend}
-            className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:scale-105 transition-all duration-300 flex items-center justify-center shadow-lg shadow-indigo-600/30"
-          >
-            <SendHorizontal className="text-white" size={20} />
-          </button>
-        </div>
+      {
+        selectedFile && (
 
-        <p className="text-center text-xs text-gray-500 mt-4">
-          Nyxora AI can make mistakes. Always verify important information.
-        </p>
-      </div>
+          <div className="
+            mb-3
+            flex
+            items-center
+            justify-between
+            rounded-xl
+            border
+            border-slate-700
+            bg-[#111827]
+            px-4
+            py-3
+          ">
+
+            <div>
+
+              <p className="text-sm text-white">
+                📎 {selectedFile.name}
+              </p>
+
+              <p className="text-xs text-gray-400">
+                {selectedFile.type}
+              </p>
+
+            </div>
+
+
+            <button
+              onClick={removeFile}
+              className="text-gray-400 hover:text-white"
+            >
+              <X size={18}/>
+            </button>
+
+
+          </div>
+
+        )
+      }
+
+
+
+      <form
+        onSubmit={handleSubmit}
+        className="flex items-end gap-3"
+      >
+
+
+        <FileUploadButton
+          onSelect={setSelectedFile}
+        />
+
+
+
+        <textarea
+
+          rows={1}
+
+          value={message}
+
+          placeholder="Message Nyxora AI..."
+
+          onChange={(e)=>
+            setMessage(
+              e.target.value
+            )
+          }
+
+          className="
+            flex-1
+            resize-none
+            rounded-2xl
+            border
+            border-slate-700
+            bg-[#111827]
+            px-4
+            py-3
+            text-white
+            outline-none
+            focus:border-violet-500
+          "
+
+        />
+
+
+
+        {
+          loading ? (
+
+            <button
+
+              type="button"
+
+              onClick={onStop}
+
+              className="
+                rounded-xl
+                bg-red-500
+                p-3
+                text-white
+              "
+
+            >
+
+              <Square size={18}/>
+
+            </button>
+
+
+          ) : (
+
+
+            <button
+
+              type="submit"
+
+              className="
+                rounded-xl
+                bg-violet-600
+                p-3
+                text-white
+              "
+
+            >
+
+              <Send size={18}/>
+
+            </button>
+
+          )
+        }
+
+
+      </form>
+
     </div>
+
   );
+
 }

@@ -1,52 +1,46 @@
-import { useEffect, useRef, useState } from "react";
+// ======================================================
+// IMPORTS
+// ======================================================
+
+import { useEffect, useRef } from "react";
 
 import ChatSidebar from "../components/ChatSidebar";
 import ChatHeader from "../components/ChatHeader";
 import ChatInput from "../components/ChatInput";
 import ChatMessage from "../components/ChatMessage";
 
-import { generateResponse } from "../services/geminiService";
+import useChatHistory from "../hooks/useChatHistory";
+import useChat from "../hooks/useChat";
 
-const createWelcomeMessages = () => [
-  {
-    id: Date.now(),
-    role: "assistant",
-    message: `Hello Akanksha 👋
-
-Welcome to Nyxora AI.
-
-How can I help you today?`,
-  },
-];
+// ======================================================
+// CHAT PAGE
+// ======================================================
 
 export default function Chat() {
-  const [chats, setChats] = useState(() => {
-    const savedChats = localStorage.getItem("nyxora-chats");
+  const {
+    chats,
+    setChats,
+    activeChat,
+    activeChatId,
+    newChat,
+    selectChat,
+    deleteChat,
+    renameChat,
+  } = useChatHistory();
 
-    if (savedChats) {
-      return JSON.parse(savedChats);
-    }
-
-    return [
-      {
-        id: 1,
-        title: "New Chat",
-        messages: createWelcomeMessages(),
-      },
-    ];
+  const {
+    send,
+    regenerate,
+    editMessage,
+    stop,
+    isThinking,
+  } = useChat({
+    activeChatId,
+    chats,
+    setChats,
   });
-
-  const [activeChatId, setActiveChatId] = useState(() => {
-    const savedId = localStorage.getItem("nyxora-active-chat");
-
-    return savedId ? Number(savedId) : 1;
-  });
-
-  const [isThinking, setIsThinking] = useState(false);
 
   const bottomRef = useRef(null);
-
-  const activeChat = chats.find((chat) => chat.id === activeChatId);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
@@ -54,149 +48,31 @@ export default function Chat() {
     });
   }, [activeChat?.messages, isThinking]);
 
-  // Save chats
-  useEffect(() => {
-    localStorage.setItem("nyxora-chats", JSON.stringify(chats));
-  }, [chats]);
-
-  // Save active chat
-  useEffect(() => {
-    localStorage.setItem(
-      "nyxora-active-chat",
-      activeChatId.toString()
-    );
-  }, [activeChatId]);
-
-  // If active chat doesn't exist anymore, select first chat
-  useEffect(() => {
-    if (!chats.length) return;
-
-    const exists = chats.some(
-      (chat) => chat.id === activeChatId
-    );
-
-    if (!exists) {
-      setActiveChatId(chats[0].id);
-    }
-  }, [chats, activeChatId]);
-
   const handleNewChat = () => {
-    const newChat = {
-      id: Date.now(),
-      title: "New Chat",
-      messages: createWelcomeMessages(),
-    };
-
-    setChats((prev) => [newChat, ...prev]);
-    setActiveChatId(newChat.id);
-    setIsThinking(false);
+    newChat();
   };
 
   const handleSelectChat = (chatId) => {
-    setActiveChatId(chatId);
+    selectChat(chatId);
   };
 
   const handleDeleteChat = (chatId) => {
-    if (chats.length === 1) return;
-
-    const updatedChats = chats.filter(
-      (chat) => chat.id !== chatId
-    );
-
-    setChats(updatedChats);
-
-    if (activeChatId === chatId) {
-      setActiveChatId(updatedChats[0].id);
-    }
+    deleteChat(chatId);
   };
 
-  const handleRenameChat = (chatId, newTitle) => {
-    setChats((prev) =>
-      prev.map((chat) =>
-        chat.id === chatId
-          ? {
-              ...chat,
-              title: newTitle,
-            }
-          : chat
-      )
-    );
+  const handleRenameChat = (chatId, title) => {
+    renameChat(chatId, title);
   };
 
-  const handleSend = async (text) => {
-    if (!text.trim()) return;
+  const handleRegenerate = () => {
+    regenerate();
+  };
 
-    const userMessage = {
-      id: Date.now(),
-      role: "user",
-      message: text,
-    };
-
-    const aiMessage = {
-      id: Date.now() + 1,
-      role: "assistant",
-      message: "",
-    };
-
-    setChats((prev) =>
-      prev.map((chat) => {
-        if (chat.id !== activeChatId) return chat;
-
-        return {
-          ...chat,
-          title:
-            chat.title === "New Chat"
-              ? text.slice(0, 30)
-              : chat.title,
-          messages: [...chat.messages, userMessage, aiMessage],
-        };
-      })
-    );
-
-    setIsThinking(true);
-
-    try {
-      await generateResponse(text, (streamText) => {
-        setChats((prev) =>
-          prev.map((chat) => {
-            if (chat.id !== activeChatId) return chat;
-
-            return {
-              ...chat,
-              messages: chat.messages.map((msg) =>
-                msg.id === aiMessage.id
-                  ? {
-                      ...msg,
-                      message: streamText,
-                    }
-                  : msg
-              ),
-            };
-          })
-        );
-      });
-    } catch {
-      setChats((prev) =>
-        prev.map((chat) => {
-          if (chat.id !== activeChatId) return chat;
-
-          return {
-            ...chat,
-            messages: chat.messages.map((msg) =>
-              msg.id === aiMessage.id
-                ? {
-                    ...msg,
-                    message:
-                      "❌ Something went wrong while generating the response.",
-                  }
-                : msg
-            ),
-          };
-        })
-      );
-    } finally {
-      setIsThinking(false);
-    }
+  const handleEdit = (
+    messageId,
+    newText
+  ) => {
+    editMessage(messageId, newText);
   };
 
   return (
@@ -217,26 +93,31 @@ export default function Chat() {
           {activeChat?.messages.map((msg) => (
             <ChatMessage
               key={msg.id}
-              role={msg.role}
-              message={msg.message}
+              message={msg}
+              onRegenerate={handleRegenerate}
+              onEdit={handleEdit}
             />
           ))}
 
-          {isThinking &&
-            activeChat?.messages[
-              activeChat.messages.length - 1
-            ]?.message === "" && (
-              <ChatMessage
-                role="assistant"
-                message=""
-                thinking
-              />
-            )}
+          {isThinking && (
+            <ChatMessage
+              message={{
+                id: "thinking",
+                role: "assistant",
+                message: "",
+              }}
+              thinking
+            />
+          )}
 
           <div ref={bottomRef} />
         </div>
 
-        <ChatInput onSend={handleSend} />
+        <ChatInput
+          onSend={send}
+          onStop={stop}
+          loading={isThinking}
+        />
       </div>
     </div>
   );

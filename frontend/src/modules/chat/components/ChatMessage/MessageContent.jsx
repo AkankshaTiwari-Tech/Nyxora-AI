@@ -2,27 +2,40 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 
-import CodeBlock from "./CodeBlock";
+import CodeBlock from "../../../../shared/components/CodeBlock";
 
-export default function MessageContent({ message, role }) {
+export default function MessageContent({
+  message,
+}) {
   return (
     <div className="prose prose-invert max-w-none prose-headings:font-bold prose-headings:text-white prose-p:text-gray-200 prose-p:leading-8 prose-li:text-gray-200 prose-strong:text-white prose-a:text-violet-400 prose-blockquote:border-violet-500 prose-blockquote:text-gray-300">
+
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw]}
         components={{
-          pre({ children }) {
-            return <>{children}</>;
-          },
+          code({
+            className,
+            children,
+          }) {
+            const language =
+              /language-(\w+)/.exec(
+                className || ""
+              )?.[1];
 
-          code({ className, children }) {
-            const match = /language-(\w+)/.exec(className || "");
+            const value = String(
+              children
+            ).replace(/\n$/, "");
 
-            if (match) {
+            const isBlock =
+              value.includes("\n") ||
+              Boolean(language);
+
+            if (isBlock) {
               return (
                 <CodeBlock
-                  language={match[1]}
-                  value={String(children).replace(/\n$/, "")}
+                  language={language}
+                  value={value}
                 />
               );
             }
@@ -64,9 +77,6 @@ export default function MessageContent({ message, role }) {
         {message}
       </ReactMarkdown>
 
-      {role === "assistant" && (
-        <span className="animate-pulse text-violet-400">▌</span>
-      )}
     </div>
   );
 }

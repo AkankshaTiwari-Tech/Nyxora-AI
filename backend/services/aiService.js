@@ -7,6 +7,7 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
+
 const SYSTEM_PROMPT = `
 You are Nyxora AI.
 
@@ -21,83 +22,273 @@ Identity:
 - Format responses using proper Markdown.
 `;
 
+
 const MODELS = [
   "gemini-3.6-flash",
   "gemini-3.5-flash",
   "gemini-3-flash-preview",
 ];
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function streamFromModel(model, prompt) {
-  return await ai.models.generateContentStream({
-    model,
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            text: `${SYSTEM_PROMPT}
+const sleep = (ms) =>
+  new Promise((resolve) =>
+    setTimeout(resolve, ms)
+  );
+
+
+
+async function streamFromModel(
+  model,
+  prompt,
+  image = null,
+  history = []
+) {
+
+
+  const contents = [];
+
+
+  // Previous conversation
+
+  if (
+    history &&
+    history.length > 0
+  ) {
+
+    history.forEach((msg) => {
+
+      if (
+        msg.role === "user" ||
+        msg.role === "assistant"
+      ) {
+
+        contents.push({
+
+          role:
+            msg.role === "assistant"
+              ? "model"
+              : "user",
+
+          parts: [
+
+            {
+              text:
+                msg.message || "",
+            },
+
+          ],
+
+        });
+
+      }
+
+    });
+
+  }
+
+
+
+  // Current prompt
+
+  const parts = [
+
+    {
+      text: `${SYSTEM_PROMPT}
 
 User:
 ${prompt}`,
-          },
-        ],
+    },
+
+  ];
+
+
+
+  // Image support
+
+  if (image) {
+
+    parts.push({
+
+      inlineData: {
+
+        data:
+          image.data,
+
+        mimeType:
+          image.mimeType,
+
       },
-    ],
+
+    });
+
+  }
+
+
+
+  contents.push({
+
+    role: "user",
+
+    parts,
+
   });
+
+
+
+  return await ai.models.generateContentStream({
+
+    model,
+
+    contents,
+
+  });
+
 }
 
-export async function* generateAIResponseStream(message) {
+
+
+
+export async function* generateAIResponseStream(
+  message,
+  image = null,
+  history = []
+) {
+
   let lastError = null;
 
+
   for (const model of MODELS) {
+
     try {
-      console.log(`🟢 Trying model: ${model}`);
 
-      const response = await streamFromModel(model, message);
+      console.log(
+        `🟢 Trying model: ${model}`
+      );
 
-      for await (const chunk of response) {
-        if (chunk.text) {
+
+      const response =
+        await streamFromModel(
+          model,
+          message,
+          image,
+          history
+        );
+
+
+
+      for await (
+        const chunk of response
+      ) {
+
+        if(chunk.text) {
+
           yield chunk.text;
+
         }
+
       }
 
-      console.log(`✅ Response generated using ${model}`);
+
+
+      console.log(
+        `✅ Response generated using ${model}`
+      );
+
+
       return;
-    } catch (error) {
+
+
+
+    } catch(error) {
+
+
       lastError = error;
 
-      console.error(`❌ ${model} failed`, error);
 
-      // Retry once if Google reports high demand
-      if (error.status === 503) {
-        console.log("🔄 High demand detected. Retrying in 2 seconds...");
+      console.error(
+        `❌ ${model} failed`,
+        error
+      );
+
+
+
+      if(error.status === 503) {
+
+
+        console.log(
+          "🔄 High demand detected. Retrying..."
+        );
+
 
         await sleep(2000);
 
-        try {
-          const retryResponse = await streamFromModel(model, message);
 
-          for await (const chunk of retryResponse) {
-            if (chunk.text) {
+
+        try {
+
+
+          const retryResponse =
+            await streamFromModel(
+              model,
+              message,
+              image,
+              history
+            );
+
+
+
+          for await (
+            const chunk of retryResponse
+          ) {
+
+            if(chunk.text) {
+
               yield chunk.text;
+
             }
+
           }
 
-          console.log(`✅ Retry successful using ${model}`);
+
+          console.log(
+            `✅ Retry successful using ${model}`
+          );
+
+
           return;
-        } catch (retryError) {
-          console.error(`❌ Retry failed for ${model}`);
-          lastError = retryError;
+
+
+
+        } catch(retryError) {
+
+
+          console.error(
+            `❌ Retry failed for ${model}`
+          );
+
+
+          lastError =
+            retryError;
+
         }
+
       }
 
-      console.log("➡️ Switching to next available model...");
+
+      console.log(
+        "➡️ Switching model..."
+      );
+
     }
+
   }
 
-  console.error("❌ All Gemini models failed.");
+
+  console.error(
+    "❌ All Gemini models failed."
+  );
+
 
   throw lastError;
+
 }
