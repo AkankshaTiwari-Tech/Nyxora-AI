@@ -1,32 +1,37 @@
-import * as admin from "firebase-admin";
+import { initializeApp, cert, getApps } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 
-if (admin.getApps().length === 0) {
+const serviceAccount = {
 
-  admin.initializeApp({
+  projectId:
+    process.env.FIREBASE_PROJECT_ID,
 
-    credential: admin.credential.cert({
+  clientEmail:
+    process.env.FIREBASE_CLIENT_EMAIL,
 
-      projectId:
-        process.env.FIREBASE_PROJECT_ID,
+  privateKey:
+    process.env.FIREBASE_PRIVATE_KEY
+      ?.replace(/\\n/g, "\n"),
 
-      clientEmail:
-        process.env.FIREBASE_CLIENT_EMAIL,
+};
 
-      privateKey:
-        process.env.FIREBASE_PRIVATE_KEY
-          ?.replace(/\\n/g, "\n"),
 
-    }),
+
+if (getApps().length === 0) {
+
+  initializeApp({
+
+    credential:
+      cert(serviceAccount),
 
   });
 
 }
 
 
-export const db = admin.firestore();
-
-export default admin;
+export const db =
+  getFirestore();

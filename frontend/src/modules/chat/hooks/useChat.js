@@ -13,10 +13,12 @@ export default function useChat({
   setChats,
 }) {
 
+
   const [
     isThinking,
     setIsThinking,
   ] = useState(false);
+
 
 
   const extractFileContent = async (file) => {
@@ -27,26 +29,34 @@ export default function useChat({
     if (
       file.type === "application/pdf"
     ) {
+
       return await extractPdfText(file);
+
     }
 
 
     if (
       file.name.endsWith(".docx")
     ) {
+
       return await extractDocxText(file);
+
     }
 
 
     if (
       file.type === "text/plain"
     ) {
+
       return await file.text();
+
     }
 
 
     return "";
+
   };
+
 
 
   const send = async (payload) => {
@@ -63,13 +73,16 @@ export default function useChat({
         : payload?.file || null;
 
 
+
     if (
-      (!String(text).trim() &&
-        !file) ||
+      (!String(text).trim() && !file) ||
       isThinking
     ) {
+
       return;
+
     }
+
 
 
     const currentChat =
@@ -79,12 +92,15 @@ export default function useChat({
       );
 
 
+
     const history =
       currentChat?.messages || [];
 
 
+
     let userPrompt =
       String(text).trim();
+
 
 
     if (
@@ -100,8 +116,10 @@ export default function useChat({
     }
 
 
+
     let prompt =
       userPrompt;
+
 
 
     if (
@@ -125,6 +143,7 @@ ${extractedText}`;
 
         }
 
+
       } catch(error) {
 
         console.error(
@@ -135,6 +154,7 @@ ${extractedText}`;
       }
 
     }
+
 
 
     const userMessage = {
@@ -152,20 +172,21 @@ ${extractedText}`;
             size:file.size,
           }
         : null,
+
     };
+
 
 
     const aiMessage = {
 
-      id:
-        Date.now()+1,
+      id: Date.now()+1,
 
-      role:
-        "assistant",
+      role: "assistant",
 
-      message:
-        "",
+      message: "",
+
     };
+
 
 
     setChats((prev)=>
@@ -175,7 +196,9 @@ ${extractedText}`;
         if(
           chat.id !== activeChatId
         )
+
           return chat;
+
 
 
         return {
@@ -193,9 +216,13 @@ ${extractedText}`;
 
 
           messages:[
+
             ...chat.messages,
+
             userMessage,
+
             aiMessage,
+
           ],
 
         };
@@ -205,7 +232,9 @@ ${extractedText}`;
     );
 
 
+
     setIsThinking(true);
+
 
 
     await streamResponse({
@@ -230,10 +259,16 @@ ${extractedText}`;
   };
 
 
+
+
+
   const regenerate = async () => {
 
+
     if(isThinking)
+
       return;
+
 
 
     const activeChat =
@@ -243,8 +278,11 @@ ${extractedText}`;
       );
 
 
+
     if(!activeChat)
+
       return;
+
 
 
     const lastUser =
@@ -256,8 +294,11 @@ ${extractedText}`;
       );
 
 
+
     if(!lastUser)
+
       return;
+
 
 
     const aiMessage = {
@@ -267,7 +308,9 @@ ${extractedText}`;
       role:"assistant",
 
       message:"",
+
     };
+
 
 
     setChats((prev)=>
@@ -277,12 +320,15 @@ ${extractedText}`;
         if(
           chat.id!==activeChatId
         )
+
           return chat;
+
 
 
         const messages=[
           ...chat.messages,
         ];
+
 
 
         if(
@@ -295,12 +341,17 @@ ${extractedText}`;
         }
 
 
+
         messages.push(aiMessage);
 
 
+
         return {
+
           ...chat,
+
           messages,
+
         };
 
       })
@@ -308,7 +359,9 @@ ${extractedText}`;
     );
 
 
+
     setIsThinking(true);
+
 
 
     await streamResponse({
@@ -328,7 +381,11 @@ ${extractedText}`;
 
     });
 
+
   };
+
+
+
 
 
   const editMessage = async(
@@ -336,8 +393,11 @@ ${extractedText}`;
     newText
   ) => {
 
+
     if(isThinking)
+
       return;
+
 
 
     const activeChat =
@@ -347,25 +407,89 @@ ${extractedText}`;
       );
 
 
+
     if(!activeChat)
+
       return;
 
 
-    const aiMessage={
+
+    const updatedMessages =
+      activeChat.messages.map(
+        (msg)=>
+
+
+          msg.id === messageId
+
+            ? {
+
+                ...msg,
+
+                message:newText,
+
+              }
+
+            : msg
+
+      );
+
+
+
+    const aiMessage = {
 
       id:Date.now(),
 
       role:"assistant",
 
       message:"",
+
     };
+
+
+
+    setChats((prev)=>
+
+      prev.map((chat)=>{
+
+
+        if(
+          chat.id !== activeChatId
+        )
+
+          return chat;
+
+
+
+        return {
+
+          ...chat,
+
+          messages:[
+
+            ...updatedMessages,
+
+            aiMessage,
+
+          ],
+
+        };
+
+
+      })
+
+    );
+
+
+
+    setIsThinking(true);
+
 
 
     await streamResponse({
 
       prompt:newText,
 
-      history:activeChat.messages,
+      history:updatedMessages,
 
       aiMessageId:
         aiMessage.id,
@@ -378,10 +502,14 @@ ${extractedText}`;
 
     });
 
+
   };
 
 
-  const stop=()=>{
+
+
+
+  const stop = ()=>{
 
     stopGeneration();
 
@@ -390,12 +518,19 @@ ${extractedText}`;
   };
 
 
+
   return {
+
     send,
+
     regenerate,
+
     editMessage,
+
     stop,
+
     isThinking,
+
   };
 
 }
