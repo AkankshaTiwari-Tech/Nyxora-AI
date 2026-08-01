@@ -3,9 +3,11 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
+
 
 
 const SYSTEM_PROMPT = `
@@ -23,6 +25,7 @@ Identity:
 `;
 
 
+
 const MODELS = [
   "gemini-3.6-flash",
   "gemini-3.5-flash",
@@ -30,10 +33,36 @@ const MODELS = [
 ];
 
 
+
 const sleep = (ms) =>
-  new Promise((resolve) =>
+  new Promise((resolve)=>
     setTimeout(resolve, ms)
   );
+
+
+
+function createMemoryPrompt(memory){
+
+  if(!memory)
+    return "";
+
+
+  return `
+
+User Memory:
+
+${JSON.stringify(
+  memory,
+  null,
+  2
+)}
+
+Use this information only when helpful.
+Do not mention that you are reading memory.
+
+`;
+
+}
 
 
 
@@ -41,26 +70,51 @@ async function streamFromModel(
   model,
   prompt,
   image = null,
-  history = []
+  history = [],
+  memory = null
 ) {
 
 
   const contents = [];
 
 
+
+  // Permanent AI Memory
+
+  if(memory){
+
+    contents.push({
+
+      role:"user",
+
+      parts:[
+
+        {
+          text:
+          createMemoryPrompt(memory),
+        },
+
+      ],
+
+    });
+
+  }
+
+
+
   // Previous conversation
 
-  if (
+  if(
     history &&
     history.length > 0
-  ) {
+  ){
 
-    history.forEach((msg) => {
+    history.forEach((msg)=>{
 
-      if (
+      if(
         msg.role === "user" ||
         msg.role === "assistant"
-      ) {
+      ){
 
         contents.push({
 
@@ -69,7 +123,7 @@ async function streamFromModel(
               ? "model"
               : "user",
 
-          parts: [
+          parts:[
 
             {
               text:
@@ -88,15 +142,17 @@ async function streamFromModel(
 
 
 
-  // Current prompt
-
   const parts = [
 
     {
-      text: `${SYSTEM_PROMPT}
+
+      text:
+
+`${SYSTEM_PROMPT}
 
 User:
-${prompt}`,
+${prompt}`
+
     },
 
   ];
@@ -105,11 +161,11 @@ ${prompt}`,
 
   // Image support
 
-  if (image) {
+  if(image){
 
     parts.push({
 
-      inlineData: {
+      inlineData:{
 
         data:
           image.data,
@@ -127,7 +183,7 @@ ${prompt}`,
 
   contents.push({
 
-    role: "user",
+    role:"user",
 
     parts,
 
@@ -151,19 +207,25 @@ ${prompt}`,
 export async function* generateAIResponseStream(
   message,
   image = null,
-  history = []
-) {
+  history = [],
+  memory = null
+){
 
   let lastError = null;
 
 
-  for (const model of MODELS) {
 
-    try {
+  for(
+    const model of MODELS
+  ){
+
+    try{
+
 
       console.log(
         `🟢 Trying model: ${model}`
       );
+
 
 
       const response =
@@ -171,16 +233,17 @@ export async function* generateAIResponseStream(
           model,
           message,
           image,
-          history
+          history,
+          memory
         );
 
 
 
-      for await (
+      for await(
         const chunk of response
-      ) {
+      ){
 
-        if(chunk.text) {
+        if(chunk.text){
 
           yield chunk.text;
 
@@ -199,10 +262,11 @@ export async function* generateAIResponseStream(
 
 
 
-    } catch(error) {
+    }catch(error){
 
 
       lastError = error;
+
 
 
       console.error(
@@ -212,19 +276,14 @@ export async function* generateAIResponseStream(
 
 
 
-      if(error.status === 503) {
-
-
-        console.log(
-          "🔄 High demand detected. Retrying..."
-        );
+      if(error.status === 503){
 
 
         await sleep(2000);
 
 
 
-        try {
+        try{
 
 
           const retryResponse =
@@ -232,16 +291,17 @@ export async function* generateAIResponseStream(
               model,
               message,
               image,
-              history
+              history,
+              memory
             );
 
 
 
-          for await (
+          for await(
             const chunk of retryResponse
-          ) {
+          ){
 
-            if(chunk.text) {
+            if(chunk.text){
 
               yield chunk.text;
 
@@ -250,22 +310,11 @@ export async function* generateAIResponseStream(
           }
 
 
-          console.log(
-            `✅ Retry successful using ${model}`
-          );
-
-
           return;
 
 
 
-        } catch(retryError) {
-
-
-          console.error(
-            `❌ Retry failed for ${model}`
-          );
-
+        }catch(retryError){
 
           lastError =
             retryError;
@@ -275,18 +324,16 @@ export async function* generateAIResponseStream(
       }
 
 
+
       console.log(
         "➡️ Switching model..."
       );
+
 
     }
 
   }
 
-
-  console.error(
-    "❌ All Gemini models failed."
-  );
 
 
   throw lastError;

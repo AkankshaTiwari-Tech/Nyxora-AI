@@ -1,14 +1,24 @@
-import { generateAIResponseStream } from "../services/aiService.js";
+import {
+  generateAIResponseStream,
+} from "../services/aiService.js";
+
+import {
+  saveMemory,
+} from "../services/memoryService.js";
 
 
 export async function chatWithAI(req, res) {
 
+
   try {
+
 
     const {
       message,
       image,
       history,
+      memory,
+      userId,
     } = req.body;
 
 
@@ -18,6 +28,7 @@ export async function chatWithAI(req, res) {
         message.trim() === "") &&
       !image
     ) {
+
 
       return res.status(400).json({
 
@@ -30,20 +41,27 @@ export async function chatWithAI(req, res) {
 
 
 
+    let fullResponse = "";
+
+
+
     res.setHeader(
       "Content-Type",
       "text/plain; charset=utf-8"
     );
+
 
     res.setHeader(
       "Transfer-Encoding",
       "chunked"
     );
 
+
     res.setHeader(
       "Cache-Control",
       "no-cache"
     );
+
 
     res.setHeader(
       "Connection",
@@ -54,18 +72,59 @@ export async function chatWithAI(req, res) {
 
     for await (
       const chunk of generateAIResponseStream(
-        message || "Analyze this image.",
+
+        message ||
+        "Analyze this image.",
+
         image,
-        history || []
+
+        history || [],
+
+        memory || null
+
       )
     ) {
 
+
+      fullResponse += chunk;
+
+
       res.write(chunk);
+
 
     }
 
 
+
     res.end();
+
+
+
+    // Automatic memory extraction
+
+    if(userId) {
+
+
+      const extractedMemory = {
+
+        lastTopic:
+          message?.slice(0,100) || "",
+
+
+        lastInteraction:
+          new Date().toISOString(),
+
+      };
+
+
+
+      await saveMemory(
+        userId,
+        extractedMemory
+      );
+
+
+    }
 
 
 
@@ -81,6 +140,7 @@ export async function chatWithAI(req, res) {
 
     if(error.status === 503) {
 
+
       return res.status(503).json({
 
         reply:
@@ -88,11 +148,13 @@ export async function chatWithAI(req, res) {
 
       });
 
+
     }
 
 
 
     if(error.status === 404) {
+
 
       return res.status(404).json({
 
@@ -100,6 +162,7 @@ export async function chatWithAI(req, res) {
           "⚠️ The selected AI model is unavailable. Please try again later.",
 
       });
+
 
     }
 
@@ -111,6 +174,7 @@ export async function chatWithAI(req, res) {
         "❌ Something went wrong while generating the response. Please try again.",
 
     });
+
 
   }
 
