@@ -20,32 +20,49 @@ Identity:
 - Never introduce yourself as Gemini or Google AI.
 - If someone asks "Who are you?", reply that you are Nyxora AI.
 - If someone asks "Who created you?", reply "I was created by Team Nyxora."
-- If someone asks about your creators or development team, mention Team Nyxora.
+
+User interaction:
 - Be professional, friendly, intelligent and concise.
-- Format responses using proper Markdown.
+- Do not call the user by name unless the user has explicitly told you their name.
+- Do not assume names.
+- Use memory only when helpful.
+- Never mention that you are reading memory.
+
+Formatting:
+- Use proper Markdown.
 `;
 
 
 
 const MODELS = [
+
   "gemini-3.6-flash",
+
   "gemini-3.5-flash",
+
   "gemini-3-flash-preview",
+
 ];
 
 
 
 const sleep = (ms) =>
-  new Promise((resolve)=>
-    setTimeout(resolve, ms)
+  new Promise(
+    (resolve)=>
+      setTimeout(resolve, ms)
   );
+
+
 
 
 
 function createMemoryPrompt(memory){
 
+
   if(!memory)
+
     return "";
+
 
 
   return `
@@ -59,11 +76,14 @@ ${JSON.stringify(
 )}
 
 Use this information only when helpful.
-Do not mention that you are reading memory.
 
 `;
 
 }
+
+
+
+
 
 
 
@@ -73,7 +93,7 @@ async function streamFromModel(
   image = null,
   history = [],
   memory = null
-) {
+){
 
 
   const contents = [];
@@ -89,8 +109,10 @@ async function streamFromModel(
       parts:[
 
         {
+
           text:
-          createMemoryPrompt(memory),
+            createMemoryPrompt(memory),
+
         },
 
       ],
@@ -101,41 +123,56 @@ async function streamFromModel(
 
 
 
-  if(
-    history &&
-    history.length > 0
-  ){
+
+
+  if(history && history.length > 0){
+
 
     history.forEach((msg)=>{
+
 
       if(
         msg.role === "user" ||
         msg.role === "assistant"
       ){
 
+
         contents.push({
 
           role:
+
             msg.role === "assistant"
+
               ? "model"
+
               : "user",
+
 
           parts:[
 
             {
+
               text:
                 msg.message || "",
+
             },
 
           ],
 
         });
 
+
       }
+
 
     });
 
+
   }
+
+
+
+
 
 
 
@@ -156,7 +193,12 @@ ${prompt}`
 
 
 
+
+
+
+
   if(image){
+
 
     parts.push({
 
@@ -172,7 +214,12 @@ ${prompt}`
 
     });
 
+
   }
+
+
+
+
 
 
 
@@ -186,6 +233,10 @@ ${prompt}`
 
 
 
+
+
+
+
   return await ai.models.generateContentStream({
 
     model,
@@ -194,25 +245,41 @@ ${prompt}`
 
   });
 
+
 }
 
 
 
 
+
+
+
+
 export async function* generateAIResponseStream(
+
   message,
+
   image = null,
+
   history = [],
+
   memory = null
+
 ){
 
+
   let lastError = null;
+
+
+
 
 
 
   for(
     const model of MODELS
   ){
+
+
 
     try{
 
@@ -224,13 +291,24 @@ export async function* generateAIResponseStream(
 
 
       const response =
+
         await streamFromModel(
+
           model,
+
           message,
+
           image,
+
           history,
+
           memory
+
         );
+
+
+
+
 
 
 
@@ -238,26 +316,38 @@ export async function* generateAIResponseStream(
         const chunk of response
       ){
 
+
         if(chunk.text){
 
           yield chunk.text;
 
         }
 
+
       }
 
 
 
+
+
+
       console.log(
+
         `✅ Response generated using ${model}`
+
       );
+
 
 
       return;
 
 
 
-    }catch(error){
+
+
+    }
+    catch(error){
+
 
 
       lastError = error;
@@ -265,72 +355,91 @@ export async function* generateAIResponseStream(
 
 
       console.error(
+
         `❌ ${model} failed`,
-        error
+
+        error.message || error
+
       );
 
 
 
+
+
+
+
+      // Handle temporary overload
+
       if(error.status === 503){
 
 
-        await sleep(2000);
+        console.log(
+
+          `⚠️ ${model} unavailable. Switching model...`
+
+        );
 
 
 
-        try{
-
-
-          const retryResponse =
-            await streamFromModel(
-              model,
-              message,
-              image,
-              history,
-              memory
-            );
+        await sleep(3000);
 
 
 
-          for await(
-            const chunk of retryResponse
-          ){
+        continue;
 
-            if(chunk.text){
-
-              yield chunk.text;
-
-            }
-
-          }
-
-
-          return;
-
-
-
-        }catch(retryError){
-
-          lastError =
-            retryError;
-
-        }
 
       }
 
 
 
+
+
+
+
+      // Handle quota limit
+
+      if(error.status === 429){
+
+
+        console.log(
+
+          `⚠️ ${model} quota exceeded. Switching model...`
+
+        );
+
+
+
+        continue;
+
+
+      }
+
+
+
+
+
+
+
       console.log(
+
         "➡️ Switching model..."
+
       );
 
 
+
     }
+
+
 
   }
 
 
 
+
+
+
   throw lastError;
+
 
 }

@@ -1,7 +1,6 @@
 let controller = null;
 
 
-// Convert image file to base64
 
 async function fileToBase64(file) {
 
@@ -32,18 +31,24 @@ async function fileToBase64(file) {
 
 
 
+
 export async function generateResponse(
   prompt,
   onChunk,
   file = null,
-  history = []
+  history = [],
+  userId = null,
+  memory = null
 ) {
+
 
   controller =
     new AbortController();
 
 
+
   let image = null;
+
 
 
   if (
@@ -51,8 +56,10 @@ export async function generateResponse(
     file.type.startsWith("image/")
   ) {
 
+
     const base64 =
       await fileToBase64(file);
+
 
 
     image = {
@@ -68,15 +75,22 @@ export async function generateResponse(
 
 
 
+
   const response =
     await fetch(
+
       "http://localhost:5000/api/chat",
+
       {
+
         method:"POST",
 
+
         headers:{
+
           "Content-Type":
             "application/json",
+
         },
 
 
@@ -88,6 +102,10 @@ export async function generateResponse(
 
           history,
 
+          userId,
+
+          memory,
+
         }),
 
 
@@ -95,7 +113,9 @@ export async function generateResponse(
           controller.signal,
 
       }
+
     );
+
 
 
 
@@ -109,6 +129,7 @@ export async function generateResponse(
 
 
 
+
   if(!response.body){
 
     throw new Error(
@@ -116,6 +137,7 @@ export async function generateResponse(
     );
 
   }
+
 
 
 
@@ -127,13 +149,17 @@ export async function generateResponse(
     new TextDecoder();
 
 
+
   let fullResponse = "";
+
 
 
 
   try {
 
+
     while(true){
+
 
       const {
         done,
@@ -170,7 +196,9 @@ export async function generateResponse(
 
       }
 
+
     }
+
 
 
     return fullResponse;
@@ -179,22 +207,31 @@ export async function generateResponse(
 
   } finally {
 
+
     controller = null;
 
+
   }
+
 
 }
 
 
 
+
 export function stopGeneration(){
+
 
   if(controller){
 
+
     controller.abort();
+
 
     controller = null;
 
+
   }
+
 
 }

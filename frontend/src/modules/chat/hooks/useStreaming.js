@@ -3,114 +3,185 @@ import {
 } from "../services/geminiService";
 
 
+
 export async function streamResponse({
+
   prompt,
+
   file,
+
   history,
+
   aiMessageId,
+
   activeChatId,
+
   setChats,
+
   setIsThinking,
+
 }) {
+
 
   try {
 
+
     await generateResponse(
+
       prompt,
 
-      (streamText) => {
 
-        setChats((prev) =>
+      (streamText)=>{
 
-          prev.map((chat) => {
 
-            if (
+        setChats(prev=>
+
+
+          prev.map(chat=>{
+
+
+            if(
               chat.id !== activeChatId
             )
+
               return chat;
+
 
 
             return {
 
               ...chat,
 
+
               messages:
-                chat.messages.map(
-                  (msg) =>
 
-                    msg.id === aiMessageId
+                chat.messages.map(msg=>
 
-                      ? {
-                          ...msg,
-                          message:
-                            streamText,
-                        }
 
-                      : msg
+                  msg.id === aiMessageId
+
+                  ? {
+
+                      ...msg,
+
+                      message: streamText,
+
+                    }
+
+                  : msg
+
+
                 ),
+
 
             };
 
+
           })
+
 
         );
 
+
       },
+
 
       file,
 
+
       history
+
 
     );
 
 
-  } catch(error) {
+
+  }
+  catch(error){
+
+
+
+    console.error(
+
+      "Streaming error:",
+
+      error
+
+    );
+
+
 
     if(
       error.name !== "AbortError"
-    ) {
+    ){
 
-      setChats((prev) =>
 
-        prev.map((chat) => {
+      setChats(prev=>
+
+
+        prev.map(chat=>{
+
 
           if(
             chat.id !== activeChatId
           )
+
             return chat;
+
 
 
           return {
 
             ...chat,
 
+
             messages:
-              chat.messages.map(
-                (msg) =>
 
-                  msg.id === aiMessageId
+              chat.messages.map(msg=>
 
-                    ? {
-                        ...msg,
-                        message:
-                          "❌ Something went wrong while generating the response.",
-                      }
 
-                    : msg
+                msg.id === aiMessageId
+
+                ? {
+
+
+                    ...msg,
+
+
+                    message:
+
+                      "❌ Something went wrong while generating the response.",
+
+
+                  }
+
+
+                : msg
+
+
               ),
+
 
           };
 
+
         })
+
 
       );
 
+
     }
 
-  } finally {
+
+  }
+  finally{
+
 
     setIsThinking(false);
 
+
   }
+
 
 }

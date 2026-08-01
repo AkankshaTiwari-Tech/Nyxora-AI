@@ -1,10 +1,21 @@
 import { useState } from "react";
 
+import { auth } from "../../../firebase/firebase";
+
+import {
+  getMemory,
+} from "../../../services/memoryService";
+
+import {
+  saveMessages,
+} from "../services/chatHistoryService";
+
 import { stopGeneration } from "../services/geminiService";
 import { streamResponse } from "./useStreaming";
 
 import { extractPdfText } from "../utils/extractPdfText";
 import { extractDocxText } from "../utils/extractDocxText";
+
 
 
 export default function useChat({
@@ -21,36 +32,39 @@ export default function useChat({
 
 
 
-  const extractFileContent = async (file) => {
-
-    if (!file) return "";
 
 
-    if (
-      file.type === "application/pdf"
-    ) {
+  const extractFileContent = async(file)=>{
+
+
+    if(!file)
+
+      return "";
+
+
+
+    if(file.type==="application/pdf"){
 
       return await extractPdfText(file);
 
     }
 
 
-    if (
-      file.name.endsWith(".docx")
-    ) {
+
+    if(file.name.endsWith(".docx")){
 
       return await extractDocxText(file);
 
     }
 
 
-    if (
-      file.type === "text/plain"
-    ) {
+
+    if(file.type==="text/plain"){
 
       return await file.text();
 
     }
+
 
 
     return "";
@@ -59,36 +73,68 @@ export default function useChat({
 
 
 
-  const send = async (payload) => {
+
+
+
+
+  const send = async(payload)=>{
+
+
+    const userId =
+      auth.currentUser?.uid;
+
+
+
+    const memory =
+      await getMemory();
+
+
+
+
 
     const text =
-      typeof payload === "string"
+      typeof payload==="string"
+
         ? payload
+
         : payload?.message || "";
 
 
+
+
+
     const file =
-      typeof payload === "string"
+      typeof payload==="string"
+
         ? null
+
         : payload?.file || null;
 
 
 
-    if (
-      (!String(text).trim() && !file) ||
+
+
+    if(
+      (!String(text).trim() && !file)
+      ||
       isThinking
-    ) {
+    )
 
       return;
 
-    }
+
+
+
 
 
 
     const currentChat =
       chats.find(
-        (chat) =>
-          chat.id === activeChatId
+
+        chat=>
+
+          chat.id===activeChatId
+
       );
 
 
@@ -98,104 +144,103 @@ export default function useChat({
 
 
 
-    let userPrompt =
-      String(text).trim();
 
-
-
-    if (
-      !userPrompt &&
-      file
-    ) {
-
-      userPrompt =
-        file.type.startsWith("image/")
-          ? "Please analyze this image."
-          : "Please analyze this document and provide a summary.";
-
-    }
 
 
 
     let prompt =
-      userPrompt;
+      String(text).trim();
 
 
 
-    if (
+
+
+
+
+    if(
       file &&
       !file.type.startsWith("image/")
-    ) {
-
-      try {
-
-        const extractedText =
-          await extractFileContent(file);
+    ){
 
 
-        if (extractedText) {
+      const extractedText =
+        await extractFileContent(file);
 
-          prompt = `${userPrompt}
+
+
+      if(extractedText){
+
+
+        prompt += `
 
 FILE CONTENT:
 
 ${extractedText}`;
 
-        }
-
-
-      } catch(error) {
-
-        console.error(
-          "File extraction error:",
-          error
-        );
-
       }
+
 
     }
 
 
 
+
+
+
+
     const userMessage = {
 
-      id: Date.now(),
 
-      role: "user",
+      id:Date.now(),
 
-      message: text,
+      role:"user",
 
-      file: file
-        ? {
-            name:file.name,
-            type:file.type,
-            size:file.size,
-          }
-        : null,
+      message:text,
+
 
     };
+
+
 
 
 
     const aiMessage = {
 
-      id: Date.now()+1,
 
-      role: "assistant",
+      id:Date.now()+1,
 
-      message: "",
+      role:"assistant",
+
+      message:"",
+
 
     };
 
 
 
-    setChats((prev)=>
 
-      prev.map((chat)=>{
 
-        if(
-          chat.id !== activeChatId
-        )
+    const newMessages = [
+
+      ...history,
+
+      userMessage,
+
+      aiMessage,
+
+    ];
+
+
+
+
+
+
+    setChats(prev=>
+
+      prev.map(chat=>{
+
+
+        if(chat.id!==activeChatId)
 
           return chat;
 
@@ -205,27 +250,30 @@ ${extractedText}`;
 
           ...chat,
 
+
           title:
-            chat.title === "New Chat"
-              ? (
-                  text ||
-                  file?.name ||
-                  "New Chat"
-                ).slice(0,30)
-              : chat.title,
+
+            chat.title==="New Chat"
+
+            ? (
+
+                text ||
+
+                file?.name ||
+
+                "New Chat"
+
+              ).slice(0,30)
+
+            : chat.title,
 
 
-          messages:[
 
-            ...chat.messages,
+          messages:newMessages,
 
-            userMessage,
-
-            aiMessage,
-
-          ],
 
         };
+
 
       })
 
@@ -233,7 +281,29 @@ ${extractedText}`;
 
 
 
+
+
+
+    // Save user message immediately
+
+    await saveMessages(
+
+      activeChatId,
+
+      newMessages
+
+    );
+
+
+
+
+
+
+
     setIsThinking(true);
+
+
+
 
 
 
@@ -246,6 +316,7 @@ ${extractedText}`;
       history,
 
       aiMessageId:
+
         aiMessage.id,
 
       activeChatId,
@@ -254,7 +325,18 @@ ${extractedText}`;
 
       setIsThinking,
 
+      userId,
+
     });
+
+
+
+
+
+
+
+    // Do not save here
+    // React state is not updated immediately
 
   };
 
@@ -262,7 +344,11 @@ ${extractedText}`;
 
 
 
-  const regenerate = async () => {
+
+
+
+
+  const regenerate = async()=>{
 
 
     if(isThinking)
@@ -272,9 +358,13 @@ ${extractedText}`;
 
 
     const activeChat =
+
       chats.find(
-        (chat)=>
+
+        chat=>
+
           chat.id===activeChatId
+
       );
 
 
@@ -285,12 +375,20 @@ ${extractedText}`;
 
 
 
+
+
     const lastUser =
+
       [...activeChat.messages]
+
       .reverse()
+
       .find(
-        (msg)=>
+
+        msg=>
+
           msg.role==="user"
+
       );
 
 
@@ -301,7 +399,15 @@ ${extractedText}`;
 
 
 
+    const memory =
+      await getMemory();
+
+
+
+
+
     const aiMessage = {
+
 
       id:Date.now(),
 
@@ -309,58 +415,15 @@ ${extractedText}`;
 
       message:"",
 
+
     };
 
 
 
-    setChats((prev)=>
-
-      prev.map((chat)=>{
-
-        if(
-          chat.id!==activeChatId
-        )
-
-          return chat;
-
-
-
-        const messages=[
-          ...chat.messages,
-        ];
-
-
-
-        if(
-          messages[messages.length-1]
-          ?.role==="assistant"
-        ){
-
-          messages.pop();
-
-        }
-
-
-
-        messages.push(aiMessage);
-
-
-
-        return {
-
-          ...chat,
-
-          messages,
-
-        };
-
-      })
-
-    );
-
-
 
     setIsThinking(true);
+
+
 
 
 
@@ -370,7 +433,10 @@ ${extractedText}`;
 
       history:activeChat.messages,
 
+      memory,
+
       aiMessageId:
+
         aiMessage.id,
 
       activeChatId,
@@ -379,7 +445,13 @@ ${extractedText}`;
 
       setIsThinking,
 
+      userId:
+
+        auth.currentUser?.uid,
+
+
     });
+
 
 
   };
@@ -388,10 +460,14 @@ ${extractedText}`;
 
 
 
+
+
+
+
   const editMessage = async(
     messageId,
     newText
-  ) => {
+  )=>{
 
 
     if(isThinking)
@@ -400,10 +476,16 @@ ${extractedText}`;
 
 
 
+
+
     const activeChat =
+
       chats.find(
-        (chat)=>
+
+        chat=>
+
           chat.id===activeChatId
+
       );
 
 
@@ -414,28 +496,15 @@ ${extractedText}`;
 
 
 
-    const updatedMessages =
-      activeChat.messages.map(
-        (msg)=>
+    const memory =
+      await getMemory();
 
 
-          msg.id === messageId
-
-            ? {
-
-                ...msg,
-
-                message:newText,
-
-              }
-
-            : msg
-
-      );
 
 
 
     const aiMessage = {
+
 
       id:Date.now(),
 
@@ -443,41 +512,10 @@ ${extractedText}`;
 
       message:"",
 
+
     };
 
 
-
-    setChats((prev)=>
-
-      prev.map((chat)=>{
-
-
-        if(
-          chat.id !== activeChatId
-        )
-
-          return chat;
-
-
-
-        return {
-
-          ...chat,
-
-          messages:[
-
-            ...updatedMessages,
-
-            aiMessage,
-
-          ],
-
-        };
-
-
-      })
-
-    );
 
 
 
@@ -485,13 +523,19 @@ ${extractedText}`;
 
 
 
+
+
+
     await streamResponse({
 
       prompt:newText,
 
-      history:updatedMessages,
+      history:activeChat.messages,
+
+      memory,
 
       aiMessageId:
+
         aiMessage.id,
 
       activeChatId,
@@ -500,10 +544,19 @@ ${extractedText}`;
 
       setIsThinking,
 
+      userId:
+
+        auth.currentUser?.uid,
+
+
     });
 
 
+
   };
+
+
+
 
 
 
@@ -511,15 +564,23 @@ ${extractedText}`;
 
   const stop = ()=>{
 
+
     stopGeneration();
 
+
     setIsThinking(false);
+
 
   };
 
 
 
+
+
+
+
   return {
+
 
     send,
 
@@ -531,6 +592,8 @@ ${extractedText}`;
 
     isThinking,
 
+
   };
+
 
 }

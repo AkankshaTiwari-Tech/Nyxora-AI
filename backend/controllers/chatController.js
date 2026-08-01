@@ -4,7 +4,13 @@ import {
 
 import {
   saveMemory,
+  getMemory,
 } from "../services/memoryService.js";
+
+import {
+  extractMemory,
+} from "../services/memoryExtractor.js";
+
 
 
 export async function chatWithAI(req, res) {
@@ -17,18 +23,23 @@ export async function chatWithAI(req, res) {
       message,
       image,
       history,
-      memory,
       userId,
     } = req.body;
 
 
 
-    if (
-      (!message ||
-        message.trim() === "") &&
-      !image
-    ) {
+    console.log(
+      "Memory User ID:",
+      userId
+    );
 
+
+
+    if(
+      (!message ||
+      message.trim()==="") &&
+      !image
+    ){
 
       return res.status(400).json({
 
@@ -38,6 +49,29 @@ export async function chatWithAI(req, res) {
       });
 
     }
+
+
+
+
+    let userMemory = null;
+
+
+
+    if(userId){
+
+
+      userMemory =
+        await getMemory(userId);
+
+
+      console.log(
+        "Loaded Memory:",
+        userMemory
+      );
+
+
+    }
+
 
 
 
@@ -63,14 +97,8 @@ export async function chatWithAI(req, res) {
     );
 
 
-    res.setHeader(
-      "Connection",
-      "keep-alive"
-    );
 
-
-
-    for await (
+    for await(
       const chunk of generateAIResponseStream(
 
         message ||
@@ -80,10 +108,10 @@ export async function chatWithAI(req, res) {
 
         history || [],
 
-        memory || null
+        userMemory
 
       )
-    ) {
+    ){
 
 
       fullResponse += chunk;
@@ -100,28 +128,41 @@ export async function chatWithAI(req, res) {
 
 
 
+
+
     // Automatic memory extraction
 
-    if(userId) {
+    if(userId && message){
 
 
-      const extractedMemory = {
-
-        lastTopic:
-          message?.slice(0,100) || "",
-
-
-        lastInteraction:
-          new Date().toISOString(),
-
-      };
+      const extractedMemory =
+        await extractMemory(
+          message
+        );
 
 
 
-      await saveMemory(
-        userId,
-        extractedMemory
-      );
+      if(
+        Object.keys(extractedMemory)
+        .length > 0
+      ){
+
+
+        await saveMemory(
+
+          userId,
+
+          extractedMemory
+
+        );
+
+
+        console.log(
+          "Smart memory extracted and saved"
+        );
+
+
+      }
 
 
     }
@@ -138,44 +179,21 @@ export async function chatWithAI(req, res) {
 
 
 
-    if(error.status === 503) {
+    if(!res.headersSent){
 
 
-      return res.status(503).json({
+      return res.status(500).json({
 
         reply:
-          "🚦 Nyxora AI is currently experiencing high demand. Please try again in a few moments.",
+          "❌ Something went wrong.",
 
       });
 
 
     }
-
-
-
-    if(error.status === 404) {
-
-
-      return res.status(404).json({
-
-        reply:
-          "⚠️ The selected AI model is unavailable. Please try again later.",
-
-      });
-
-
-    }
-
-
-
-    return res.status(500).json({
-
-      reply:
-        "❌ Something went wrong while generating the response. Please try again.",
-
-    });
 
 
   }
+
 
 }

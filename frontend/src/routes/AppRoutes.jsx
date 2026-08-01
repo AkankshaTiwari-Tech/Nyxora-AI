@@ -11,44 +11,123 @@ import NotFound from "../pages/NotFound";
 import Home from "../modules/home/pages/Home";
 import Chat from "../modules/chat/pages/Chat";
 
+import AIMemory from "../pages/settings/AIMemory";
+
 import ProtectedRoute from "./ProtectedRoute";
 
+
 export default function AppRoutes() {
+
   return (
+
     <BrowserRouter>
+
       <Routes>
+
+
         {/* Authentication */}
+
         <Route element={<AuthLayout />}>
-          <Route path="/" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+
+          <Route
+            path="/"
+            element={<Login />}
+          />
+
+          <Route
+            path="/register"
+            element={<Register />}
+          />
+
+          <Route
+            path="/forgot-password"
+            element={<ForgotPassword />}
+          />
+
         </Route>
 
+
+
         {/* Dashboard */}
+
         <Route
+
           path="/dashboard"
+
           element={
+
             <ProtectedRoute>
+
               <MainLayout>
+
                 <Home />
+
               </MainLayout>
+
             </ProtectedRoute>
+
           }
+
         />
+
+
 
         {/* AI Chat */}
+
         <Route
+
           path="/chat"
+
           element={
+
             <ProtectedRoute>
+
               <Chat />
+
             </ProtectedRoute>
+
           }
+
         />
 
+
+
+        {/* AI Memory */}
+
+        <Route
+
+          path="/ai-memory"
+
+          element={
+
+            <ProtectedRoute>
+
+              <MainLayout>
+
+                <AIMemory />
+
+              </MainLayout>
+
+            </ProtectedRoute>
+
+          }
+
+        />
+
+
+
         {/* 404 */}
-        <Route path="*" element={<NotFound />} />
+
+        <Route
+          path="*"
+          element={<NotFound />}
+        />
+
+
       </Routes>
+
     </BrowserRouter>
+
   );
+
 }
