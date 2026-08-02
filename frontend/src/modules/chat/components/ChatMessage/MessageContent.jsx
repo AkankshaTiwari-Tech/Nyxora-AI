@@ -1,6 +1,10 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 import rehypeRaw from "rehype-raw";
+import rehypeKatex from "rehype-katex";
+
+import "katex/dist/katex.min.css";
 
 import CodeBlock from "../../../../shared/components/CodeBlock";
 
@@ -11,8 +15,14 @@ export default function MessageContent({
     <div className="prose prose-invert max-w-none prose-headings:font-bold prose-headings:text-white prose-p:text-gray-200 prose-p:leading-8 prose-li:text-gray-200 prose-strong:text-white prose-a:text-violet-400 prose-blockquote:border-violet-500 prose-blockquote:text-gray-300">
 
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw]}
+        remarkPlugins={[
+          remarkGfm,
+          remarkMath,
+        ]}
+        rehypePlugins={[
+          rehypeRaw,
+          rehypeKatex,
+        ]}
         components={{
           code({
             className,
