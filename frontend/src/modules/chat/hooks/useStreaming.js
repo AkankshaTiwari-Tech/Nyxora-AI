@@ -2,6 +2,9 @@ import {
   generateResponse,
 } from "../services/geminiService";
 
+import {
+  saveMessages,
+} from "../services/chatHistoryService";
 
 
 export async function streamResponse({
@@ -11,6 +14,8 @@ export async function streamResponse({
   file,
 
   history,
+
+  messages,
 
   aiMessageId,
 
@@ -22,166 +27,171 @@ export async function streamResponse({
 
 }) {
 
+  let finalStreamText = "";
+
 
   try {
-
 
     await generateResponse(
 
       prompt,
 
+      (streamText) => {
 
-      (streamText)=>{
-
-
-        setChats(prev=>
+        finalStreamText = streamText;
 
 
-          prev.map(chat=>{
+        // Update current tab while AI is streaming
+        setChats((prev) =>
+          prev.map((chat) => {
 
-
-            if(
+            if (
               chat.id !== activeChatId
-            )
-
+            ) {
               return chat;
-
+            }
 
 
             return {
 
               ...chat,
 
-
               messages:
-
-                chat.messages.map(msg=>
-
-
-                  msg.id === aiMessageId
-
-                  ? {
-
-                      ...msg,
-
-                      message: streamText,
-
-                    }
-
-                  : msg
-
-
+                chat.messages.map(
+                  (msg) =>
+                    msg.id === aiMessageId
+                      ? {
+                          ...msg,
+                          message: streamText,
+                        }
+                      : msg
                 ),
-
 
             };
 
-
           })
+        );
 
+      },
+
+      file,
+
+      history
+
+    );
+
+
+    // ==========================================
+    // CREATE FINAL MESSAGE ARRAY DIRECTLY
+    // ==========================================
+
+    if (finalStreamText) {
+
+      const finalMessages =
+        messages.map((msg) =>
+
+          msg.id === aiMessageId
+
+            ? {
+                ...msg,
+                message: finalStreamText,
+              }
+
+            : msg
 
         );
 
 
-      },
+      // Save completed AI response to Firestore
+      await saveMessages(
+        activeChatId,
+        finalMessages
+      );
 
 
-      file,
+      console.log(
+        "Final AI response saved to Firestore"
+      );
 
-
-      history
-
-
-    );
-
-
+    }
 
   }
-  catch(error){
 
-
+  catch (error) {
 
     console.error(
-
       "Streaming error:",
-
       error
-
     );
 
 
-
-    if(
+    if (
       error.name !== "AbortError"
-    ){
+    ) {
+
+      const errorMessage =
+        "❌ Something went wrong while generating the response.";
 
 
-      setChats(prev=>
+      const errorMessages =
+        messages.map((msg) =>
+
+          msg.id === aiMessageId
+
+            ? {
+                ...msg,
+                message: errorMessage,
+              }
+
+            : msg
+
+        );
 
 
-        prev.map(chat=>{
+      setChats((prev) =>
+        prev.map((chat) => {
 
-
-          if(
+          if (
             chat.id !== activeChatId
-          )
-
+          ) {
             return chat;
-
+          }
 
 
           return {
 
             ...chat,
 
-
             messages:
-
-              chat.messages.map(msg=>
-
-
-                msg.id === aiMessageId
-
-                ? {
-
-
-                    ...msg,
-
-
-                    message:
-
-                      "❌ Something went wrong while generating the response.",
-
-
-                  }
-
-
-                : msg
-
-
+              chat.messages.map(
+                (msg) =>
+                  msg.id === aiMessageId
+                    ? {
+                        ...msg,
+                        message: errorMessage,
+                      }
+                    : msg
               ),
-
 
           };
 
-
         })
-
-
       );
 
 
+      await saveMessages(
+        activeChatId,
+        errorMessages
+      );
+
     }
 
-
   }
-  finally{
 
+  finally {
 
     setIsThinking(false);
 
-
   }
-
 
 }
