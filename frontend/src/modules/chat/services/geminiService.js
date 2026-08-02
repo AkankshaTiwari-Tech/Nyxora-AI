@@ -1,6 +1,9 @@
 let controller = null;
 
 
+// ======================================================
+// FILE TO BASE64
+// ======================================================
 
 async function fileToBase64(file) {
 
@@ -20,7 +23,8 @@ async function fileToBase64(file) {
     };
 
 
-    reader.onerror = reject;
+    reader.onerror =
+      reject;
 
 
     reader.readAsDataURL(file);
@@ -30,25 +34,37 @@ async function fileToBase64(file) {
 }
 
 
-
+// ======================================================
+// GENERATE RESPONSE
+// ======================================================
 
 export async function generateResponse(
-  prompt,
-  onChunk,
-  file = null,
-  history = [],
-  userId = null,
-  memory = null
-) {
 
+  prompt,
+
+  onChunk,
+
+  file = null,
+
+  history = [],
+
+  userId = null,
+
+  memory = null,
+
+  memoryMessage = null
+
+) {
 
   controller =
     new AbortController();
 
 
+  // ====================================================
+  // PREPARE IMAGE
+  // ====================================================
 
   let image = null;
-
 
 
   if (
@@ -56,15 +72,14 @@ export async function generateResponse(
     file.type.startsWith("image/")
   ) {
 
-
     const base64 =
       await fileToBase64(file);
 
 
-
     image = {
 
-      data: base64,
+      data:
+        base64,
 
       mimeType:
         file.type,
@@ -74,7 +89,9 @@ export async function generateResponse(
   }
 
 
-
+  // ====================================================
+  // SEND REQUEST
+  // ====================================================
 
   const response =
     await fetch(
@@ -83,10 +100,11 @@ export async function generateResponse(
 
       {
 
-        method:"POST",
+        method:
+          "POST",
 
 
-        headers:{
+        headers: {
 
           "Content-Type":
             "application/json",
@@ -94,19 +112,29 @@ export async function generateResponse(
         },
 
 
-        body:JSON.stringify({
+        body:
+          JSON.stringify({
 
-          message:prompt,
+            // Full internal prompt used
+            // for AI generation.
+            message:
+              prompt,
 
-          image,
+            // Clean original user message
+            // used by backend memory.
+            memoryMessage:
+              memoryMessage ??
+              prompt,
 
-          history,
+            image,
 
-          userId,
+            history,
 
-          memory,
+            userId,
 
-        }),
+            memory,
+
+          }),
 
 
         signal:
@@ -117,28 +145,54 @@ export async function generateResponse(
     );
 
 
+  // ====================================================
+  // HANDLE HTTP ERROR
+  // ====================================================
+
+  if (!response.ok) {
+
+    let errorMessage =
+      "Failed to connect to AI server.";
 
 
-  if(!response.ok){
+    try {
+
+      const errorText =
+        await response.text();
+
+
+      if (errorText) {
+
+        errorMessage =
+          errorText;
+
+      }
+
+    } catch {
+
+      // Keep default error.
+
+    }
+
 
     throw new Error(
-      "Failed to connect to AI server."
+      errorMessage
     );
 
   }
 
 
+  // ====================================================
+  // STREAM VALIDATION
+  // ====================================================
 
-
-  if(!response.body){
+  if (!response.body) {
 
     throw new Error(
       "Streaming is not supported."
     );
 
   }
-
-
 
 
   const reader =
@@ -149,46 +203,48 @@ export async function generateResponse(
     new TextDecoder();
 
 
-
   let fullResponse = "";
 
 
-
+  // ====================================================
+  // READ STREAM
+  // ====================================================
 
   try {
 
-
-    while(true){
-
+    while (true) {
 
       const {
         done,
-        value
+        value,
       } =
-      await reader.read();
+        await reader.read();
 
 
+      if (done) {
 
-      if(done)
         break;
 
+      }
 
 
       const chunk =
         decoder.decode(
+
           value,
+
           {
-            stream:true,
+            stream: true,
           }
+
         );
 
 
+      fullResponse +=
+        chunk;
 
-      fullResponse += chunk;
 
-
-
-      if(onChunk){
+      if (onChunk) {
 
         onChunk(
           fullResponse
@@ -196,42 +252,58 @@ export async function generateResponse(
 
       }
 
+    }
+
+
+    // Flush remaining decoder data.
+
+    const remaining =
+      decoder.decode();
+
+
+    if (remaining) {
+
+      fullResponse +=
+        remaining;
+
+
+      if (onChunk) {
+
+        onChunk(
+          fullResponse
+        );
+
+      }
 
     }
 
 
-
     return fullResponse;
-
-
-
-  } finally {
-
-
-    controller = null;
-
 
   }
 
+
+  finally {
+
+    controller = null;
+
+  }
 
 }
 
 
+// ======================================================
+// STOP GENERATION
+// ======================================================
 
+export function stopGeneration() {
 
-export function stopGeneration(){
-
-
-  if(controller){
-
+  if (controller) {
 
     controller.abort();
 
-
     controller = null;
 
-
   }
-
 
 }

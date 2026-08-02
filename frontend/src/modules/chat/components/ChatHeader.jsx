@@ -6,6 +6,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 
+
 const assistantModes = [
   {
     id: "normal",
@@ -39,42 +40,70 @@ const assistantModes = [
   },
 ];
 
-export default function ChatHeader() {
-  const [selectedMode, setSelectedMode] = useState(
-    assistantModes[0]
-  );
 
-  const [isOpen, setIsOpen] = useState(false);
+export default function ChatHeader({
+  selectedMode,
+  onModeChange,
+}) {
 
-  const dropdownRef = useRef(null);
+  const [isOpen, setIsOpen] =
+    useState(false);
+
+  const dropdownRef =
+    useRef(null);
+
+
+  const currentMode =
+    assistantModes.find(
+      (mode) =>
+        mode.id === selectedMode
+    ) || assistantModes[0];
+
 
   useEffect(() => {
-    const handleOutsideClick = (event) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target)
-      ) {
-        setIsOpen(false);
-      }
-    };
+
+    const handleOutsideClick =
+      (event) => {
+
+        if (
+          dropdownRef.current &&
+          !dropdownRef.current.contains(
+            event.target
+          )
+        ) {
+          setIsOpen(false);
+        }
+
+      };
+
 
     document.addEventListener(
       "mousedown",
       handleOutsideClick
     );
 
+
     return () => {
+
       document.removeEventListener(
         "mousedown",
         handleOutsideClick
       );
+
     };
+
   }, []);
 
-  const handleSelectMode = (mode) => {
-    setSelectedMode(mode);
-    setIsOpen(false);
-  };
+
+  const handleSelectMode =
+    (mode) => {
+
+      onModeChange(mode.id);
+
+      setIsOpen(false);
+
+    };
+
 
   return (
     <header
@@ -91,8 +120,10 @@ export default function ChatHeader() {
         px-8
       "
     >
+
       {/* Left */}
       <div className="flex items-center gap-4">
+
         <div
           className="
             w-12
@@ -110,10 +141,13 @@ export default function ChatHeader() {
           />
         </div>
 
+
         <div>
+
           <h2 className="text-xl font-semibold text-white">
             Nyxora AI Assistant
           </h2>
+
 
           <p
             className="
@@ -128,21 +162,29 @@ export default function ChatHeader() {
 
             Online
           </p>
+
         </div>
+
       </div>
+
 
       {/* Right */}
       <div className="flex items-center gap-4">
+
 
         {/* Assistant Selector */}
         <div
           ref={dropdownRef}
           className="relative"
         >
+
           <button
             type="button"
             onClick={() =>
-              setIsOpen((current) => !current)
+              setIsOpen(
+                (current) =>
+                  !current
+              )
             }
             className="
               min-w-[225px]
@@ -164,17 +206,19 @@ export default function ChatHeader() {
             aria-haspopup="menu"
             aria-expanded={isOpen}
           >
+
             <div className="flex items-center gap-3">
 
               <span className="text-xl leading-none">
-                {selectedMode.emoji}
+                {currentMode.emoji}
               </span>
 
               <span className="font-medium whitespace-nowrap">
-                {selectedMode.label}
+                {currentMode.label}
               </span>
 
             </div>
+
 
             <ChevronDown
               size={18}
@@ -190,10 +234,13 @@ export default function ChatHeader() {
                 }
               `}
             />
+
           </button>
+
 
           {/* Dropdown */}
           {isOpen && (
+
             <div
               className="
                 absolute
@@ -211,48 +258,65 @@ export default function ChatHeader() {
               "
               role="menu"
             >
-              {assistantModes.map((mode) => {
-                const isSelected =
-                  selectedMode.id === mode.id;
 
-                return (
-                  <button
-                    key={mode.id}
-                    type="button"
-                    onClick={() =>
-                      handleSelectMode(mode)
-                    }
-                    className={`
-                      w-full
-                      flex
-                      items-center
-                      gap-4
-                      rounded-xl
-                      px-4
-                      py-3
-                      text-left
-                      transition
-                      ${
-                        isSelected
-                          ? "bg-violet-600/15 text-violet-300"
-                          : "text-gray-200 hover:bg-[#1A2236] hover:text-white"
+              {assistantModes.map(
+                (mode) => {
+
+                  const isSelected =
+                    currentMode.id ===
+                    mode.id;
+
+
+                  return (
+
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() =>
+                        handleSelectMode(
+                          mode
+                        )
                       }
-                    `}
-                    role="menuitem"
-                  >
-                    <span className="w-7 text-center text-xl">
-                      {mode.emoji}
-                    </span>
+                      className={`
+                        w-full
+                        flex
+                        items-center
+                        gap-4
+                        rounded-xl
+                        px-4
+                        py-3
+                        text-left
+                        transition
+                        ${
+                          isSelected
+                            ? "bg-violet-600/15 text-violet-300"
+                            : "text-gray-200 hover:bg-[#1A2236] hover:text-white"
+                        }
+                      `}
+                      role="menuitem"
+                    >
 
-                    <span className="font-medium">
-                      {mode.label}
-                    </span>
-                  </button>
-                );
-              })}
+                      <span className="w-7 text-center text-xl">
+                        {mode.emoji}
+                      </span>
+
+                      <span className="font-medium">
+                        {mode.label}
+                      </span>
+
+                    </button>
+
+                  );
+
+                }
+              )}
+
             </div>
+
           )}
+
         </div>
+
 
         {/* More Options */}
         <button
@@ -270,13 +334,16 @@ export default function ChatHeader() {
           "
           aria-label="More options"
         >
+
           <MoreVertical
             className="text-gray-300"
             size={20}
           />
+
         </button>
 
       </div>
+
     </header>
   );
 }

@@ -7,9 +7,19 @@ import {
 } from "../services/chatHistoryService";
 
 
+// ======================================================
+// STREAM AI RESPONSE
+// ======================================================
+
 export async function streamResponse({
 
+  // Full prompt sent to AI.
+  // May contain assistant-mode instructions.
   prompt,
+
+  // Clean original user message.
+  // Used by backend memory system.
+  memoryMessage,
 
   file,
 
@@ -25,6 +35,10 @@ export async function streamResponse({
 
   setIsThinking,
 
+  userId,
+
+  memory,
+
 }) {
 
   let finalStreamText = "";
@@ -38,17 +52,23 @@ export async function streamResponse({
 
       (streamText) => {
 
-        finalStreamText = streamText;
+        finalStreamText =
+          streamText;
 
 
-        // Update current tab while AI is streaming
+        // ==========================================
+        // UPDATE CURRENT TAB DURING STREAMING
+        // ==========================================
+
         setChats((prev) =>
           prev.map((chat) => {
 
             if (
               chat.id !== activeChatId
             ) {
+
               return chat;
+
             }
 
 
@@ -59,12 +79,17 @@ export async function streamResponse({
               messages:
                 chat.messages.map(
                   (msg) =>
+
                     msg.id === aiMessageId
+
                       ? {
                           ...msg,
-                          message: streamText,
+                          message:
+                            streamText,
                         }
+
                       : msg
+
                 ),
 
             };
@@ -76,13 +101,29 @@ export async function streamResponse({
 
       file,
 
-      history
+      history,
+
+
+      // ==========================================
+      // PERSONAL AI DATA
+      // ==========================================
+
+      userId,
+
+      memory,
+
+
+      // ==========================================
+      // CLEAN MESSAGE FOR MEMORY
+      // ==========================================
+
+      memoryMessage
 
     );
 
 
     // ==========================================
-    // CREATE FINAL MESSAGE ARRAY DIRECTLY
+    // SAVE FINAL RESPONSE TO FIRESTORE
     // ==========================================
 
     if (finalStreamText) {
@@ -94,7 +135,8 @@ export async function streamResponse({
 
             ? {
                 ...msg,
-                message: finalStreamText,
+                message:
+                  finalStreamText,
               }
 
             : msg
@@ -102,7 +144,6 @@ export async function streamResponse({
         );
 
 
-      // Save completed AI response to Firestore
       await saveMessages(
         activeChatId,
         finalMessages
@@ -117,6 +158,7 @@ export async function streamResponse({
 
   }
 
+
   catch (error) {
 
     console.error(
@@ -126,7 +168,8 @@ export async function streamResponse({
 
 
     if (
-      error.name !== "AbortError"
+      error.name !==
+      "AbortError"
     ) {
 
       const errorMessage =
@@ -140,7 +183,8 @@ export async function streamResponse({
 
             ? {
                 ...msg,
-                message: errorMessage,
+                message:
+                  errorMessage,
               }
 
             : msg
@@ -154,7 +198,9 @@ export async function streamResponse({
           if (
             chat.id !== activeChatId
           ) {
+
             return chat;
+
           }
 
 
@@ -165,12 +211,17 @@ export async function streamResponse({
             messages:
               chat.messages.map(
                 (msg) =>
+
                   msg.id === aiMessageId
+
                     ? {
                         ...msg,
-                        message: errorMessage,
+                        message:
+                          errorMessage,
                       }
+
                     : msg
+
               ),
 
           };
@@ -187,6 +238,7 @@ export async function streamResponse({
     }
 
   }
+
 
   finally {
 
