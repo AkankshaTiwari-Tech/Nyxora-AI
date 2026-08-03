@@ -205,6 +205,44 @@ function buildChatTitle(
 
 
 // ======================================================
+// BUILD SAFE FILE METADATA
+//
+// IMPORTANT:
+// Never save the browser File object directly to Firestore.
+// Only save serializable information needed by the UI.
+// ======================================================
+
+function buildFileMetadata(
+  file
+) {
+
+  if (!file) {
+
+    return null;
+
+  }
+
+
+  return {
+
+    name:
+      file.name || "Attachment",
+
+    type:
+      file.type ||
+      "application/octet-stream",
+
+    size:
+      Number(
+        file.size || 0
+      ),
+
+  };
+
+}
+
+
+// ======================================================
 // CHAT HOOK
 // ======================================================
 
@@ -249,7 +287,7 @@ export default function useChat({
 
       if (
         file.name
-          .toLowerCase()
+          ?.toLowerCase()
           .endsWith(".docx")
       ) {
 
@@ -263,6 +301,17 @@ export default function useChat({
       if (
         file.type ===
         "text/plain"
+      ) {
+
+        return await file.text();
+
+      }
+
+
+      if (
+        file.name
+          ?.toLowerCase()
+          .endsWith(".md")
       ) {
 
         return await file.text();
@@ -308,6 +357,13 @@ ${userPrompt}
   const send =
     async (payload) => {
 
+      if (isThinking) {
+
+        return;
+
+      }
+
+
       const userId =
         auth.currentUser?.uid;
 
@@ -337,11 +393,8 @@ ${userPrompt}
 
 
       if (
-        (
-          !String(text).trim() &&
-          !file
-        ) ||
-        isThinking
+        !String(text).trim() &&
+        !file
       ) {
 
         return;
@@ -372,9 +425,9 @@ ${userPrompt}
       // ==================================================
       // DETECT FIRST REAL USER MESSAGE
       //
-      // New chats already contain the Nyxora welcome
-      // assistant message, so history.length === 0 cannot
-      // be used to detect the first user message.
+      // A new chat already contains the Nyxora welcome
+      // assistant message, so we detect whether a USER
+      // message already exists instead of checking length.
       // ==================================================
 
       const hasUserMessage =
@@ -417,29 +470,47 @@ ${userPrompt}
 
 
       // ==================================================
-      // FILE CONTENT
+      // EXTRACT DOCUMENT CONTENT
+      //
+      // Images are handled separately by geminiService.
+      // PDFs/DOCX/TXT/MD are converted to text here.
       // ==================================================
 
       if (
         file &&
-        !file.type.startsWith(
+        !file.type?.startsWith(
           "image/"
         )
       ) {
 
-        const extractedText =
-          await extractFileContent(
-            file
+        try {
+
+          const extractedText =
+            await extractFileContent(
+              file
+            );
+
+
+          if (extractedText) {
+
+            userPrompt += `
+
+
+ATTACHED FILE CONTENT:
+
+${extractedText}`;
+
+          }
+
+        } catch (error) {
+
+          console.error(
+            "File extraction error:",
+            error
           );
 
 
-        if (extractedText) {
-
-          userPrompt += `
-
-FILE CONTENT:
-
-${extractedText}`;
+          throw error;
 
         }
 
@@ -458,10 +529,23 @@ ${extractedText}`;
 
       // ==================================================
       // CLEAN MESSAGE FOR MEMORY
+      //
+      // Do not store extracted PDF/DOCX text as the user's
+      // actual conversational memory message.
       // ==================================================
 
       const memoryMessage =
         cleanUserMessage;
+
+
+      // ==================================================
+      // SAFE ATTACHMENT METADATA
+      // ==================================================
+
+      const fileMetadata =
+        buildFileMetadata(
+          file
+        );
 
 
       // ==================================================
@@ -478,6 +562,13 @@ ${extractedText}`;
 
         message:
           text,
+
+        ...(fileMetadata
+          ? {
+              file:
+                fileMetadata,
+            }
+          : {}),
 
       };
 
@@ -596,6 +687,11 @@ ${extractedText}`;
 
       // ==================================================
       // STREAM AI RESPONSE
+      //
+      // IMPORTANT:
+      // Pass the original File object here.
+      // Images need the real File for base64 conversion.
+      // Firestore receives only fileMetadata.
       // ==================================================
 
       await streamResponse({
