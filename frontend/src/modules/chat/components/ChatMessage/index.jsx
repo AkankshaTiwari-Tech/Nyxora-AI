@@ -20,6 +20,7 @@ import {
   Loader2,
   FolderPlus,
   Bot,
+  Star,
 } from "lucide-react";
 
 import MessageContent
@@ -78,6 +79,12 @@ export default function ChatMessage({
     feedback,
     setFeedback,
   ] = useState(null);
+
+
+  const [
+    isFavorite,
+    setIsFavorite,
+  ] = useState(false);
 
 
   const [
@@ -504,6 +511,57 @@ export default function ChatMessage({
           "";
 
       }
+
+    };
+
+
+  const toggleFavorite =
+    () => {
+
+      const content =
+        String(
+          text || ""
+        ).trim();
+
+
+      if (!content) {
+        return;
+      }
+
+
+      const saved =
+        JSON.parse(
+          localStorage.getItem(
+            "nyxora_favorites"
+          )
+        ) || [];
+
+
+      const exists =
+        saved.includes(content);
+
+
+      const updated =
+        exists
+          ? saved.filter(
+              (item) =>
+                item !== content
+            )
+          : [
+              ...saved,
+              content,
+            ];
+
+
+      localStorage.setItem(
+        "nyxora_favorites",
+        JSON.stringify(updated)
+      );
+
+
+      setIsFavorite(
+        !exists
+      );
 
     };
 
@@ -1720,6 +1778,31 @@ export default function ChatMessage({
   </button>
 
 )}
+
+            {/* FAVORITE */}
+
+            {isAssistant && (
+
+              <button
+                type="button"
+                onClick={toggleFavorite}
+                className={`
+                  rounded-lg
+                  p-2
+                  transition
+                  ${
+                    isFavorite
+                      ? "text-yellow-400 bg-yellow-400/10"
+                      : "text-gray-500 hover:bg-white/[0.06] hover:text-yellow-400"
+                  }
+                `}
+                title="Add to Favorites"
+              >
+                <Star size={15} />
+              </button>
+
+            )}
+
 
             {/* LIKE */}
 

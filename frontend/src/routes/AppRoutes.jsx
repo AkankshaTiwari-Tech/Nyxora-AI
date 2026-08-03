@@ -22,6 +22,12 @@ import PDFGenerator
 
 import AIMemory from "../pages/settings/AIMemory";
 
+import Favorites
+  from "../modules/favorites/pages/Favorites";
+
+import Notes
+  from "../modules/notes/pages/Notes";
+
 import ProtectedRoute from "./ProtectedRoute";
 
 
@@ -34,9 +40,7 @@ export default function AppRoutes() {
       <Routes>
 
 
-        {/* ============================================= */}
-        {/* AUTHENTICATION                                */}
-        {/* ============================================= */}
+        {/* AUTH */}
 
         <Route element={<AuthLayout />}>
 
@@ -58,9 +62,9 @@ export default function AppRoutes() {
         </Route>
 
 
-        {/* ============================================= */}
-        {/* DASHBOARD                                     */}
-        {/* ============================================= */}
+
+
+        {/* DASHBOARD */}
 
         <Route
           path="/dashboard"
@@ -80,9 +84,9 @@ export default function AppRoutes() {
         />
 
 
-        {/* ============================================= */}
-        {/* AI CHAT                                       */}
-        {/* ============================================= */}
+
+
+        {/* AI CHAT */}
 
         <Route
           path="/chat"
@@ -98,9 +102,9 @@ export default function AppRoutes() {
         />
 
 
-        {/* ============================================= */}
-        {/* WORKSPACE                                     */}
-        {/* ============================================= */}
+
+
+        {/* WORKSPACE */}
 
         <Route
           path="/workspace"
@@ -120,9 +124,9 @@ export default function AppRoutes() {
         />
 
 
-        {/* ============================================= */}
-        {/* PDF GENERATOR                                 */}
-        {/* ============================================= */}
+
+
+        {/* PDF */}
 
         <Route
           path="/pdf"
@@ -142,9 +146,9 @@ export default function AppRoutes() {
         />
 
 
-        {/* ============================================= */}
-        {/* AI MEMORY                                     */}
-        {/* ============================================= */}
+
+
+        {/* AI MEMORY */}
 
         <Route
           path="/ai-memory"
@@ -164,9 +168,53 @@ export default function AppRoutes() {
         />
 
 
-        {/* ============================================= */}
-        {/* 404                                           */}
-        {/* ============================================= */}
+
+
+        {/* FAVORITES */}
+
+        <Route
+          path="/favorites"
+          element={
+
+            <ProtectedRoute>
+
+              <MainLayout>
+
+                <Favorites />
+
+              </MainLayout>
+
+            </ProtectedRoute>
+
+          }
+        />
+
+
+
+
+        {/* NOTES */}
+
+        <Route
+          path="/notes"
+          element={
+
+            <ProtectedRoute>
+
+              <MainLayout>
+
+                <Notes />
+
+              </MainLayout>
+
+            </ProtectedRoute>
+
+          }
+        />
+
+
+
+
+        {/* 404 */}
 
         <Route
           path="*"

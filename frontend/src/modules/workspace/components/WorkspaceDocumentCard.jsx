@@ -4,6 +4,8 @@ import {
   FileText,
   Pencil,
   Trash2,
+  Eye,
+  X,
 } from "lucide-react";
 
 import {
@@ -28,10 +30,19 @@ export default function WorkspaceDocumentCard({
   onDelete,
 }) {
 
+
   const [
     copied,
     setCopied,
   ] = useState(false);
+
+
+  const [
+    viewerOpen,
+    setViewerOpen,
+  ] = useState(false);
+
+
 
 
   async function copyDocument() {
@@ -47,10 +58,14 @@ export default function WorkspaceDocumentCard({
 
 
       setTimeout(
-        () =>
-          setCopied(false),
+        () => {
+
+          setCopied(false);
+
+        },
         1600
       );
+
 
     } catch (error) {
 
@@ -64,9 +79,13 @@ export default function WorkspaceDocumentCard({
   }
 
 
+
+
+
   function downloadPdf() {
 
     downloadWorkspacePdf({
+
       ...document,
 
       className:
@@ -74,202 +93,410 @@ export default function WorkspaceDocumentCard({
 
       studentName:
         student?.name || "",
+
     });
 
   }
 
 
+
+
+
   return (
 
-    <article
-      className="
-        rounded-2xl
-        border
-        border-[#242D43]
-        bg-[#0D1322]
-        p-5
-        transition
-        hover:border-[#343E58]
-      "
-    >
+    <>
 
-      <div
+      <article
         className="
-          flex
-          items-start
-          justify-between
-          gap-4
+          rounded-2xl
+          border
+          border-[#242D43]
+          bg-[#0D1322]
+          p-5
+          transition
+          hover:border-[#343E58]
         "
       >
 
-        <div className="min-w-0">
 
-          <div
-            className="
-              mb-3
-              flex
-              flex-wrap
-              items-center
-              gap-2
-            "
-          >
+        <div
+          className="
+            flex
+            items-start
+            justify-between
+            gap-4
+          "
+        >
 
-            <span
+
+          <div className="min-w-0">
+
+
+            <div
               className="
-                rounded-lg
-                bg-violet-500/10
-                px-2.5
-                py-1
-                text-xs
-                text-violet-300
+                mb-3
+                flex
+                flex-wrap
+                items-center
+                gap-2
               "
             >
-              {getDocumentTypeIcon(
-                document.type
-              )}{" "}
 
-              {getDocumentTypeLabel(
-                document.type
-              )}
-            </span>
-
-
-            {document.source === "ai" && (
 
               <span
                 className="
                   rounded-lg
-                  bg-blue-500/10
+                  bg-violet-500/10
                   px-2.5
                   py-1
                   text-xs
-                  text-blue-300
+                  text-violet-300
                 "
               >
-                AI Generated
+
+                {getDocumentTypeIcon(
+                  document.type
+                )}
+
+                {" "}
+
+                {getDocumentTypeLabel(
+                  document.type
+                )}
+
               </span>
 
-            )}
+
+
+              {
+                document.source === "ai" && (
+
+                  <span
+                    className="
+                      rounded-lg
+                      bg-blue-500/10
+                      px-2.5
+                      py-1
+                      text-xs
+                      text-blue-300
+                    "
+                  >
+
+                    AI Generated
+
+                  </span>
+
+                )
+              }
+
+
+            </div>
+
+
+
+
+            <h3
+              className="
+                truncate
+                font-semibold
+                text-white
+              "
+            >
+
+              {document.title}
+
+            </h3>
+
+
+
+
+            <p
+              className="
+                mt-2
+                text-sm
+                text-gray-500
+              "
+            >
+
+              {
+                [
+                  document.subject,
+                  document.chapter,
+                  classItem?.name,
+                  student?.name,
+                ]
+                .filter(Boolean)
+                .join(" • ")
+                ||
+                "No additional information"
+              }
+
+            </p>
+
 
           </div>
 
 
-          <h3
-            className="
-              truncate
-              font-semibold
-              text-white
-            "
-          >
-            {document.title}
-          </h3>
 
-
-          <p
+          <FileText
+            size={22}
             className="
-              mt-2
-              text-sm
-              text-gray-500
+              shrink-0
+              text-violet-400
             "
-          >
-            {[
-              document.subject,
-              document.chapter,
-              classItem?.name,
-              student?.name,
-            ]
-              .filter(Boolean)
-              .join(" • ") ||
-              "No additional information"}
-          </p>
+          />
+
 
         </div>
 
 
-        <FileText
-          size={22}
+
+
+
+        <p
           className="
-            shrink-0
-            text-violet-400
+            mt-4
+            line-clamp-4
+            whitespace-pre-line
+            text-sm
+            leading-6
+            text-gray-400
           "
-        />
-
-      </div>
-
-
-      <p
-        className="
-          mt-4
-          line-clamp-4
-          whitespace-pre-line
-          text-sm
-          leading-6
-          text-gray-400
-        "
-      >
-        {document.content ||
-          "No content"}
-      </p>
-
-
-      <div
-        className="
-          mt-5
-          flex
-          flex-wrap
-          gap-2
-        "
-      >
-
-        <Action
-          onClick={downloadPdf}
         >
-          <Download size={14} />
 
-          PDF
-        </Action>
-
-
-        <Action
-          onClick={copyDocument}
-        >
-          <Copy size={14} />
-
-          {copied
-            ? "Copied"
-            : "Copy"}
-        </Action>
-
-
-        <Action
-          onClick={() =>
-            onEdit(document)
+          {
+            document.content ||
+            "No content"
           }
+
+        </p>
+
+
+
+
+
+        <div
+          className="
+            mt-5
+            flex
+            flex-wrap
+            gap-2
+          "
         >
-          <Pencil size={14} />
-
-          Edit
-        </Action>
 
 
-        <Action
-          danger
-          onClick={() =>
-            onDelete(document)
-          }
-        >
-          <Trash2 size={14} />
 
-          Delete
-        </Action>
+          <Action
+            onClick={() =>
+              setViewerOpen(true)
+            }
+          >
 
-      </div>
+            <Eye size={14}/>
 
-    </article>
+            Open
+
+          </Action>
+
+
+
+
+
+          <Action
+            onClick={downloadPdf}
+          >
+
+            <Download size={14}/>
+
+            PDF
+
+          </Action>
+
+
+
+
+
+          <Action
+            onClick={copyDocument}
+          >
+
+            <Copy size={14}/>
+
+            {
+              copied
+              ?
+              "Copied"
+              :
+              "Copy"
+            }
+
+          </Action>
+
+
+
+
+
+          <Action
+            onClick={() =>
+              onEdit(document)
+            }
+          >
+
+            <Pencil size={14}/>
+
+            Edit
+
+          </Action>
+
+
+
+
+
+          <Action
+            danger
+            onClick={() =>
+              onDelete(document)
+            }
+          >
+
+            <Trash2 size={14}/>
+
+            Delete
+
+          </Action>
+
+
+
+        </div>
+
+
+      </article>
+
+
+
+
+
+      {
+        viewerOpen && (
+
+          <div
+            className="
+              fixed
+              inset-0
+              z-50
+              flex
+              items-center
+              justify-center
+              bg-black/70
+              p-5
+            "
+          >
+
+
+            <div
+              className="
+                max-h-[85vh]
+                w-full
+                max-w-4xl
+                overflow-y-auto
+                rounded-3xl
+                border
+                border-white/10
+                bg-[#0D1322]
+                p-6
+              "
+            >
+
+
+
+              <div
+                className="
+                  mb-5
+                  flex
+                  items-center
+                  justify-between
+                "
+              >
+
+
+                <h2
+                  className="
+                    text-xl
+                    font-semibold
+                    text-white
+                  "
+                >
+
+                  {document.title}
+
+                </h2>
+
+
+
+
+                <button
+
+                  onClick={() =>
+                    setViewerOpen(false)
+                  }
+
+                  className="
+                    rounded-lg
+                    p-2
+                    text-gray-400
+                    hover:bg-white/10
+                    hover:text-white
+                  "
+
+                >
+
+                  <X size={20}/>
+
+                </button>
+
+
+              </div>
+
+
+
+
+
+              <div
+                className="
+                  whitespace-pre-wrap
+                  leading-8
+                  text-gray-200
+                "
+              >
+
+                {
+                  document.content ||
+                  "No content available."
+                }
+
+              </div>
+
+
+
+            </div>
+
+
+
+          </div>
+
+        )
+      }
+
+
+
+    </>
 
   );
 
 }
+
+
+
 
 
 function Action({
@@ -278,11 +505,15 @@ function Action({
   danger = false,
 }) {
 
+
   return (
 
     <button
+
       type="button"
+
       onClick={onClick}
+
       className={`
         flex
         items-center
@@ -296,21 +527,22 @@ function Action({
 
         ${
           danger
-            ? `
-              border-red-500/20
-              text-red-400
-              hover:bg-red-500/10
-            `
-            : `
-              border-[#303A55]
-              text-gray-300
-              hover:border-violet-500/50
-              hover:text-white
-            `
+
+          ?
+
+          "border-red-500/20 text-red-400 hover:bg-red-500/10"
+
+          :
+
+          "border-[#303A55] text-gray-300 hover:border-violet-500/50 hover:text-white"
+
         }
       `}
+
     >
+
       {children}
+
     </button>
 
   );

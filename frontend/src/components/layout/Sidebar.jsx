@@ -5,14 +5,12 @@ import {
   FileText,
   FileDown,
   ClipboardList,
-  Presentation,
   Star,
-  Settings,
   Brain,
   LogOut,
 } from "lucide-react";
 
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 import NyxoraLogo from "../common/NyxoraLogo";
 
@@ -58,13 +56,8 @@ const menuItems = [
   {
     name: "Test Generator",
     icon: ClipboardList,
-    path: "/tests",
-  },
-
-  {
-    name: "Presentation",
-    icon: Presentation,
-    path: "/presentation",
+    path: "/chat",
+    mode: "test",
   },
 
   {
@@ -73,30 +66,66 @@ const menuItems = [
     path: "/favorites",
   },
 
-  {
-    name: "Settings",
-    icon: Settings,
-    path: "/settings",
-  },
-
 ];
-
 
 
 export default function Sidebar() {
 
+  const navigate = useNavigate();
+
+
+  const handleClick = (item) => {
+
+    if (item.mode === "test") {
+
+      navigate("/chat", {
+
+        state: {
+          assistantMode: "test",
+        },
+
+      });
+
+      return;
+
+    }
+
+
+    navigate(item.path);
+
+  };
+
+
   return (
 
-    <aside className="w-72 min-h-screen bg-[#0E1424] border-r border-[#20263B] flex flex-col">
+    <aside
+      className="
+        w-72
+        min-h-screen
+        bg-[#0E1424]
+        border-r
+        border-[#20263B]
+        flex
+        flex-col
+      "
+    >
 
 
       {/* Logo */}
 
-      <div className="px-6 py-8 border-b border-[#20263B]">
+      <div
+        className="
+          px-6
+          py-8
+          border-b
+          border-[#20263B]
+        "
+      >
 
         <div className="flex items-center gap-4">
 
-          <NyxoraLogo size={52} />
+          <NyxoraLogo size={52}/>
+
 
           <div>
 
@@ -104,11 +133,13 @@ export default function Sidebar() {
               Nyxora AI
             </h1>
 
+
             <p className="text-sm text-indigo-300">
               Your AI Workspace
             </p>
 
           </div>
+
 
         </div>
 
@@ -118,54 +149,123 @@ export default function Sidebar() {
 
       {/* Navigation */}
 
-      <nav className="flex-1 px-4 py-6">
+      <nav
+        className="
+          flex-1
+          px-4
+          py-6
+        "
+      >
 
         <div className="space-y-2">
 
-          {menuItems.map((item)=>{
 
-            const Icon = item.icon;
+          {
+            menuItems.map((item)=>{
+
+              const Icon = item.icon;
 
 
-            return (
+              if(item.mode === "test") {
 
-              <NavLink
+                return (
 
-                key={item.name}
+                  <button
 
-                to={item.path}
+                    key={item.name}
 
-                className={({isActive})=>
+                    onClick={() =>
+                      handleClick(item)
+                    }
 
-                  `w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all duration-300 ${
-                    
-                    isActive
+                    className="
+                      w-full
+                      flex
+                      items-center
+                      gap-4
+                      px-5
+                      py-4
+                      rounded-xl
+                      text-gray-400
+                      hover:bg-[#1A2237]
+                      hover:text-white
+                      transition-all
+                      duration-300
+                    "
 
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                  >
 
-                    : "text-gray-400 hover:bg-[#1A2237] hover:text-white"
+                    <Icon size={22}/>
 
-                  }`
 
-                }
+                    <span className="font-medium">
+                      {item.name}
+                    </span>
 
-              >
 
-                <Icon size={22}/>
+                  </button>
 
-                <span className="font-medium">
+                );
 
-                  {item.name}
+              }
 
-                </span>
 
-              </NavLink>
 
-            );
+              return (
 
-          })}
+                <NavLink
+
+                  key={item.name}
+
+                  to={item.path}
+
+                  className={({isActive}) =>
+
+                    `
+                    w-full
+                    flex
+                    items-center
+                    gap-4
+                    px-5
+                    py-4
+                    rounded-xl
+                    transition-all
+                    duration-300
+
+                    ${
+                      isActive
+
+                      ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+
+                      :
+
+                      "text-gray-400 hover:bg-[#1A2237] hover:text-white"
+
+                    }
+                    `
+                  }
+
+                >
+
+                  <Icon size={22}/>
+
+
+                  <span className="font-medium">
+                    {item.name}
+                  </span>
+
+
+                </NavLink>
+
+              );
+
+
+            })
+          }
+
 
         </div>
+
 
       </nav>
 
@@ -173,9 +273,29 @@ export default function Sidebar() {
 
       {/* Logout */}
 
-      <div className="p-4 border-t border-[#20263B]">
+      <div
+        className="
+          p-4
+          border-t
+          border-[#20263B]
+        "
+      >
 
-        <button className="w-full flex items-center gap-4 px-5 py-4 rounded-xl text-red-400 hover:bg-red-500 hover:text-white transition-all duration-300">
+        <button
+          className="
+            w-full
+            flex
+            items-center
+            gap-4
+            px-5
+            py-4
+            rounded-xl
+            text-red-400
+            hover:bg-red-500
+            hover:text-white
+            transition-all
+          "
+        >
 
           <LogOut size={22}/>
 
