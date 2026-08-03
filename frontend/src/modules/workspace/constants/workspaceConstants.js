@@ -19,6 +19,9 @@ export const WORKSPACE_COLLECTIONS =
     DOCUMENTS:
       "documents",
 
+    RESULTS:
+      "results",
+
   });
 
 

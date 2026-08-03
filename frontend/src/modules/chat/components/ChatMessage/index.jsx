@@ -1,21 +1,38 @@
 import {
-  useEffect,
   useRef,
   useState,
 } from "react";
 
 import {
+  Copy,
+  Check,
+  RotateCcw,
+  Pencil,
+  X,
+  ThumbsUp,
+  ThumbsDown,
+  Paperclip,
   FileText,
   File,
   Image as ImageIcon,
-  Paperclip,
-  X,
+  Eye,
+  Download,
+  Loader2,
+  FolderPlus,
+  Bot,
 } from "lucide-react";
 
-import MessageAvatar from "./MessageAvatar";
-import MessageToolbar from "./MessageToolbar";
-import ThinkingIndicator from "./ThinkingIndicator";
-import MessageContent from "./MessageContent";
+import MessageContent
+  from "./MessageContent";
+
+import {
+  createWorkspacePdfUrl,
+  downloadWorkspacePdf,
+} from "../../../workspace/documents/pdfs/generatePdf";
+
+import {
+  createChatPdfTitle,
+} from "../../utils/pdfIntent";
 
 
 // ======================================================
@@ -24,9 +41,10 @@ import MessageContent from "./MessageContent";
 
 export default function ChatMessage({
   message,
-  thinking = false,
   onRegenerate,
   onEdit,
+  onSaveToWorkspace,
+  isThinking = false,
 }) {
 
   const {
@@ -34,8 +52,21 @@ export default function ChatMessage({
     role,
     message: text,
     file,
+    pdfRequested = false,
   } = message;
 
+
+  const isUser =
+    role === "user";
+
+
+  const isAssistant =
+    role === "assistant";
+
+
+  // ====================================================
+  // STATE
+  // ====================================================
 
   const [
     copied,
@@ -44,31 +75,28 @@ export default function ChatMessage({
 
 
   const [
-    editing,
-    setEditing,
+    feedback,
+    setFeedback,
+  ] = useState(null);
+
+
+  const [
+    isEditing,
+    setIsEditing,
   ] = useState(false);
 
 
   const [
-    editedText,
-    setEditedText,
-  ] = useState(text);
+    editText,
+    setEditText,
+  ] = useState(
+    text || ""
+  );
 
-
-  // ====================================================
-  // EDIT ATTACHMENT STATE
-  //
-  // file = metadata belonging to the existing message.
-  //
-  // editedFile = newly selected browser File.
-  //
-  // removeExistingFile = whether the old attachment
-  // should be removed when Save is pressed.
-  // ====================================================
 
   const [
-    editedFile,
-    setEditedFile,
+    editFile,
+    setEditFile,
   ] = useState(null);
 
 
@@ -78,21 +106,120 @@ export default function ChatMessage({
   ] = useState(false);
 
 
-  const fileInputRef =
+  const [
+    pdfLoadingAction,
+    setPdfLoadingAction,
+  ] = useState(null);
+
+
+  const editFileInputRef =
     useRef(null);
 
 
   // ====================================================
-  // SYNC MESSAGE TEXT
+  // FILE HELPERS
   // ====================================================
 
-  useEffect(() => {
+  const getFileIcon =
+    (
+      fileData
+    ) => {
 
-    setEditedText(
-      text
-    );
+      const type =
+        String(
+          fileData?.type || ""
+        ).toLowerCase();
 
-  }, [text]);
+
+      const name =
+        String(
+          fileData?.name || ""
+        ).toLowerCase();
+
+
+      if (
+        type.startsWith(
+          "image/"
+        )
+      ) {
+
+        return ImageIcon;
+
+      }
+
+
+      if (
+        type ===
+          "application/pdf" ||
+        name.endsWith(
+          ".pdf"
+        )
+      ) {
+
+        return FileText;
+
+      }
+
+
+      return File;
+
+    };
+
+
+  const formatFileSize =
+    (
+      size
+    ) => {
+
+      const bytes =
+        Number(
+          size || 0
+        );
+
+
+      if (!bytes) {
+
+        return "";
+
+      }
+
+
+      if (
+        bytes <
+        1024
+      ) {
+
+        return `${bytes} B`;
+
+      }
+
+
+      if (
+        bytes <
+        1024 * 1024
+      ) {
+
+        return `${
+          (
+            bytes /
+            1024
+          ).toFixed(1)
+        } KB`;
+
+      }
+
+
+      return `${
+        (
+          bytes /
+          (
+            1024 *
+            1024
+          )
+        ).toFixed(1)
+      } MB`;
+
+    };
 
 
   // ====================================================
@@ -102,13 +229,24 @@ export default function ChatMessage({
   const copyMessage =
     async () => {
 
+      const content =
+        String(
+          text || ""
+        );
+
+
+      if (!content) {
+
+        return;
+
+      }
+
+
       try {
 
-        await navigator
-          .clipboard
-          .writeText(
-            text
-          );
+        await navigator.clipboard.writeText(
+          content
+        );
 
 
         setCopied(
@@ -116,7 +254,7 @@ export default function ChatMessage({
         );
 
 
-        setTimeout(
+        window.setTimeout(
           () => {
 
             setCopied(
@@ -124,12 +262,13 @@ export default function ChatMessage({
             );
 
           },
-          2000
+          1600
         );
 
       } catch (error) {
 
         console.error(
+          "Copy message error:",
           error
         );
 
@@ -139,139 +278,145 @@ export default function ChatMessage({
 
 
   // ====================================================
-  // START EDITING
+  // START EDIT
   // ====================================================
 
-  const startEditing = () => {
-
-    setEditedText(
-      text
-    );
-
-
-    setEditedFile(
-      null
-    );
-
-
-    setRemoveExistingFile(
-      false
-    );
-
-
-    setEditing(
-      true
-    );
-
-  };
-
-
-  // ====================================================
-  // CANCEL EDITING
-  // ====================================================
-
-  const cancelEditing = () => {
-
-    setEditedText(
-      text
-    );
-
-
-    setEditedFile(
-      null
-    );
-
-
-    setRemoveExistingFile(
-      false
-    );
-
-
-    if (
-      fileInputRef.current
-    ) {
-
-      fileInputRef.current.value =
-        "";
-
-    }
-
-
-    setEditing(
-      false
-    );
-
-  };
-
-
-  // ====================================================
-  // SELECT NEW ATTACHMENT
-  // ====================================================
-
-  const handleFileChange = (
-    event
-  ) => {
-
-    const selected =
-      event.target.files?.[0];
-
-
-    if (!selected) {
-
-      return;
-
-    }
-
-
-    // New file automatically replaces the old file.
-
-    setEditedFile(
-      selected
-    );
-
-
-    setRemoveExistingFile(
-      true
-    );
-
-
-    event.target.value =
-      "";
-
-  };
-
-
-  // ====================================================
-  // REMOVE ATTACHMENT DURING EDIT
-  // ====================================================
-
-  const removeEditAttachment =
+  const startEditing =
     () => {
 
-      // If a newly selected file exists, remove it first.
-      //
-      // The original attachment stays removed because
-      // selecting a replacement already marked it for
-      // replacement.
-
-      if (editedFile) {
-
-        setEditedFile(
-          null
-        );
-
-
-        setRemoveExistingFile(
-          true
-        );
-
+      if (
+        isThinking
+      ) {
 
         return;
 
       }
 
 
-      // Otherwise remove the original message attachment.
+      setEditText(
+        text || ""
+      );
+
+
+      setEditFile(
+        null
+      );
+
+
+      setRemoveExistingFile(
+        false
+      );
+
+
+      setIsEditing(
+        true
+      );
+
+    };
+
+
+  // ====================================================
+  // CANCEL EDIT
+  // ====================================================
+
+  const cancelEditing =
+    () => {
+
+      setEditText(
+        text || ""
+      );
+
+
+      setEditFile(
+        null
+      );
+
+
+      setRemoveExistingFile(
+        false
+      );
+
+
+      setIsEditing(
+        false
+      );
+
+
+      if (
+        editFileInputRef.current
+      ) {
+
+        editFileInputRef.current.value =
+          "";
+
+      }
+
+    };
+
+
+  // ====================================================
+  // EDIT FILE CHANGE
+  // ====================================================
+
+  const handleEditFileChange =
+    (
+      event
+    ) => {
+
+      const selectedFile =
+        event.target.files?.[0] ||
+        null;
+
+
+      if (!selectedFile) {
+
+        return;
+
+      }
+
+
+      setEditFile(
+        selectedFile
+      );
+
+
+      setRemoveExistingFile(
+        false
+      );
+
+    };
+
+
+  // ====================================================
+  // REMOVE FILE WHILE EDITING
+  // ====================================================
+
+  const removeEditAttachment =
+    () => {
+
+      if (
+        editFile
+      ) {
+
+        setEditFile(
+          null
+        );
+
+
+        if (
+          editFileInputRef.current
+        ) {
+
+          editFileInputRef.current.value =
+            "";
+
+        }
+
+
+        return;
+
+      }
+
 
       if (file) {
 
@@ -288,308 +433,983 @@ export default function ChatMessage({
   // SAVE EDIT
   // ====================================================
 
-  const handleSave = async () => {
+  const saveEdit =
+    async () => {
 
-    const cleanText =
-      String(
-        editedText || ""
-      ).trim();
+      if (
+        !onEdit ||
+        isThinking
+      ) {
 
+        return;
 
-    // A message is allowed to contain only an attachment.
-
-    const hasAttachment =
-      Boolean(
-        editedFile ||
-        (
-          file &&
-          !removeExistingFile
-        )
-      );
+      }
 
 
-    if (
-      !cleanText &&
-      !hasAttachment
-    ) {
-
-      return;
-
-    }
+      const cleanText =
+        String(
+          editText || ""
+        ).trim();
 
 
-    const success =
-      await onEdit?.(
+      const hasAttachment =
+        Boolean(
+          editFile ||
+          (
+            file &&
+            !removeExistingFile
+          )
+        );
 
+
+      if (
+        !cleanText &&
+        !hasAttachment
+      ) {
+
+        return;
+
+      }
+
+
+      setIsEditing(false);
+
+      setEditFile(null);
+
+      setRemoveExistingFile(false);
+
+
+      await onEdit(
         id,
-
         cleanText,
-
         {
           newFile:
-            editedFile,
+            editFile,
 
           removeFile:
             removeExistingFile,
         }
-
       );
 
+      setEditFile(null);
 
-    // Keep edit mode open when attachment validation
-    // fails, such as a password-protected PDF.
-
-    if (
-      success === false
-    ) {
-
-      return;
-
-    }
+      setRemoveExistingFile(false);
 
 
-    setEditing(
-      false
-    );
+      if (
+        editFileInputRef.current
+      ) {
 
+        editFileInputRef.current.value =
+          "";
 
-    setEditedFile(
-      null
-    );
+      }
 
-
-    setRemoveExistingFile(
-      false
-    );
-
-  };
+    };
 
 
   // ====================================================
-  // FILE ICON
+  // SAVE TO WORKSPACE
   // ====================================================
 
-  const getFileIcon = (
-    currentFile
-  ) => {
+  const handleSaveToWorkspace =
+    () => {
 
-    const type =
-      currentFile?.type ||
-      "";
+      if (
+        !isAssistant ||
+        !onSaveToWorkspace
+      ) {
 
+        return;
 
-    const name =
-      currentFile?.name
-        ?.toLowerCase() ||
-      "";
+      }
 
 
-    if (
-      type ===
-        "application/pdf" ||
-      name.endsWith(
-        ".pdf"
-      )
-    ) {
-
-      return (
-
-        <FileText
-          size={22}
-          className="text-red-400"
-        />
-
-      );
-
-    }
+      const content =
+        String(
+          text || ""
+        ).trim();
 
 
-    if (
-      type.startsWith(
-        "image/"
-      )
-    ) {
+      if (
+        !content
+      ) {
 
-      return (
+        return;
 
-        <ImageIcon
-          size={22}
-          className="text-violet-300"
-        />
-
-      );
-
-    }
+      }
 
 
-    return (
+      onSaveToWorkspace({
+        messageId:
+          id,
 
-      <File
-        size={22}
-        className="text-blue-400"
-      />
+        content,
 
-    );
+        pdfRequested:
+          Boolean(
+            pdfRequested
+          ),
+      });
 
-  };
+    };
+
+
+  // ====================================================
+  // PDF DATA
+  // ====================================================
+
+  const getPdfData =
+    () => {
+
+      const content =
+        String(
+          text || ""
+        ).trim();
+
+
+      return {
+
+        title:
+          createChatPdfTitle(
+            content,
+            "Nyxora AI Document"
+          ),
+
+        type:
+          "AI Generated Document",
+
+        subject:
+          "",
+
+        chapter:
+          "",
+
+        content,
+
+      };
+
+    };
+
+
+  // ====================================================
+  // PREVIEW PDF
+  // ====================================================
+
+  const handlePreviewPdf =
+    async () => {
+
+      if (
+        pdfLoadingAction ||
+        !String(
+          text || ""
+        ).trim()
+      ) {
+
+        return;
+
+      }
+
+
+      let url =
+        null;
+
+
+      try {
+
+        setPdfLoadingAction(
+          "preview"
+        );
+
+
+        url =
+          await createWorkspacePdfUrl(
+            getPdfData()
+          );
+
+
+        window.open(
+          url,
+          "_blank",
+          "noopener,noreferrer"
+        );
+
+
+        window.setTimeout(
+          () => {
+
+            if (url) {
+
+              URL.revokeObjectURL(
+                url
+              );
+
+            }
+
+          },
+          60000
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Chat PDF preview error:",
+          error
+        );
+
+
+        window.alert(
+          error?.message ||
+          "Nyxora could not generate this PDF."
+        );
+
+      } finally {
+
+        setPdfLoadingAction(
+          null
+        );
+
+      }
+
+    };
+
+
+  // ====================================================
+  // DOWNLOAD PDF
+  // ====================================================
+
+  const handleDownloadPdf =
+    async () => {
+
+      if (
+        pdfLoadingAction ||
+        !String(
+          text || ""
+        ).trim()
+      ) {
+
+        return;
+
+      }
+
+
+      try {
+
+        setPdfLoadingAction(
+          "download"
+        );
+
+
+        await downloadWorkspacePdf(
+          getPdfData()
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Chat PDF download error:",
+          error
+        );
+
+
+        window.alert(
+          error?.message ||
+          "Nyxora could not download this PDF."
+        );
+
+      } finally {
+
+        setPdfLoadingAction(
+          null
+        );
+
+      }
+
+    };
 
 
   // ====================================================
   // CURRENT EDIT ATTACHMENT
   // ====================================================
 
-  const currentEditFile =
-    editedFile ||
-    (
-      file &&
-      !removeExistingFile
+  const currentEditAttachment =
+    editFile
+      ? {
+          name:
+            editFile.name,
 
-        ? file
+          type:
+            editFile.type,
 
-        : null
+          size:
+            editFile.size,
+        }
+
+      : (
+          file &&
+          !removeExistingFile
+
+            ? file
+
+            : null
+        );
+
+
+  // ====================================================
+  // MESSAGE ATTACHMENT
+  // ====================================================
+
+  const AttachmentIcon =
+    getFileIcon(
+      file
+    );
+
+
+  const EditAttachmentIcon =
+    getFileIcon(
+      currentEditAttachment
     );
 
 
   // ====================================================
-  // UI
+  // RENDER
   // ====================================================
 
   return (
 
     <div
-      className={`flex gap-4 ${
-        role === "user"
-          ? "justify-end"
-          : "justify-start"
-      }`}
+      className={`
+        group
+        flex
+        w-full
+        ${
+          isUser
+            ? "justify-end"
+            : "justify-start"
+        }
+      `}
     >
 
-      {role === "assistant" && (
-
-        <MessageAvatar
-          role={role}
-        />
-
-      )}
-
-
       <div
-        className={`max-w-[85%] rounded-3xl px-6 py-5 shadow-md ${
-          role === "assistant"
-            ? "bg-[#111827] text-gray-100"
-            : "bg-violet-600 text-white"
-        }`}
+        className={`
+          min-w-0
+          ${
+            isUser
+              ? "max-w-[88%] sm:max-w-[80%]"
+              : "w-full max-w-4xl"
+          }
+        `}
       >
 
-        {thinking ? (
+        {/* =============================================
+            USER MESSAGE
+        ============================================== */}
 
-          <ThinkingIndicator />
+        {isUser && (
 
-        ) : editing ? (
+          <div
+            className="
+              rounded-2xl
+              rounded-br-md
+              border
+              border-violet-400/40
+              bg-gradient-to-br
+              from-violet-900/60
+              via-purple-900/40
+              to-slate-900/80
+              px-4
+              py-3
+              text-sm
+              leading-6
+              text-gray-100
+              shadow-lg
+              shadow-violet-700/30
+            "
+          >
 
-          // =================================================
-          // EDIT MODE
-          // =================================================
+            {isEditing ? (
 
-          <div className="space-y-4">
+              <div
+                className="
+                  space-y-3
+                "
+              >
+
+                {/* EDIT TEXT */}
+
+                <textarea
+                  value={
+                    editText
+                  }
+                  onChange={
+                    (
+                      event
+                    ) =>
+                      setEditText(
+                        event.target.value
+                      )
+                  }
+                  rows={4}
+                  autoFocus
+                  className="
+                    w-full
+                    resize-y
+                    rounded-xl
+                    border
+                    border-white/10
+                    bg-white/[0.06]
+                    px-3
+                    py-2.5
+                    text-sm
+                    leading-6
+                    text-white
+                    outline-none
+                    transition
+                    placeholder:text-gray-500
+                    focus:border-indigo-500/60
+                    focus:ring-2
+                    focus:ring-indigo-500/20
+                  "
+                />
 
 
-            {/* EDIT TEXT */}
+                {/* EDIT ATTACHMENT */}
 
-            <textarea
-              rows={4}
+                {currentEditAttachment && (
 
-              value={
-                editedText
-              }
+                  <div
+                    className="
+                      flex
+                      items-center
+                      gap-3
+                      rounded-xl
+                      border
+                      border-white/10
+                      bg-white/[0.05]
+                      px-3
+                      py-2.5
+                    "
+                  >
 
-              onChange={(e) =>
-                setEditedText(
-                  e.target.value
-                )
-              }
+                    <div
+                      className="
+                        flex
+                        h-9
+                        w-9
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-lg
+                        bg-indigo-500/15
+                        text-indigo-300
+                      "
+                    >
 
+                      <EditAttachmentIcon
+                        size={18}
+                      />
+
+                    </div>
+
+
+                    <div
+                      className="
+                        min-w-0
+                        flex-1
+                      "
+                    >
+
+                      <p
+                        className="
+                          truncate
+                          text-xs
+                          font-medium
+                          text-gray-200
+                        "
+                      >
+                        {
+                          currentEditAttachment.name ||
+                          "Attachment"
+                        }
+                      </p>
+
+
+                      {formatFileSize(
+                        currentEditAttachment.size
+                      ) && (
+
+                        <p
+                          className="
+                            mt-0.5
+                            text-[11px]
+                            text-gray-500
+                          "
+                        >
+                          {
+                            formatFileSize(
+                              currentEditAttachment.size
+                            )
+                          }
+                        </p>
+
+                      )}
+
+                    </div>
+
+
+                    <button
+                      type="button"
+                      onClick={
+                        removeEditAttachment
+                      }
+                      className="
+                        rounded-lg
+                        p-1.5
+                        text-gray-400
+                        transition
+                        hover:bg-white/10
+                        hover:text-white
+                      "
+                      title="Remove attachment"
+                    >
+
+                      <X
+                        size={16}
+                      />
+
+                    </button>
+
+                  </div>
+
+                )}
+
+
+                {/* ATTACH FILE */}
+
+                <div
+                  className="
+                    flex
+                    flex-wrap
+                    items-center
+                    justify-between
+                    gap-2
+                  "
+                >
+
+                  <div>
+
+                    <input
+                      ref={
+                        editFileInputRef
+                      }
+                      type="file"
+                      className="hidden"
+                      onChange={
+                        handleEditFileChange
+                      }
+                    />
+
+
+                    <button
+                      type="button"
+                      onClick={
+                        () =>
+                          editFileInputRef
+                            .current
+                            ?.click()
+                      }
+                      className="
+                        inline-flex
+                        items-center
+                        gap-2
+                        rounded-lg
+                        border
+                        border-white/10
+                        bg-white/[0.04]
+                        px-3
+                        py-2
+                        text-xs
+                        text-gray-300
+                        transition
+                        hover:bg-white/[0.08]
+                        hover:text-white
+                      "
+                    >
+
+                      <Paperclip
+                        size={14}
+                      />
+
+                      {
+                        currentEditAttachment
+                          ? "Replace file"
+                          : "Attach file"
+                      }
+
+                    </button>
+
+                  </div>
+
+
+                  {/* EDIT ACTIONS */}
+
+                  <div
+                    className="
+                      flex
+                      items-center
+                      gap-2
+                    "
+                  >
+
+                    <button
+                      type="button"
+                      onClick={
+                        cancelEditing
+                      }
+                      disabled={
+                        isThinking
+                      }
+                      className="
+                        rounded-lg
+                        px-3
+                        py-2
+                        text-xs
+                        font-medium
+                        text-gray-400
+                        transition
+                        hover:bg-white/10
+                        hover:text-white
+                        disabled:cursor-not-allowed
+                        disabled:opacity-50
+                      "
+                    >
+                      Cancel
+                    </button>
+
+
+                    <button
+                      type="button"
+                      onClick={
+                        saveEdit
+                      }
+                      disabled={
+                        isThinking
+                      }
+                      className="
+                        rounded-lg
+                        bg-indigo-600
+                        px-3
+                        py-2
+                        text-xs
+                        font-medium
+                        text-white
+                        transition
+                        hover:bg-indigo-500
+                        disabled:cursor-not-allowed
+                        disabled:opacity-50
+                      "
+                    >
+                      Save & Regenerate
+                    </button>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            ) : (
+
+              <>
+                {/* ATTACHMENT */}
+
+                {file && (
+
+                  <div
+                    className="
+                      mb-3
+                      flex
+                      items-center
+                      gap-3
+                      rounded-xl
+                      border
+                      border-white/10
+                      bg-black/15
+                      px-3
+                      py-2.5
+                    "
+                  >
+
+                    <div
+                      className="
+                        flex
+                        h-9
+                        w-9
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-lg
+                        bg-indigo-500/15
+                        text-indigo-300
+                      "
+                    >
+
+                      <AttachmentIcon
+                        size={18}
+                      />
+
+                    </div>
+
+
+                    <div
+                      className="
+                        min-w-0
+                      "
+                    >
+
+                      <p
+                        className="
+                          truncate
+                          text-xs
+                          font-medium
+                          text-gray-200
+                        "
+                      >
+                        {
+                          file.name ||
+                          "Attachment"
+                        }
+                      </p>
+
+
+                      {formatFileSize(
+                        file.size
+                      ) && (
+
+                        <p
+                          className="
+                            mt-0.5
+                            text-[11px]
+                            text-gray-500
+                          "
+                        >
+                          {
+                            formatFileSize(
+                              file.size
+                            )
+                          }
+                        </p>
+
+                      )}
+
+                    </div>
+
+                  </div>
+
+                )}
+
+
+                {/* USER TEXT */}
+
+                {text && (
+
+                  <div
+                    className="
+                      whitespace-pre-wrap
+                      break-words
+                    "
+                  >
+                    {text}
+                  </div>
+
+                )}
+
+              </>
+
+            )}
+
+          </div>
+
+        )}
+
+
+        {/* =============================================
+            ASSISTANT MESSAGE
+        ============================================== */}
+
+        {isAssistant && (
+
+          <div
+            className="
+              flex
+              items-start
+              gap-3
+            "
+          >
+
+            <div
               className="
-                w-full
-                resize-none
-                rounded-xl
+                mt-1
+                flex
+                h-9
+                w-9
+                shrink-0
+                items-center
+                justify-center
+                rounded-full
+                bg-violet-600
+                text-white
+                shadow-lg
+                shadow-violet-900/40
+              "
+            >
+              <Bot size={18} />
+            </div>
+
+            <div
+              className="
+                min-w-0
+                rounded-2xl
                 border
                 border-white/10
-                bg-[#111827]
-                p-4
-                text-white
-                outline-none
-                focus:border-violet-400
+                bg-white/[0.03]
+                px-5
+                py-4
+                shadow-sm
+                flex-1
               "
-            />
+            >
 
-
-            {/* ============================================= */}
-            {/* CURRENT ATTACHMENT                            */}
-            {/* ============================================= */}
-
-            {currentEditFile && (
+            {isThinking ? (
 
               <div
                 className="
                   flex
                   items-center
-                  justify-between
                   gap-3
-                  rounded-xl
-                  border
-                  border-white/20
-                  bg-black/20
-                  p-3
+                  text-gray-400
                 "
               >
 
                 <div
                   className="
                     flex
-                    min-w-0
-                    items-center
-                    gap-3
+                    gap-1
                   "
                 >
 
-                  <div className="shrink-0">
+                  <span className="h-2 w-2 rounded-full bg-violet-400 animate-bounce" />
+                  <span className="h-2 w-2 rounded-full bg-violet-400 animate-bounce [animation-delay:150ms]" />
+                  <span className="h-2 w-2 rounded-full bg-violet-400 animate-bounce [animation-delay:300ms]" />
 
-                    {getFileIcon(
-                      currentEditFile
-                    )}
+                </div>
+
+                <span>
+                  Nyxora AI is thinking...
+                </span>
+
+              </div>
+
+            ) : (
+
+              <MessageContent
+                message={
+                  text
+                }
+              />
+
+            )}
+
+
+            {/* =========================================
+                PDF READY CARD
+            ========================================== */}
+
+            {pdfRequested &&
+              String(
+                text || ""
+              ).trim() && (
+
+              <div
+                className="
+                  mt-5
+                  overflow-hidden
+                  rounded-2xl
+                  border
+                  border-indigo-500/25
+                  bg-gradient-to-br
+                  from-indigo-500/[0.10]
+                  via-violet-500/[0.05]
+                  to-cyan-500/[0.08]
+                  shadow-lg
+                  shadow-indigo-950/10
+                "
+              >
+
+                {/* PDF HEADER */}
+
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-3
+                    border-b
+                    border-indigo-500/15
+                    px-4
+                    py-4
+                  "
+                >
+
+                  <div
+                    className="
+                      flex
+                      h-11
+                      w-11
+                      shrink-0
+                      items-center
+                      justify-center
+                      rounded-xl
+                      border
+                      border-indigo-400/20
+                      bg-indigo-500/15
+                      text-indigo-300
+                    "
+                  >
+
+                    <FileText
+                      size={21}
+                    />
 
                   </div>
 
 
-                  <div className="min-w-0">
+                  <div
+                    className="
+                      min-w-0
+                      flex-1
+                    "
+                  >
 
                     <p
                       className="
-                        truncate
                         text-sm
-                        font-medium
+                        font-semibold
                         text-white
                       "
                     >
-
-                      {currentEditFile.name ||
-                        "Attachment"}
-
+                      Professional PDF Ready
                     </p>
 
 
                     <p
                       className="
-                        truncate
+                        mt-0.5
                         text-xs
-                        text-white/60
+                        leading-5
+                        text-gray-400
                       "
                     >
-
-                      {currentEditFile.type ||
-                        "Unknown file type"}
-
+                      Generated with Nyxora&apos;s professional PDF engine.
                     </p>
 
                   </div>
@@ -597,279 +1417,369 @@ export default function ChatMessage({
                 </div>
 
 
-                {/* REMOVE */}
+                {/* PDF ACTIONS */}
 
-                <button
-                  type="button"
-
-                  onClick={
-                    removeEditAttachment
-                  }
-
+                <div
                   className="
-                    shrink-0
-                    rounded-lg
-                    p-2
-                    text-white/70
-                    transition
-                    hover:bg-white/10
-                    hover:text-white
+                    flex
+                    flex-wrap
+                    gap-3
+                    p-4
                   "
-
-                  title="Remove attachment"
-
-                  aria-label="Remove attachment"
                 >
 
-                  <X size={18} />
+                  <button
+                    type="button"
+                    onClick={
+                      handlePreviewPdf
+                    }
+                    disabled={
+                      Boolean(
+                        pdfLoadingAction
+                      )
+                    }
+                    className="
+                      inline-flex
+                      items-center
+                      justify-center
+                      gap-2
+                      rounded-xl
+                      border
+                      border-indigo-400/25
+                      bg-indigo-500/10
+                      px-4
+                      py-2.5
+                      text-sm
+                      font-medium
+                      text-indigo-200
+                      transition
+                      hover:border-indigo-400/40
+                      hover:bg-indigo-500/20
+                      disabled:cursor-not-allowed
+                      disabled:opacity-50
+                    "
+                  >
 
-                </button>
+                    {pdfLoadingAction ===
+                    "preview" ? (
+
+                      <Loader2
+                        size={16}
+                        className="animate-spin"
+                      />
+
+                    ) : (
+
+                      <Eye
+                        size={16}
+                      />
+
+                    )}
+
+                    Preview PDF
+
+                  </button>
+
+
+                  <button
+                    type="button"
+                    onClick={
+                      handleDownloadPdf
+                    }
+                    disabled={
+                      Boolean(
+                        pdfLoadingAction
+                      )
+                    }
+                    className="
+                      inline-flex
+                      items-center
+                      justify-center
+                      gap-2
+                      rounded-xl
+                      bg-indigo-600
+                      px-4
+                      py-2.5
+                      text-sm
+                      font-medium
+                      text-white
+                      shadow-sm
+                      transition
+                      hover:bg-indigo-500
+                      disabled:cursor-not-allowed
+                      disabled:opacity-50
+                    "
+                  >
+
+                    {pdfLoadingAction ===
+                    "download" ? (
+
+                      <Loader2
+                        size={16}
+                        className="animate-spin"
+                      />
+
+                    ) : (
+
+                      <Download
+                        size={16}
+                      />
+
+                    )}
+
+                    Download PDF
+
+                  </button>
+
+                </div>
 
               </div>
 
             )}
-
-
-            {/* ============================================= */}
-            {/* ADD / REPLACE ATTACHMENT                     */}
-            {/* ============================================= */}
-
-            <div>
-
-              <input
-                ref={
-                  fileInputRef
-                }
-
-                type="file"
-
-                className="hidden"
-
-                accept="
-                  .pdf,
-                  .doc,
-                  .docx,
-                  .txt,
-                  .md,
-                  image/png,
-                  image/jpeg,
-                  image/jpg,
-                  image/webp
-                "
-
-                onChange={
-                  handleFileChange
-                }
-              />
-
-
-              <button
-                type="button"
-
-                onClick={() =>
-                  fileInputRef
-                    .current
-                    ?.click()
-                }
-
-                className="
-                  inline-flex
-                  items-center
-                  gap-2
-                  rounded-lg
-                  border
-                  border-white/20
-                  bg-black/10
-                  px-3
-                  py-2
-                  text-sm
-                  text-white
-                  transition
-                  hover:bg-white/10
-                "
-              >
-
-                <Paperclip
-                  size={17}
-                />
-
-
-                {currentEditFile
-                  ? "Replace file"
-                  : "Add file"}
-
-              </button>
-
-            </div>
-
-
-            {/* ============================================= */}
-            {/* ACTIONS                                      */}
-            {/* ============================================= */}
-
-            <div
-              className="
-                flex
-                justify-end
-                gap-3
-              "
-            >
-
-              <button
-                type="button"
-
-                onClick={
-                  cancelEditing
-                }
-
-                className="
-                  rounded-lg
-                  border
-                  border-slate-600
-                  px-4
-                  py-2
-                  transition
-                  hover:bg-white/10
-                "
-              >
-
-                Cancel
-
-              </button>
-
-
-              <button
-                type="button"
-
-                onClick={
-                  handleSave
-                }
-
-                className="
-                  rounded-lg
-                  bg-violet-500
-                  px-4
-                  py-2
-                  transition
-                  hover:bg-violet-400
-                "
-              >
-
-                Save
-
-              </button>
 
             </div>
 
           </div>
 
-        ) : (
+        )}
 
-          // =================================================
-          // NORMAL MESSAGE
-          // =================================================
 
-          <>
+        {/* =============================================
+            MESSAGE TOOLBAR
+        ============================================== */}
 
-            {file && (
+        {!isEditing &&
+          String(
+            text || ""
+          ).trim() && (
 
-              <div
+          <div
+            className={`
+              mt-2
+              flex
+              items-center
+              gap-1
+              opacity-0
+              transition-opacity
+              duration-200
+              group-hover:opacity-100
+              ${
+                isUser
+                  ? "justify-end"
+                  : "justify-start"
+              }
+            `}
+          >
+
+            {/* COPY */}
+
+            <button
+              type="button"
+              onClick={
+                copyMessage
+              }
+              className="
+                rounded-lg
+                p-2
+                text-gray-500
+                transition
+                hover:bg-white/[0.06]
+                hover:text-gray-200
+              "
+              title="Copy"
+            >
+
+              {copied ? (
+
+                <Check
+                  size={15}
+                  className="
+                    text-emerald-400
+                  "
+                />
+
+              ) : (
+
+                <Copy
+                  size={15}
+                />
+
+              )}
+
+            </button>
+
+
+            {/* USER EDIT */}
+
+            {isUser &&
+              onEdit && (
+
+              <button
+                type="button"
+                onClick={
+                  startEditing
+                }
+                disabled={
+                  isThinking
+                }
                 className="
-                  mb-4
-                  flex
-                  items-center
-                  gap-3
-                  rounded-xl
-                  border
-                  border-slate-700
-                  bg-black/20
-                  p-3
+                  rounded-lg
+                  p-2
+                  text-gray-500
+                  transition
+                  hover:bg-white/[0.06]
+                  hover:text-gray-200
+                  disabled:cursor-not-allowed
+                  disabled:opacity-40
                 "
+                title="Edit message"
               >
 
-                {getFileIcon(
-                  file
-                )}
+                <Pencil
+                  size={15}
+                />
 
-
-                <div className="min-w-0">
-
-                  <p
-                    className="
-                      truncate
-                      text-sm
-                      font-medium
-                    "
-                  >
-
-                    {file.name}
-
-                  </p>
-
-
-                  <p
-                    className="
-                      text-xs
-                      text-gray-400
-                    "
-                  >
-
-                    {file.type}
-
-                  </p>
-
-                </div>
-
-              </div>
+              </button>
 
             )}
 
 
-            <MessageContent
-              message={text}
-            />
+            {/* ASSISTANT REGENERATE */}
+
+            {isAssistant &&
+              onRegenerate && (
+
+              <button
+                type="button"
+                onClick={
+                  onRegenerate
+                }
+                disabled={
+                  isThinking
+                }
+                className="
+                  rounded-lg
+                  p-2
+                  text-gray-500
+                  transition
+                  hover:bg-white/[0.06]
+                  hover:text-gray-200
+                  disabled:cursor-not-allowed
+                  disabled:opacity-40
+                "
+                title="Regenerate"
+              >
+
+                <RotateCcw
+                  size={15}
+                />
+
+              </button>
+
+            )}
 
 
-            <MessageToolbar
-              copied={copied}
+           {/* SAVE TO WORKSPACE */}
 
-              onCopy={
-                copyMessage
+{isAssistant &&
+  onSaveToWorkspace && (
+
+  <button
+    type="button"
+    onClick={
+      handleSaveToWorkspace
+    }
+    className="
+      inline-flex
+      items-center
+      gap-1.5
+      rounded-lg
+      border
+      border-violet-500/20
+      bg-violet-500/10
+      px-3
+      py-1.5
+      text-xs
+      font-medium
+      text-violet-300
+      transition
+      hover:bg-violet-500/20
+      hover:text-violet-200
+    "
+    title="Save AI response to Workspace"
+  >
+
+    <FolderPlus
+      size={15}
+    />
+
+    <span>
+      Save to Workspace
+    </span>
+
+  </button>
+
+)}
+
+            {/* LIKE */}
+
+            <button
+              type="button"
+              onClick={() =>
+                setFeedback(
+                  feedback === "like"
+                    ? null
+                    : "like"
+                )
               }
+              className={`
+                rounded-lg
+                p-2
+                transition
+                ${
+                  feedback === "like"
+                    ? "bg-emerald-500/20 text-emerald-400"
+                    : "text-gray-500 hover:bg-white/[0.06] hover:text-emerald-400"
+                }
+              `}
+              title="Like"
+            >
+              <ThumbsUp size={15} />
+            </button>
 
-              onRegenerate={
-                role ===
-                  "assistant"
 
-                  ? onRegenerate
+            {/* DISLIKE */}
 
-                  : undefined
+            <button
+              type="button"
+              onClick={() =>
+                setFeedback(
+                  feedback === "dislike"
+                    ? null
+                    : "dislike"
+                )
               }
+              className={`
+                rounded-lg
+                p-2
+                transition
+                ${
+                  feedback === "dislike"
+                    ? "bg-red-500/20 text-red-400"
+                    : "text-gray-500 hover:bg-white/[0.06] hover:text-red-400"
+                }
+              `}
+              title="Dislike"
+            >
+              <ThumbsDown size={15} />
+            </button>
 
-              onEdit={
-                role ===
-                  "user"
 
-                  ? startEditing
-
-                  : undefined
-              }
-            />
-
-          </>
+          </div>
 
         )}
 
       </div>
-
-
-      {role === "user" && (
-
-        <MessageAvatar
-          role={role}
-        />
-
-      )}
 
     </div>
 

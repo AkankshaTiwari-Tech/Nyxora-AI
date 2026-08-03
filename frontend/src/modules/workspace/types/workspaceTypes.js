@@ -9,6 +9,7 @@ export const WORKSPACE_ENTITY_TYPES = Object.freeze({
   CLASS: "class",
   STUDENT: "student",
   DOCUMENT: "document",
+  RESULT: "result",
 });
 
 
@@ -91,6 +92,7 @@ export function createEmptyDocument() {
 
   return {
     title: "",
+
     type:
       WORKSPACE_DOCUMENT_TYPES.NOTES,
 
@@ -109,6 +111,31 @@ export function createEmptyDocument() {
       WORKSPACE_DOCUMENT_STATUS.DRAFT,
 
     aiMode: "",
+  };
+
+}
+
+
+// ======================================================
+// DEFAULT STUDENT RESULT
+// ======================================================
+
+export function createEmptyResult() {
+
+  return {
+    studentId: "",
+    classId: "",
+
+    title: "",
+    subject: "",
+    chapter: "",
+
+    marksObtained: "",
+    totalMarks: "",
+
+    testDate: "",
+
+    remarks: "",
   };
 
 }

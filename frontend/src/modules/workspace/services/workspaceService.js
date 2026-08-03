@@ -3,6 +3,7 @@ import {
   deleteWorkspaceItem,
   subscribeToClasses,
   subscribeToDocuments,
+  subscribeToResults,
   subscribeToStudents,
   updateWorkspaceItem,
 } from "../firebase/workspaceFirestore";
@@ -272,6 +273,137 @@ function normalizeDocument(
 
 
 // ======================================================
+// RESULT NORMALIZER
+// ======================================================
+
+function normalizeResult(
+  data = {}
+) {
+
+  const studentId =
+    cleanString(
+      data.studentId
+    );
+
+
+  if (!studentId) {
+
+    throw new Error(
+      "Student is required."
+    );
+
+  }
+
+
+  const title =
+    limitString(
+      data.title,
+      WORKSPACE_LIMITS.DOCUMENT_TITLE
+    );
+
+
+  if (!title) {
+
+    throw new Error(
+      "Test title is required."
+    );
+
+  }
+
+
+  const marksObtained =
+    Number(
+      data.marksObtained
+    );
+
+
+  const totalMarks =
+    Number(
+      data.totalMarks
+    );
+
+
+  if (
+    !Number.isFinite(
+      marksObtained
+    ) ||
+    marksObtained < 0
+  ) {
+
+    throw new Error(
+      "Valid marks obtained are required."
+    );
+
+  }
+
+
+  if (
+    !Number.isFinite(
+      totalMarks
+    ) ||
+    totalMarks <= 0
+  ) {
+
+    throw new Error(
+      "Total marks must be greater than 0."
+    );
+
+  }
+
+
+  if (
+    marksObtained >
+    totalMarks
+  ) {
+
+    throw new Error(
+      "Marks obtained cannot be greater than total marks."
+    );
+
+  }
+
+
+  return {
+    studentId,
+
+    classId:
+      cleanString(
+        data.classId
+      ),
+
+    title,
+
+    subject:
+      limitString(
+        data.subject,
+        WORKSPACE_LIMITS.SUBJECT
+      ),
+
+    chapter:
+      limitString(
+        data.chapter,
+        WORKSPACE_LIMITS.CHAPTER
+      ),
+
+    marksObtained,
+
+    totalMarks,
+
+    testDate:
+      cleanString(
+        data.testDate
+      ),
+
+    remarks:
+      cleanString(
+        data.remarks
+      ),
+  };
+
+}
+
+
+// ======================================================
 // CLASS CRUD
 // ======================================================
 
@@ -410,6 +542,52 @@ export async function deleteDocument(
 
 
 // ======================================================
+// RESULT CRUD
+// ======================================================
+
+export async function createResult(
+  data
+) {
+
+  return createWorkspaceItem(
+    WORKSPACE_COLLECTIONS.RESULTS,
+    normalizeResult(
+      data
+    )
+  );
+
+}
+
+
+export async function updateResult(
+  resultId,
+  data
+) {
+
+  return updateWorkspaceItem(
+    WORKSPACE_COLLECTIONS.RESULTS,
+    resultId,
+    normalizeResult(
+      data
+    )
+  );
+
+}
+
+
+export async function deleteResult(
+  resultId
+) {
+
+  return deleteWorkspaceItem(
+    WORKSPACE_COLLECTIONS.RESULTS,
+    resultId
+  );
+
+}
+
+
+// ======================================================
 // AI GENERATED DOCUMENT
 // ======================================================
 
@@ -464,3 +642,7 @@ export const watchStudents =
 
 export const watchDocuments =
   subscribeToDocuments;
+
+
+export const watchResults =
+  subscribeToResults;

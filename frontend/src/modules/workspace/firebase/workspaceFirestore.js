@@ -294,3 +294,17 @@ export function subscribeToDocuments(
   );
 
 }
+
+
+export function subscribeToResults(
+  callback,
+  onError
+) {
+
+  return subscribeToWorkspaceItems(
+    WORKSPACE_COLLECTIONS.RESULTS,
+    callback,
+    onError
+  );
+
+}

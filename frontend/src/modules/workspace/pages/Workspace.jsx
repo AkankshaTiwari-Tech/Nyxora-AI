@@ -53,6 +53,7 @@ export default function Workspace() {
     classes,
     students,
     documents,
+    results,
 
     loading,
     error,
@@ -69,6 +70,10 @@ export default function Workspace() {
     addDocument,
     editDocument,
     removeDocument,
+
+    addResult,
+    editResult,
+    removeResult,
   } = useWorkspace();
 
 
@@ -259,10 +264,15 @@ export default function Workspace() {
           <WorkspaceStudents
             students={students}
             classes={classes}
+            results={results}
 
             onAdd={addStudent}
             onEdit={editStudent}
             onDelete={removeStudent}
+
+            onAddResult={addResult}
+            onEditResult={editResult}
+            onDeleteResult={removeResult}
 
             createSignal={
               studentCreateSignal

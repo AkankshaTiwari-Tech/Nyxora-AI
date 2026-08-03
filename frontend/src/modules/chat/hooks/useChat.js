@@ -32,6 +32,11 @@ import {
   extractDocxText,
 } from "../utils/extractDocxText";
 
+import {
+  buildPdfInstruction,
+  isPdfRequest,
+} from "../utils/pdfIntent";
+
 
 // ======================================================
 // CONFIG
@@ -45,6 +50,9 @@ const MAX_WORKSPACE_DOCUMENTS =
 
 const MAX_WORKSPACE_DOCUMENT_CONTENT =
   2500;
+
+const MAX_WORKSPACE_RESULTS =
+  20;
 
 
 // ======================================================
@@ -144,7 +152,7 @@ When data is available:
 4. Highlight meaningful patterns.
 5. Suggest practical next steps.
 
-Use Workspace student information and related documents
+Use Workspace student information, test results and related documents
 when they are supplied.
 
 Never invent student data.
@@ -303,6 +311,7 @@ function buildWorkspaceContextPrompt(
   const selectedStudent =
     workspaceContext.student;
 
+
   const documents =
     Array.isArray(
       workspaceContext.documents
@@ -317,10 +326,25 @@ function buildWorkspaceContextPrompt(
       : [];
 
 
+  const results =
+    Array.isArray(
+      workspaceContext.results
+    )
+
+      ? workspaceContext.results
+          .slice(
+            0,
+            MAX_WORKSPACE_RESULTS
+          )
+
+      : [];
+
+
   if (
     !selectedClass &&
     !selectedStudent &&
-    documents.length === 0
+    documents.length === 0 &&
+    results.length === 0
   ) {
 
     return "";
@@ -389,7 +413,7 @@ function buildWorkspaceContextPrompt(
         index
       ) => {
 
-        const content =
+        const documentContent =
           cleanValue(
             document.content
           )
@@ -406,7 +430,73 @@ function buildWorkspaceContextPrompt(
           `Type: ${cleanValue(document.type) || "Document"}`,
           `Subject: ${cleanValue(document.subject) || "Not provided"}`,
           `Chapter: ${cleanValue(document.chapter) || "Not provided"}`,
-          `Content: ${content || "No content available"}`
+          `Content: ${documentContent || "No content available"}`
+        );
+
+      }
+    );
+
+  }
+
+
+  if (
+    results.length > 0
+  ) {
+
+    lines.push(
+      "",
+      "STUDENT TEST RESULTS:"
+    );
+
+
+    results.forEach(
+      (
+        result,
+        index
+      ) => {
+
+        const marksObtained =
+          Number(
+            result.marksObtained
+          );
+
+
+        const totalMarks =
+          Number(
+            result.totalMarks
+          );
+
+
+        const percentage =
+          Number.isFinite(
+            marksObtained
+          ) &&
+          Number.isFinite(
+            totalMarks
+          ) &&
+          totalMarks > 0
+
+            ? Math.round(
+                (
+                  marksObtained /
+                  totalMarks
+                ) *
+                100
+              )
+
+            : null;
+
+
+        lines.push(
+          "",
+          `Result ${index + 1}:`,
+          `Test: ${cleanValue(result.title) || "Untitled"}`,
+          `Subject: ${cleanValue(result.subject) || "Not provided"}`,
+          `Chapter: ${cleanValue(result.chapter) || "Not provided"}`,
+          `Marks: ${cleanValue(result.marksObtained)} / ${cleanValue(result.totalMarks)}`,
+          `Percentage: ${percentage !== null ? `${percentage}%` : "Not available"}`,
+          `Test Date: ${cleanValue(result.testDate) || "Not provided"}`,
+          `Remarks: ${cleanValue(result.remarks) || "None"}`
         );
 
       }
@@ -636,12 +726,13 @@ ${extractedText}`;
 
 
   // ====================================================
-  // FINAL PROMPT
+  // FINAL MODE PROMPT
   // ====================================================
 
   const buildModePrompt =
     (
-      userPrompt
+      userPrompt,
+      pdfRequested = false
     ) => {
 
       const modeInstruction =
@@ -657,10 +748,20 @@ ${extractedText}`;
         );
 
 
+      const pdfInstruction =
+        pdfRequested
+
+          ? buildPdfInstruction()
+
+          : "";
+
+
       return `
 ${modeInstruction}
 
 ${workspacePrompt}
+
+${pdfInstruction}
 
 USER REQUEST:
 
@@ -753,6 +854,16 @@ ${userPrompt}
         );
 
 
+      // ================================================
+      // DIRECT PDF REQUEST DETECTION
+      // ================================================
+
+      const pdfRequested =
+        isPdfRequest(
+          cleanUserMessage
+        );
+
+
       let userPrompt;
 
 
@@ -819,7 +930,8 @@ ${userPrompt}
 
       const prompt =
         buildModePrompt(
-          userPrompt
+          userPrompt,
+          pdfRequested
         );
 
 
@@ -862,6 +974,9 @@ ${userPrompt}
 
         message:
           "",
+
+        pdfRequested:
+          pdfRequested,
 
       };
 
@@ -1123,10 +1238,68 @@ ${userPrompt}
         );
 
 
-      const prompt =
-        buildModePrompt(
+      const pdfRequested =
+        Boolean(
+          lastAssistant
+            ?.pdfRequested
+        ) ||
+        isPdfRequest(
           cleanUserMessage
         );
+
+
+      const prompt =
+        buildModePrompt(
+          cleanUserMessage,
+          pdfRequested
+        );
+
+
+      const updatedMessages =
+        messages.map(
+          (msg) =>
+
+            msg.id ===
+            lastAssistant.id
+
+              ? {
+                  ...msg,
+
+                  message:
+                    "",
+
+                  pdfRequested:
+                    pdfRequested,
+                }
+
+              : msg
+        );
+
+
+      setChats(
+        (prev) =>
+          prev.map(
+            (chat) =>
+
+              chat.id ===
+              activeChatId
+
+                ? {
+                    ...chat,
+
+                    messages:
+                      updatedMessages,
+                  }
+
+                : chat
+          )
+      );
+
+
+      await saveMessages(
+        activeChatId,
+        updatedMessages
+      );
 
 
       setIsThinking(
@@ -1144,12 +1317,13 @@ ${userPrompt}
             cleanUserMessage,
 
           history:
-            messages.slice(
+            updatedMessages.slice(
               0,
               lastUserIndex
             ),
 
-          messages,
+          messages:
+            updatedMessages,
 
           memory,
 
@@ -1191,7 +1365,7 @@ ${userPrompt}
 
 
   // ====================================================
-  // EDIT
+  // EDIT MESSAGE
   // ====================================================
 
   const editMessage =
@@ -1298,6 +1472,12 @@ ${userPrompt}
       const cleanUserMessage =
         cleanValue(
           newText
+        );
+
+
+      const pdfRequested =
+        isPdfRequest(
+          cleanUserMessage
         );
 
 
@@ -1442,6 +1622,9 @@ ${userPrompt}
                 message:
                   "",
 
+                pdfRequested:
+                  pdfRequested,
+
               };
 
             }
@@ -1481,7 +1664,8 @@ ${userPrompt}
 
       const prompt =
         buildModePrompt(
-          userPrompt
+          userPrompt,
+          pdfRequested
         );
 
 
@@ -1557,7 +1741,7 @@ ${userPrompt}
 
 
   // ====================================================
-  // STOP
+  // STOP GENERATION
   // ====================================================
 
   const stop =
@@ -1571,6 +1755,10 @@ ${userPrompt}
 
     };
 
+
+  // ====================================================
+  // RETURN
+  // ====================================================
 
   return {
 

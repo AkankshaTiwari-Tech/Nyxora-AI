@@ -1,8 +1,18 @@
-import { jsPDF } from "jspdf";
+import {
+  jsPDF,
+} from "jspdf";
+
+import html2canvas
+  from "html2canvas";
+
+import {
+  cleanMarkdownPreserveMath,
+  getRenderableSegments,
+} from "./renderMath";
 
 
 // ======================================================
-// CONSTANTS
+// PAGE
 // ======================================================
 
 const PAGE = {
@@ -24,6 +34,101 @@ const CONTENT_WIDTH =
 
 
 // ======================================================
+// PROFESSIONAL PDF THEME
+// ======================================================
+
+const COLORS = {
+
+  primary: [
+    79,
+    70,
+    229,
+  ],
+
+  secondary: [
+    124,
+    58,
+    237,
+  ],
+
+  accent: [
+    14,
+    165,
+    233,
+  ],
+
+  title: [
+    30,
+    41,
+    59,
+  ],
+
+  text: [
+    35,
+    40,
+    55,
+  ],
+
+  muted: [
+    100,
+    116,
+    139,
+  ],
+
+  border: [
+    226,
+    232,
+    240,
+  ],
+
+  lightPrimary: [
+    238,
+    242,
+    255,
+  ],
+
+  lightBlue: [
+    240,
+    249,
+    255,
+  ],
+
+  lightGreen: [
+    240,
+    253,
+    244,
+  ],
+
+  lightYellow: [
+    254,
+    252,
+    232,
+  ],
+
+  lightRed: [
+    254,
+    242,
+    242,
+  ],
+
+  white: [
+    255,
+    255,
+    255,
+  ],
+
+};
+
+
+// ======================================================
+// HINDI FONT
+// ======================================================
+
+const DEVANAGARI_FONT_URL =
+  "/fonts/NotoSansDevanagari-Regular.ttf";
+
+
+// ======================================================
 // SAFE TEXT
 // ======================================================
 
@@ -33,8 +138,11 @@ function safeText(value) {
     value === null ||
     value === undefined
   ) {
+
     return "";
+
   }
+
 
   return String(value);
 
@@ -62,14 +170,832 @@ function createFileName(title) {
 
 
   return `${
-    cleaned || "nyxora-document"
+    cleaned ||
+    "nyxora-document"
   }.pdf`;
 
 }
 
 
 // ======================================================
-// PDF GENERATOR
+// DEVANAGARI DETECTION
+// ======================================================
+
+function containsDevanagari(value) {
+
+  return /[\u0900-\u097F]/.test(
+    safeText(value)
+  );
+
+}
+
+
+// ======================================================
+// DOCUMENT CONTAINS HINDI
+// ======================================================
+
+function documentContainsDevanagari(
+  documentData = {}
+) {
+
+  return containsDevanagari(
+    [
+      documentData.title,
+      documentData.type,
+      documentData.subject,
+      documentData.chapter,
+      documentData.content,
+    ].join("\n")
+  );
+
+}
+
+
+// ======================================================
+// PDF SAFE SYMBOLS
+//
+// EXISTING MATH PATH PRESERVED
+// ======================================================
+
+function pdfSafeText(value) {
+
+  return safeText(value)
+
+    .replace(
+      /∠/g,
+      "angle "
+    )
+
+    .replace(
+      /×/g,
+      "x"
+    )
+
+    .replace(
+      /÷/g,
+      "/"
+    )
+
+    .replace(
+      /·/g,
+      "."
+    )
+
+    .replace(
+      /≤/g,
+      "<="
+    )
+
+    .replace(
+      /≥/g,
+      ">="
+    )
+
+    .replace(
+      /≠/g,
+      "!="
+    )
+
+    .replace(
+      /≈/g,
+      "~"
+    )
+
+    .replace(
+      /≡/g,
+      "="
+    )
+
+    .replace(
+      /∥/g,
+      "||"
+    )
+
+    .replace(
+      /⊥/g,
+      " perpendicular "
+    )
+
+    .replace(
+      /⇒/g,
+      "=>"
+    )
+
+    .replace(
+      /⇐/g,
+      "<="
+    )
+
+    .replace(
+      /→/g,
+      "->"
+    )
+
+    .replace(
+      /←/g,
+      "<-"
+    )
+
+    .replace(
+      /↔/g,
+      "<->"
+    )
+
+    .replace(
+      /∈/g,
+      " in "
+    )
+
+    .replace(
+      /∉/g,
+      " not in "
+    )
+
+    .replace(
+      /∞/g,
+      "infinity"
+    )
+
+    .replace(
+      /∴/g,
+      "therefore"
+    )
+
+    .replace(
+      /∵/g,
+      "because"
+    )
+
+    .replace(
+      /[ \t]+/g,
+      " "
+    );
+
+}
+
+
+// ======================================================
+// SUPERSCRIPTS
+// ======================================================
+
+const SUPERSCRIPT_PATTERN =
+  /[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ⁱⁿ]+/g;
+
+
+function superscriptToNormal(value) {
+
+  const map = {
+
+    "⁰": "0",
+    "¹": "1",
+    "²": "2",
+    "³": "3",
+    "⁴": "4",
+    "⁵": "5",
+    "⁶": "6",
+    "⁷": "7",
+    "⁸": "8",
+    "⁹": "9",
+
+    "⁺": "+",
+    "⁻": "-",
+    "⁼": "=",
+    "⁽": "(",
+    "⁾": ")",
+
+    "ⁱ": "i",
+    "ⁿ": "n",
+
+  };
+
+
+  return [
+    ...safeText(value),
+  ]
+    .map(
+      (character) =>
+        map[character] ||
+        character
+    )
+    .join("");
+
+}
+
+
+// ======================================================
+// FRACTIONS
+// ======================================================
+
+const FRACTION_PATTERN =
+  /\[\[FRAC:([^|\]]+)\|([^\]]+)\]\]/g;
+
+
+function tokenizeFractions(value) {
+
+  const text =
+    safeText(value);
+
+
+  const result = [];
+
+
+  let lastIndex = 0;
+
+  let match;
+
+
+  FRACTION_PATTERN.lastIndex =
+    0;
+
+
+  while (
+    (
+      match =
+        FRACTION_PATTERN.exec(
+          text
+        )
+    ) !== null
+  ) {
+
+    if (
+      match.index >
+      lastIndex
+    ) {
+
+      result.push({
+
+        type:
+          "text",
+
+        value:
+          text.slice(
+            lastIndex,
+            match.index
+          ),
+
+      });
+
+    }
+
+
+    result.push({
+
+      type:
+        "fraction",
+
+      numerator:
+        pdfSafeText(
+          match[1]
+        ),
+
+      denominator:
+        pdfSafeText(
+          match[2]
+        ),
+
+    });
+
+
+    lastIndex =
+      FRACTION_PATTERN.lastIndex;
+
+  }
+
+
+  if (
+    lastIndex <
+    text.length
+  ) {
+
+    result.push({
+
+      type:
+        "text",
+
+      value:
+        text.slice(
+          lastIndex
+        ),
+
+    });
+
+  }
+
+
+  return result;
+
+}
+
+
+function tokenizeSuperscripts(value) {
+
+  const text =
+    safeText(value);
+
+
+  const tokens = [];
+
+
+  let lastIndex = 0;
+
+  let match;
+
+
+  SUPERSCRIPT_PATTERN.lastIndex =
+    0;
+
+
+  while (
+    (
+      match =
+        SUPERSCRIPT_PATTERN.exec(
+          text
+        )
+    ) !== null
+  ) {
+
+    if (
+      match.index >
+      lastIndex
+    ) {
+
+      tokens.push({
+
+        type:
+          "text",
+
+        value:
+          text.slice(
+            lastIndex,
+            match.index
+          ),
+
+      });
+
+    }
+
+
+    tokens.push({
+
+      type:
+        "superscript",
+
+      value:
+        superscriptToNormal(
+          match[0]
+        ),
+
+    });
+
+
+    lastIndex =
+      SUPERSCRIPT_PATTERN.lastIndex;
+
+  }
+
+
+  if (
+    lastIndex <
+    text.length
+  ) {
+
+    tokens.push({
+
+      type:
+        "text",
+
+      value:
+        text.slice(
+          lastIndex
+        ),
+
+    });
+
+  }
+
+
+  return tokens;
+
+}
+
+
+// ======================================================
+// PREPARE PDF CONTENT
+// ======================================================
+
+export function preparePdfContent(value) {
+
+  const cleaned =
+    cleanMarkdownPreserveMath(
+      value
+    );
+
+
+  return getRenderableSegments(
+    cleaned
+  )
+
+    .map(
+      (segment) =>
+        segment.value
+    )
+
+    .join("")
+
+    .replace(
+      FRACTION_PATTERN,
+      "($1/$2)"
+    )
+
+    .replace(
+      /∠/g,
+      "angle "
+    )
+
+    .replace(
+      /×/g,
+      "x"
+    )
+
+    .replace(
+      /÷/g,
+      "/"
+    )
+
+    .trim();
+
+}
+
+
+// ======================================================
+// CONTENT DETECTION
+// ======================================================
+
+function isMarkdownHeading(value) {
+
+  return /^#{1,6}\s+/.test(
+    safeText(value).trim()
+  );
+
+}
+
+
+function getHeadingLevel(value) {
+
+  const match =
+    safeText(value)
+      .trim()
+      .match(
+        /^(#{1,6})\s+/
+      );
+
+
+  return match
+    ? match[1].length
+    : 0;
+
+}
+
+
+function removeHeadingMarker(value) {
+
+  return safeText(value)
+    .trim()
+    .replace(
+      /^#{1,6}\s+/,
+      ""
+    );
+
+}
+
+
+function isSectionHeading(value) {
+
+  const text =
+    safeText(value)
+      .trim();
+
+
+  return (
+    isMarkdownHeading(
+      text
+    ) ||
+
+    /^section\s+[a-z0-9]+[:.\s-]/i.test(
+      text
+    ) ||
+
+    /^instructions?\s*:?\s*$/i.test(
+      text
+    ) ||
+
+    /^general\s+instructions?\s*:?\s*$/i.test(
+      text
+    ) ||
+
+    /^(summary|conclusion|introduction|examples?|key points?|revision|formulae?|formulas?|answers?|solutions?)\s*:?\s*$/i.test(
+      text
+    )
+  );
+
+}
+
+
+function isQuestionLine(value) {
+
+  const text =
+    safeText(value)
+      .trim();
+
+
+  return (
+    /^q\d+[\s.:)]*/i.test(
+      text
+    ) ||
+
+    /^question\s*\d+[\s.:)]*/i.test(
+      text
+    ) ||
+
+    /^\d+[\s.)]+\S/.test(
+      text
+    )
+  );
+
+}
+
+
+function isOptionLine(value) {
+
+  return (
+    /^\([a-d]\)\s*/i.test(
+      safeText(value).trim()
+    ) ||
+
+    /^[a-d][.)]\s+/i.test(
+      safeText(value).trim()
+    )
+  );
+
+}
+
+
+function isBulletLine(value) {
+
+  return /^[-*•]\s+/.test(
+    safeText(value).trim()
+  );
+
+}
+
+
+function getBulletText(value) {
+
+  return safeText(value)
+    .trim()
+    .replace(
+      /^[-*•]\s+/,
+      ""
+    );
+
+}
+
+
+function isNumberedListLine(value) {
+
+  return /^\d+[.)]\s+/.test(
+    safeText(value).trim()
+  );
+
+}
+
+
+function getNumberedParts(value) {
+
+  const match =
+    safeText(value)
+      .trim()
+      .match(
+        /^(\d+[.)])\s+(.+)$/
+      );
+
+
+  if (!match) {
+
+    return null;
+
+  }
+
+
+  return {
+
+    marker:
+      match[1],
+
+    text:
+      match[2],
+
+  };
+
+}
+
+
+// ======================================================
+// CALLOUT DETECTION
+// ======================================================
+
+function getCallout(value) {
+
+  const text =
+    safeText(value)
+      .trim();
+
+
+  const match =
+    text.match(
+      /^(key point|remember|note|definition|formula|tip|warning|important|example)\s*:\s*(.*)$/i
+    );
+
+
+  if (!match) {
+
+    return null;
+
+  }
+
+
+  return {
+
+    label:
+      match[1],
+
+    content:
+      match[2],
+
+  };
+
+}
+
+
+// ======================================================
+// DIAGRAM PARSER
+// ======================================================
+
+function parseDiagramBlocks(
+  content
+) {
+
+  const lines =
+    safeText(content)
+      .split("\n");
+
+
+  const output = [];
+
+
+  let diagram = null;
+
+
+  lines.forEach(
+    (rawLine) => {
+
+      const line =
+        rawLine.trim();
+
+
+      if (
+        line ===
+        "[DIAGRAM]"
+      ) {
+
+        diagram = {
+
+          title:
+            "Diagram",
+
+          type:
+            "flowchart",
+
+          items:
+            [],
+
+        };
+
+
+        return;
+
+      }
+
+
+      if (
+        line ===
+        "[/DIAGRAM]"
+      ) {
+
+        if (diagram) {
+
+          output.push({
+
+            type:
+              "diagram",
+
+            diagram,
+
+          });
+
+        }
+
+
+        diagram =
+          null;
+
+
+        return;
+
+      }
+
+
+      if (diagram) {
+
+        if (
+          /^title\s*:/i.test(
+            line
+          )
+        ) {
+
+          diagram.title =
+            line.replace(
+              /^title\s*:/i,
+              ""
+            ).trim();
+
+
+          return;
+
+        }
+
+
+        if (
+          /^type\s*:/i.test(
+            line
+          )
+        ) {
+
+          diagram.type =
+            line.replace(
+              /^type\s*:/i,
+              ""
+            ).trim()
+              .toLowerCase();
+
+
+          return;
+
+        }
+
+
+        if (
+          /^[-*•]\s+/.test(
+            line
+          )
+        ) {
+
+          diagram.items.push(
+            line.replace(
+              /^[-*•]\s+/,
+              ""
+            )
+          );
+
+        }
+
+
+        return;
+
+      }
+
+
+      output.push({
+
+        type:
+          "line",
+
+        value:
+          rawLine,
+
+      });
+
+    }
+  );
+
+
+  return output;
+
+}
+
+
+// ======================================================
+// ENGLISH / MATH PDF GENERATOR
 // ======================================================
 
 export function generateWorkspacePdf(
@@ -77,19 +1003,33 @@ export function generateWorkspacePdf(
 ) {
 
   const {
-    title = "Nyxora Document",
+
+    title =
+      "Nyxora Document",
+
     type = "",
+
     subject = "",
+
     chapter = "",
+
     content = "",
+
   } = documentData;
 
 
   const pdf =
     new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
+
+      orientation:
+        "portrait",
+
+      unit:
+        "mm",
+
+      format:
+        "a4",
+
     });
 
 
@@ -98,95 +1038,1464 @@ export function generateWorkspacePdf(
 
 
   // ====================================================
-  // PAGE CHECK
+  // PAGE SPACE
   // ====================================================
 
-  const ensureSpace = (
-    requiredSpace = 10
-  ) => {
+  function ensureSpace(
+    required = 10
+  ) {
 
     if (
-      y + requiredSpace >
+      y + required >
       PAGE.height -
       PAGE.marginBottom
     ) {
 
       pdf.addPage();
 
+
       y =
         PAGE.marginTop;
 
     }
 
-  };
+  }
 
 
   // ====================================================
-  // BRAND
+  // FONT
   // ====================================================
 
-  pdf.setFont(
-    "helvetica",
-    "bold"
+  function setFont(
+    bold = false,
+    size = 11,
+    color = COLORS.text
+  ) {
+
+    pdf.setFont(
+      "helvetica",
+      bold
+        ? "bold"
+        : "normal"
+    );
+
+
+    pdf.setFontSize(
+      size
+    );
+
+
+    pdf.setTextColor(
+      ...color
+    );
+
+  }
+
+
+  // ====================================================
+  // TEXT WIDTH
+  // ====================================================
+
+  function textWidth(
+    value,
+    size = 11,
+    bold = false
+  ) {
+
+    const safe =
+      pdfSafeText(
+        value
+      );
+
+
+    setFont(
+      bold,
+      size
+    );
+
+
+    return pdf.getTextWidth(
+      safe
+    );
+
+  }
+
+
+  // ====================================================
+  // FRACTION WIDTH
+  // ====================================================
+
+  function fractionWidth(
+    numerator,
+    denominator,
+    size
+  ) {
+
+    const fractionSize =
+      size *
+      0.68;
+
+
+    const topWidth =
+      textWidth(
+        numerator,
+        fractionSize
+      );
+
+
+    const bottomWidth =
+      textWidth(
+        denominator,
+        fractionSize
+      );
+
+
+    return (
+      Math.max(
+        topWidth,
+        bottomWidth
+      ) +
+      2
+    );
+
+  }
+
+
+  // ====================================================
+  // DRAW FRACTION
+  // ====================================================
+
+  function drawFraction(
+    numerator,
+    denominator,
+    x,
+    baseline,
+    size,
+    color = COLORS.text
+  ) {
+
+    const fractionSize =
+      size *
+      0.68;
+
+
+    const safeNumerator =
+      pdfSafeText(
+        numerator
+      );
+
+
+    const safeDenominator =
+      pdfSafeText(
+        denominator
+      );
+
+
+    const topWidth =
+      textWidth(
+        safeNumerator,
+        fractionSize
+      );
+
+
+    const bottomWidth =
+      textWidth(
+        safeDenominator,
+        fractionSize
+      );
+
+
+    const width =
+      Math.max(
+        topWidth,
+        bottomWidth
+      ) +
+      2;
+
+
+    setFont(
+      false,
+      fractionSize,
+      color
+    );
+
+
+    pdf.text(
+      safeNumerator,
+
+      x +
+        (
+          width -
+          topWidth
+        ) /
+          2,
+
+      baseline -
+        2.2
+    );
+
+
+    pdf.setDrawColor(
+      ...color
+    );
+
+
+    pdf.setLineWidth(
+      0.2
+    );
+
+
+    pdf.line(
+      x,
+      baseline - 0.7,
+
+      x + width,
+      baseline - 0.7
+    );
+
+
+    setFont(
+      false,
+      fractionSize,
+      color
+    );
+
+
+    pdf.text(
+      safeDenominator,
+
+      x +
+        (
+          width -
+          bottomWidth
+        ) /
+          2,
+
+      baseline +
+        2.6
+    );
+
+
+    return (
+      x +
+      width
+    );
+
+  }
+
+
+  // ====================================================
+  // BUILD TEXT TOKENS
+  // ====================================================
+
+  function addTextTokens(
+    tokens,
+    value,
+    size,
+    bold
+  ) {
+
+    const superscriptParts =
+      tokenizeSuperscripts(
+        value
+      );
+
+
+    superscriptParts.forEach(
+      (part) => {
+
+        if (
+          part.type ===
+          "superscript"
+        ) {
+
+          const supSize =
+            size *
+            0.68;
+
+
+          tokens.push({
+
+            type:
+              "superscript",
+
+            value:
+              part.value,
+
+            width:
+              textWidth(
+                part.value,
+                supSize,
+                false
+              ),
+
+          });
+
+
+          return;
+
+        }
+
+
+        const safe =
+          pdfSafeText(
+            part.value
+          );
+
+
+        safe
+          .split(
+            /(\s+)/
+          )
+          .forEach(
+            (word) => {
+
+              if (!word) {
+
+                return;
+
+              }
+
+
+              const isSpace =
+                /^\s+$/.test(
+                  word
+                );
+
+
+              tokens.push({
+
+                type:
+                  isSpace
+                    ? "space"
+                    : "text",
+
+                value:
+                  word,
+
+                width:
+                  textWidth(
+                    word,
+                    size,
+                    bold
+                  ),
+
+              });
+
+            }
+          );
+
+      }
+    );
+
+  }
+
+
+  // ====================================================
+  // BUILD INLINE TOKENS
+  // ====================================================
+
+  function buildInlineTokens(
+    rawLine,
+    size,
+    bold
+  ) {
+
+    const segments =
+      getRenderableSegments(
+        rawLine
+      );
+
+
+    const tokens = [];
+
+
+    segments.forEach(
+      (segment) => {
+
+        const parts =
+          tokenizeFractions(
+            segment.value
+          );
+
+
+        parts.forEach(
+          (part) => {
+
+            if (
+              part.type ===
+              "fraction"
+            ) {
+
+              tokens.push({
+
+                type:
+                  "fraction",
+
+                numerator:
+                  part.numerator,
+
+                denominator:
+                  part.denominator,
+
+                width:
+                  fractionWidth(
+                    part.numerator,
+                    part.denominator,
+                    size
+                  ),
+
+              });
+
+
+              return;
+
+            }
+
+
+            addTextTokens(
+              tokens,
+              part.value,
+              size,
+              bold
+            );
+
+          }
+        );
+
+      }
+    );
+
+
+    return tokens;
+
+  }
+
+
+  // ====================================================
+  // DRAW MIXED LINE
+  // ====================================================
+
+  function drawMixedLine(
+    rawLine,
+    options = {}
+  ) {
+
+    const {
+
+      bold = false,
+
+      size = 11,
+
+      indent = 0,
+
+      color =
+        COLORS.text,
+
+      maxWidth =
+        CONTENT_WIDTH -
+        indent,
+
+    } = options;
+
+
+    const tokens =
+      buildInlineTokens(
+        rawLine,
+        size,
+        bold
+      );
+
+
+    const startX =
+      PAGE.marginLeft +
+      indent;
+
+
+    const maxX =
+      Math.min(
+        startX +
+          maxWidth,
+
+        PAGE.width -
+          PAGE.marginRight
+      );
+
+
+    const lineHeight =
+      size >= 16
+        ? 8
+        : size >= 13
+          ? 7.5
+          : 7;
+
+
+    let x =
+      startX;
+
+
+    ensureSpace(
+      lineHeight +
+      4
+    );
+
+
+    function nextLine() {
+
+      y +=
+        lineHeight;
+
+
+      ensureSpace(
+        lineHeight +
+        4
+      );
+
+
+      x =
+        startX;
+
+    }
+
+
+    tokens.forEach(
+      (token) => {
+
+        if (
+          token.type ===
+          "space"
+        ) {
+
+          if (
+            x ===
+            startX
+          ) {
+
+            return;
+
+          }
+
+
+          if (
+            x +
+              token.width >
+            maxX
+          ) {
+
+            nextLine();
+
+            return;
+
+          }
+
+
+          x +=
+            token.width;
+
+
+          return;
+
+        }
+
+
+        if (
+          x !==
+            startX &&
+          x +
+            token.width >
+            maxX
+        ) {
+
+          nextLine();
+
+        }
+
+
+        if (
+          token.type ===
+          "text"
+        ) {
+
+          setFont(
+            bold,
+            size,
+            color
+          );
+
+
+          pdf.text(
+            pdfSafeText(
+              token.value
+            ),
+            x,
+            y
+          );
+
+
+          x +=
+            token.width;
+
+
+          return;
+
+        }
+
+
+        if (
+          token.type ===
+          "superscript"
+        ) {
+
+          const supSize =
+            size *
+            0.68;
+
+
+          setFont(
+            false,
+            supSize,
+            color
+          );
+
+
+          pdf.text(
+            token.value,
+            x,
+            y -
+              size *
+                0.23
+          );
+
+
+          x +=
+            token.width;
+
+
+          return;
+
+        }
+
+
+        if (
+          token.type ===
+          "fraction"
+        ) {
+
+          x =
+            drawFraction(
+              token.numerator,
+              token.denominator,
+              x,
+              y,
+              size,
+              color
+            ) +
+            0.8;
+
+        }
+
+      }
+    );
+
+
+    y +=
+      lineHeight;
+
+  }
+
+
+  // ====================================================
+  // DRAW SECTION HEADING
+  // ====================================================
+
+  function drawHeading(
+    value,
+    level = 2
+  ) {
+
+    const clean =
+      removeHeadingMarker(
+        value
+      );
+
+
+    const size =
+      level <= 1
+        ? 17
+        : level === 2
+          ? 14
+          : 12;
+
+
+    ensureSpace(
+      18
+    );
+
+
+    y +=
+      3;
+
+
+    if (
+      level <= 2
+    ) {
+
+      pdf.setFillColor(
+        ...COLORS.lightPrimary
+      );
+
+
+      pdf.roundedRect(
+        PAGE.marginLeft,
+        y - 6,
+
+        CONTENT_WIDTH,
+        10,
+
+        2,
+        2,
+
+        "F"
+      );
+
+
+      pdf.setFillColor(
+        ...COLORS.primary
+      );
+
+
+      pdf.roundedRect(
+        PAGE.marginLeft,
+        y - 6,
+
+        2.5,
+        10,
+
+        1,
+        1,
+
+        "F"
+      );
+
+
+      drawMixedLine(
+        clean,
+        {
+
+          bold:
+            true,
+
+          size,
+
+          indent:
+            6,
+
+          color:
+            COLORS.primary,
+
+          maxWidth:
+            CONTENT_WIDTH -
+            8,
+
+        }
+      );
+
+    } else {
+
+      drawMixedLine(
+        clean,
+        {
+
+          bold:
+            true,
+
+          size,
+
+          color:
+            COLORS.secondary,
+
+        }
+      );
+
+    }
+
+
+    y +=
+      2;
+
+  }
+
+
+  // ====================================================
+  // DRAW BULLET
+  // ====================================================
+
+  function drawBullet(
+    value
+  ) {
+
+    ensureSpace(
+      9
+    );
+
+
+    const bulletY =
+      y - 1.2;
+
+
+    pdf.setFillColor(
+      ...COLORS.primary
+    );
+
+
+    pdf.circle(
+      PAGE.marginLeft +
+        2,
+
+      bulletY,
+
+      1.05,
+
+      "F"
+    );
+
+
+    drawMixedLine(
+      getBulletText(
+        value
+      ),
+      {
+
+        size:
+          11,
+
+        indent:
+          6,
+
+        maxWidth:
+          CONTENT_WIDTH -
+          6,
+
+      }
+    );
+
+  }
+
+
+  // ====================================================
+  // DRAW NUMBERED LIST
+  // ====================================================
+
+  function drawNumberedList(
+    value
+  ) {
+
+    const parts =
+      getNumberedParts(
+        value
+      );
+
+
+    if (!parts) {
+
+      drawMixedLine(
+        value
+      );
+
+
+      return;
+
+    }
+
+
+    ensureSpace(
+      9
+    );
+
+
+    setFont(
+      true,
+      10,
+      COLORS.primary
+    );
+
+
+    pdf.text(
+      parts.marker,
+      PAGE.marginLeft,
+      y
+    );
+
+
+    drawMixedLine(
+      parts.text,
+      {
+
+        size:
+          11,
+
+        indent:
+          8,
+
+        maxWidth:
+          CONTENT_WIDTH -
+          8,
+
+      }
+    );
+
+  }
+
+
+  // ====================================================
+  // DRAW CALLOUT
+  // ====================================================
+
+  function drawCallout(
+    callout
+  ) {
+
+    const label =
+      callout.label
+        .toLowerCase();
+
+
+    let background =
+      COLORS.lightBlue;
+
+
+    let accent =
+      COLORS.accent;
+
+
+    if (
+      label ===
+        "warning"
+    ) {
+
+      background =
+        COLORS.lightRed;
+
+      accent = [
+        220,
+        38,
+        38,
+      ];
+
+    }
+
+
+    if (
+      label ===
+        "tip" ||
+      label ===
+        "key point"
+    ) {
+
+      background =
+        COLORS.lightGreen;
+
+      accent = [
+        22,
+        163,
+        74,
+      ];
+
+    }
+
+
+    if (
+      label ===
+        "remember" ||
+      label ===
+        "important"
+    ) {
+
+      background =
+        COLORS.lightYellow;
+
+      accent = [
+        202,
+        138,
+        4,
+      ];
+
+    }
+
+
+    const wrapped =
+      pdf.splitTextToSize(
+        pdfSafeText(
+          callout.content
+        ),
+        CONTENT_WIDTH -
+          14
+      );
+
+
+    const boxHeight =
+      Math.max(
+        18,
+        12 +
+          wrapped.length *
+            5.5
+      );
+
+
+    ensureSpace(
+      boxHeight +
+      5
+    );
+
+
+    pdf.setFillColor(
+      ...background
+    );
+
+
+    pdf.roundedRect(
+      PAGE.marginLeft,
+      y - 5,
+
+      CONTENT_WIDTH,
+      boxHeight,
+
+      3,
+      3,
+
+      "F"
+    );
+
+
+    pdf.setFillColor(
+      ...accent
+    );
+
+
+    pdf.roundedRect(
+      PAGE.marginLeft,
+      y - 5,
+
+      2.5,
+      boxHeight,
+
+      1,
+      1,
+
+      "F"
+    );
+
+
+    setFont(
+      true,
+      10,
+      accent
+    );
+
+
+    pdf.text(
+      callout.label
+        .toUpperCase(),
+      PAGE.marginLeft +
+        6,
+      y + 1
+    );
+
+
+    y +=
+      7;
+
+
+    drawMixedLine(
+      callout.content,
+      {
+
+        size:
+          10.5,
+
+        indent:
+          6,
+
+        maxWidth:
+          CONTENT_WIDTH -
+          12,
+
+      }
+    );
+
+
+    y +=
+      5;
+
+  }
+
+
+  // ====================================================
+  // DRAW DIAGRAM
+  // ====================================================
+
+  function drawDiagram(
+    diagram
+  ) {
+
+    const items =
+      Array.isArray(
+        diagram.items
+      )
+
+        ? diagram.items.filter(
+            Boolean
+          )
+
+        : [];
+
+
+    if (
+      items.length === 0
+    ) {
+
+      return;
+
+    }
+
+
+    const visibleItems =
+      items.slice(
+        0,
+        8
+      );
+
+
+    const boxHeight =
+      16;
+
+
+    const gap =
+      8;
+
+
+    const titleSpace =
+      16;
+
+
+    const totalHeight =
+      titleSpace +
+      visibleItems.length *
+        boxHeight +
+      Math.max(
+        0,
+        visibleItems.length -
+          1
+      ) *
+        gap +
+      8;
+
+
+    ensureSpace(
+      Math.min(
+        totalHeight,
+        110
+      )
+    );
+
+
+    y +=
+      3;
+
+
+    setFont(
+      true,
+      12,
+      COLORS.secondary
+    );
+
+
+    pdf.text(
+      pdfSafeText(
+        diagram.title ||
+        "Diagram"
+      ),
+      PAGE.marginLeft,
+      y
+    );
+
+
+    y +=
+      8;
+
+
+    visibleItems.forEach(
+      (
+        item,
+        index
+      ) => {
+
+        ensureSpace(
+          boxHeight +
+          gap +
+          5
+        );
+
+
+        const x =
+          PAGE.marginLeft +
+          12;
+
+
+        const width =
+          CONTENT_WIDTH -
+          24;
+
+
+        pdf.setFillColor(
+          index % 2 === 0
+            ? 238
+            : 240,
+
+          index % 2 === 0
+            ? 242
+            : 249,
+
+          255
+        );
+
+
+        pdf.setDrawColor(
+          ...COLORS.border
+        );
+
+
+        pdf.roundedRect(
+          x,
+          y,
+
+          width,
+          boxHeight,
+
+          3,
+          3,
+
+          "FD"
+        );
+
+
+        pdf.setFillColor(
+          ...COLORS.primary
+        );
+
+
+        pdf.circle(
+          x + 7,
+          y + boxHeight / 2,
+
+          3.2,
+          "F"
+        );
+
+
+        setFont(
+          true,
+          8,
+          COLORS.white
+        );
+
+
+        pdf.text(
+          String(
+            index + 1
+          ),
+          x + 7,
+          y +
+            boxHeight / 2 +
+            1,
+
+          {
+            align:
+              "center",
+          }
+        );
+
+
+        setFont(
+          false,
+          10,
+          COLORS.text
+        );
+
+
+        const textLines =
+          pdf.splitTextToSize(
+            pdfSafeText(
+              item
+            ),
+            width -
+              22
+          );
+
+
+        pdf.text(
+          textLines.slice(
+            0,
+            2
+          ),
+          x + 14,
+          y + 6
+        );
+
+
+        y +=
+          boxHeight;
+
+
+        if (
+          index <
+          visibleItems.length -
+            1
+        ) {
+
+          pdf.setDrawColor(
+            ...COLORS.primary
+          );
+
+
+          pdf.setLineWidth(
+            0.5
+          );
+
+
+          pdf.line(
+            PAGE.width / 2,
+            y,
+
+            PAGE.width / 2,
+            y + gap - 2
+          );
+
+
+          pdf.line(
+            PAGE.width / 2,
+            y + gap - 2,
+
+            PAGE.width / 2 - 1.5,
+            y + gap - 4
+          );
+
+
+          pdf.line(
+            PAGE.width / 2,
+            y + gap - 2,
+
+            PAGE.width / 2 + 1.5,
+            y + gap - 4
+          );
+
+
+          y +=
+            gap;
+
+        }
+
+      }
+    );
+
+
+    y +=
+      8;
+
+  }
+
+
+  // ====================================================
+  // HEADER
+  // ====================================================
+
+  pdf.setFillColor(
+    ...COLORS.primary
   );
 
-  pdf.setFontSize(11);
+
+  pdf.roundedRect(
+    PAGE.marginLeft,
+    y - 5,
+
+    34,
+    9,
+
+    2,
+    2,
+
+    "F"
+  );
+
+
+  setFont(
+    true,
+    9,
+    COLORS.white
+  );
+
 
   pdf.text(
     "NYXORA AI",
-    PAGE.marginLeft,
-    y
+    PAGE.marginLeft +
+      17,
+    y,
+
+    {
+      align:
+        "center",
+    }
   );
 
 
-  y += 8;
+  y +=
+    10;
 
 
   pdf.setDrawColor(
-    120,
-    100,
-    255
+    ...COLORS.primary
   );
 
+
   pdf.setLineWidth(
-    0.6
+    0.7
   );
+
 
   pdf.line(
     PAGE.marginLeft,
     y,
+
     PAGE.width -
       PAGE.marginRight,
     y
   );
 
 
-  y += 12;
+  y +=
+    12;
 
 
   // ====================================================
   // TITLE
   // ====================================================
 
-  pdf.setTextColor(
-    20,
-    20,
-    30
-  );
+  const cleanTitle =
+    preparePdfContent(
+      title
+    );
 
-  pdf.setFont(
-    "helvetica",
-    "bold"
-  );
 
-  pdf.setFontSize(
-    20
+  setFont(
+    true,
+    21,
+    COLORS.title
   );
 
 
   const titleLines =
     pdf.splitTextToSize(
-      safeText(title),
+      cleanTitle,
       CONTENT_WIDTH
     );
 
@@ -201,66 +2510,166 @@ export function generateWorkspacePdf(
   y +=
     titleLines.length *
       8 +
-    5;
+    7;
 
 
   // ====================================================
-  // METADATA
+  // METADATA CARDS
   // ====================================================
 
   const metadata = [
+
     type
-      ? `Type: ${type}`
-      : "",
+      ? {
+          label:
+            "TYPE",
+
+          value:
+            preparePdfContent(
+              type
+            ),
+        }
+      : null,
 
     subject
-      ? `Subject: ${subject}`
-      : "",
+      ? {
+          label:
+            "SUBJECT",
+
+          value:
+            preparePdfContent(
+              subject
+            ),
+        }
+      : null,
 
     chapter
-      ? `Chapter: ${chapter}`
-      : "",
-  ].filter(Boolean);
+      ? {
+          label:
+            "TOPIC",
+
+          value:
+            preparePdfContent(
+              chapter
+            ),
+        }
+      : null,
+
+  ].filter(
+    Boolean
+  );
 
 
   if (
-    metadata.length > 0
+    metadata.length
   ) {
 
-    pdf.setFont(
-      "helvetica",
-      "normal"
-    );
+    const gap =
+      3;
 
-    pdf.setFontSize(
-      10
-    );
 
-    pdf.setTextColor(
-      90,
-      90,
-      100
+    const width =
+      (
+        CONTENT_WIDTH -
+        gap *
+          (
+            metadata.length -
+            1
+          )
+      ) /
+      metadata.length;
+
+
+    const height =
+      17;
+
+
+    ensureSpace(
+      height +
+      8
     );
 
 
     metadata.forEach(
-      (item) => {
+      (
+        item,
+        index
+      ) => {
 
-        ensureSpace(7);
+        const x =
+          PAGE.marginLeft +
+          index *
+            (
+              width +
+              gap
+            );
 
-        pdf.text(
-          item,
-          PAGE.marginLeft,
-          y
+
+        pdf.setFillColor(
+          ...COLORS.lightPrimary
         );
 
-        y += 6;
+
+        pdf.roundedRect(
+          x,
+          y,
+
+          width,
+          height,
+
+          2,
+          2,
+
+          "F"
+        );
+
+
+        setFont(
+          true,
+          7.5,
+          COLORS.primary
+        );
+
+
+        pdf.text(
+          item.label,
+          x + 4,
+          y + 5
+        );
+
+
+        setFont(
+          false,
+          9,
+          COLORS.text
+        );
+
+
+        const valueLines =
+          pdf.splitTextToSize(
+            pdfSafeText(
+              item.value
+            ),
+            width - 8
+          );
+
+
+        pdf.text(
+          valueLines.slice(
+            0,
+            2
+          ),
+          x + 4,
+          y + 11
+        );
 
       }
     );
 
 
-    y += 5;
+    y +=
+      height +
+      10;
 
   }
 
@@ -269,72 +2678,225 @@ export function generateWorkspacePdf(
   // CONTENT
   // ====================================================
 
-  pdf.setTextColor(
-    25,
-    25,
-    30
-  );
-
-  pdf.setFont(
-    "helvetica",
-    "normal"
-  );
-
-  pdf.setFontSize(
-    11
-  );
+  const preparedContent =
+    cleanMarkdownPreserveMath(
+      content
+    );
 
 
-  const paragraphs =
-    safeText(content)
-      .replace(
-        /\r\n/g,
-        "\n"
-      )
-      .split("\n");
+  const blocks =
+    parseDiagramBlocks(
+      preparedContent
+    );
 
 
-  paragraphs.forEach(
-    (paragraph) => {
+  blocks.forEach(
+    (block) => {
 
       if (
-        !paragraph.trim()
+        block.type ===
+        "diagram"
       ) {
 
-        y += 5;
+        drawDiagram(
+          block.diagram
+        );
 
-        ensureSpace();
 
         return;
 
       }
 
 
-      const lines =
-        pdf.splitTextToSize(
-          paragraph,
-          CONTENT_WIDTH
+      const rawLine =
+        block.value;
+
+
+      const line =
+        rawLine.trim();
+
+
+      if (!line) {
+
+        y +=
+          4;
+
+
+        ensureSpace(
+          5
         );
 
 
-      lines.forEach(
-        (line) => {
+        return;
 
-          ensureSpace(7);
+      }
 
-          pdf.text(
-            line,
-            PAGE.marginLeft,
-            y
-          );
 
-          y += 6;
+      const callout =
+        getCallout(
+          line
+        );
+
+
+      if (callout) {
+
+        drawCallout(
+          callout
+        );
+
+
+        return;
+
+      }
+
+
+      if (
+        isMarkdownHeading(
+          line
+        )
+      ) {
+
+        drawHeading(
+          line,
+          getHeadingLevel(
+            line
+          )
+        );
+
+
+        return;
+
+      }
+
+
+      if (
+        isSectionHeading(
+          line
+        )
+      ) {
+
+        drawHeading(
+          line,
+          2
+        );
+
+
+        return;
+
+      }
+
+
+      if (
+        isBulletLine(
+          line
+        )
+      ) {
+
+        drawBullet(
+          line
+        );
+
+
+        return;
+
+      }
+
+
+      if (
+        isQuestionLine(
+          line
+        )
+      ) {
+
+        ensureSpace(
+          12
+        );
+
+
+        drawMixedLine(
+          line,
+          {
+
+            bold:
+              true,
+
+            size:
+              11,
+
+            color:
+              COLORS.title,
+
+          }
+        );
+
+
+        y +=
+          1;
+
+
+        return;
+
+      }
+
+
+      if (
+        isNumberedListLine(
+          line
+        )
+      ) {
+
+        drawNumberedList(
+          line
+        );
+
+
+        return;
+
+      }
+
+
+      if (
+        isOptionLine(
+          line
+        )
+      ) {
+
+        drawMixedLine(
+          line,
+          {
+
+            size:
+              10.5,
+
+            indent:
+              5,
+
+            maxWidth:
+              CONTENT_WIDTH -
+              5,
+
+          }
+        );
+
+
+        return;
+
+      }
+
+
+      drawMixedLine(
+        line,
+        {
+
+          size:
+            11,
 
         }
       );
 
 
-      y += 2;
+      y +=
+        1;
 
     }
   );
@@ -359,28 +2921,49 @@ export function generateWorkspacePdf(
     );
 
 
-    pdf.setFont(
-      "helvetica",
-      "normal"
+    pdf.setDrawColor(
+      ...COLORS.border
     );
 
-    pdf.setFontSize(
-      8
+
+    pdf.setLineWidth(
+      0.3
     );
 
-    pdf.setTextColor(
-      120,
-      120,
-      130
+
+    pdf.line(
+      PAGE.marginLeft,
+      PAGE.height - 15,
+
+      PAGE.width -
+        PAGE.marginRight,
+      PAGE.height - 15
+    );
+
+
+    setFont(
+      false,
+      8,
+      COLORS.muted
     );
 
 
     pdf.text(
-      `Generated with Nyxora AI • Page ${pageNumber} of ${totalPages}`,
-      PAGE.width / 2,
-      PAGE.height - 10,
+      "Generated with Nyxora AI",
+      PAGE.marginLeft,
+      PAGE.height - 9
+    );
+
+
+    pdf.text(
+      `Page ${pageNumber} of ${totalPages}`,
+      PAGE.width -
+        PAGE.marginRight,
+      PAGE.height - 9,
+
       {
-        align: "center",
+        align:
+          "right",
       }
     );
 
@@ -393,15 +2976,1267 @@ export function generateWorkspacePdf(
 
 
 // ======================================================
+// HINDI CONTENT PREPARATION
+// ======================================================
+
+function prepareHindiContent(value) {
+
+  return cleanMarkdownPreserveMath(
+    safeText(value)
+  )
+
+    .replace(
+      FRACTION_PATTERN,
+      "$1/$2"
+    )
+
+    .trim();
+
+}
+
+
+// ======================================================
+// HTML ESCAPE
+// ======================================================
+
+function escapeHtml(value) {
+
+  return safeText(value)
+
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+
+    .replace(
+      /</g,
+      "&lt;"
+    )
+
+    .replace(
+      />/g,
+      "&gt;"
+    )
+
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
+}
+
+
+// ======================================================
+// HINDI CALLOUT HTML
+// ======================================================
+
+function createHindiCalloutHtml(
+  callout
+) {
+
+  const label =
+    callout.label
+      .toLowerCase();
+
+
+  let background =
+    "#f0f9ff";
+
+
+  let accent =
+    "#0ea5e9";
+
+
+  if (
+    label ===
+    "warning"
+  ) {
+
+    background =
+      "#fef2f2";
+
+    accent =
+      "#dc2626";
+
+  }
+
+
+  if (
+    label ===
+      "tip" ||
+    label ===
+      "key point"
+  ) {
+
+    background =
+      "#f0fdf4";
+
+    accent =
+      "#16a34a";
+
+  }
+
+
+  if (
+    label ===
+      "remember" ||
+    label ===
+      "important"
+  ) {
+
+    background =
+      "#fefce8";
+
+    accent =
+      "#ca8a04";
+
+  }
+
+
+  return `
+    <div
+      style="
+        margin: 14px 0;
+        padding: 14px 16px;
+        background: ${background};
+        border-left: 5px solid ${accent};
+        border-radius: 8px;
+      "
+    >
+      <div
+        style="
+          color: ${accent};
+          font-size: 13px;
+          font-weight: 700;
+          margin-bottom: 5px;
+          text-transform: uppercase;
+        "
+      >
+        ${escapeHtml(
+          callout.label
+        )}
+      </div>
+
+      <div
+        style="
+          font-size: 15px;
+          line-height: 1.7;
+        "
+      >
+        ${escapeHtml(
+          callout.content
+        )}
+      </div>
+    </div>
+  `;
+
+}
+
+
+// ======================================================
+// HINDI LINE HTML
+// ======================================================
+
+function createHindiLineHtml(
+  rawLine
+) {
+
+  const line =
+    safeText(rawLine)
+      .trim();
+
+
+  if (!line) {
+
+    return `
+      <div
+        style="
+          height: 10px;
+        "
+      ></div>
+    `;
+
+  }
+
+
+  const callout =
+    getCallout(
+      line
+    );
+
+
+  if (callout) {
+
+    return createHindiCalloutHtml(
+      callout
+    );
+
+  }
+
+
+  if (
+    isMarkdownHeading(
+      line
+    ) ||
+    isSectionHeading(
+      line
+    )
+  ) {
+
+    const clean =
+      removeHeadingMarker(
+        line
+      );
+
+
+    return `
+      <div
+        style="
+          margin-top: 18px;
+          margin-bottom: 10px;
+          padding: 9px 13px;
+          background: #eef2ff;
+          border-left: 5px solid #4f46e5;
+          border-radius: 7px;
+          color: #4338ca;
+          font-size: 18px;
+          font-weight: 700;
+          line-height: 1.55;
+        "
+      >
+        ${escapeHtml(
+          clean
+        )}
+      </div>
+    `;
+
+  }
+
+
+  if (
+    isBulletLine(
+      line
+    )
+  ) {
+
+    return `
+      <div
+        style="
+          display: flex;
+          gap: 10px;
+          align-items: flex-start;
+          margin: 7px 0;
+          padding-left: 4px;
+          font-size: 15px;
+          line-height: 1.7;
+        "
+      >
+        <div
+          style="
+            margin-top: 9px;
+            width: 7px;
+            height: 7px;
+            flex: 0 0 7px;
+            border-radius: 50%;
+            background: #4f46e5;
+          "
+        ></div>
+
+        <div>
+          ${escapeHtml(
+            getBulletText(
+              line
+            )
+          )}
+        </div>
+      </div>
+    `;
+
+  }
+
+
+  if (
+    isQuestionLine(
+      line
+    )
+  ) {
+
+    return `
+      <div
+        style="
+          font-size: 15px;
+          font-weight: 700;
+          color: #1e293b;
+          margin-top: 10px;
+          margin-bottom: 6px;
+          line-height: 1.7;
+        "
+      >
+        ${escapeHtml(
+          line
+        )}
+      </div>
+    `;
+
+  }
+
+
+  if (
+    isOptionLine(
+      line
+    )
+  ) {
+
+    return `
+      <div
+        style="
+          font-size: 15px;
+          margin-left: 18px;
+          margin-bottom: 5px;
+          line-height: 1.7;
+        "
+      >
+        ${escapeHtml(
+          line
+        )}
+      </div>
+    `;
+
+  }
+
+
+  return `
+    <div
+      style="
+        font-size: 15px;
+        margin-bottom: 7px;
+        line-height: 1.75;
+      "
+    >
+      ${escapeHtml(
+        line
+      )}
+    </div>
+  `;
+
+}
+
+
+// ======================================================
+// HINDI DIAGRAM HTML
+// ======================================================
+
+function createHindiDiagramHtml(
+  diagram
+) {
+
+  const items =
+    Array.isArray(
+      diagram.items
+    )
+
+      ? diagram.items
+          .filter(
+            Boolean
+          )
+          .slice(
+            0,
+            8
+          )
+
+      : [];
+
+
+  if (
+    items.length === 0
+  ) {
+
+    return "";
+
+  }
+
+
+  const itemsHtml =
+    items
+      .map(
+        (
+          item,
+          index
+        ) => `
+
+          <div
+            style="
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+            "
+          >
+
+            <div
+              style="
+                width: 82%;
+                box-sizing: border-box;
+                padding: 13px 16px;
+                background:
+                  ${
+                    index % 2 === 0
+                      ? "#eef2ff"
+                      : "#f0f9ff"
+                  };
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+              "
+            >
+
+              <div
+                style="
+                  width: 28px;
+                  height: 28px;
+                  flex: 0 0 28px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  border-radius: 50%;
+                  background: #4f46e5;
+                  color: white;
+                  font-family: Arial, sans-serif;
+                  font-size: 12px;
+                  font-weight: 700;
+                "
+              >
+                ${index + 1}
+              </div>
+
+              <div
+                style="
+                  font-size: 15px;
+                  line-height: 1.6;
+                "
+              >
+                ${escapeHtml(
+                  item
+                )}
+              </div>
+
+            </div>
+
+            ${
+              index <
+              items.length - 1
+
+                ? `
+                  <div
+                    style="
+                      color: #4f46e5;
+                      font-family: Arial, sans-serif;
+                      font-size: 22px;
+                      font-weight: 700;
+                      line-height: 26px;
+                    "
+                  >
+                    ↓
+                  </div>
+                `
+
+                : ""
+            }
+
+          </div>
+
+        `
+      )
+      .join("");
+
+
+  return `
+    <div
+      style="
+        margin: 20px 0;
+        padding: 18px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #ffffff;
+      "
+    >
+
+      <div
+        style="
+          color: #6d28d9;
+          font-size: 18px;
+          font-weight: 700;
+          margin-bottom: 16px;
+        "
+      >
+        ${escapeHtml(
+          diagram.title ||
+          "Diagram"
+        )}
+      </div>
+
+      ${itemsHtml}
+
+    </div>
+  `;
+
+}
+
+
+// ======================================================
+// HINDI CONTENT HTML
+// ======================================================
+
+function createHindiContentHtml(
+  content
+) {
+
+  const blocks =
+    parseDiagramBlocks(
+      prepareHindiContent(
+        content
+      )
+    );
+
+
+  return blocks
+    .map(
+      (block) => {
+
+        if (
+          block.type ===
+          "diagram"
+        ) {
+
+          return createHindiDiagramHtml(
+            block.diagram
+          );
+
+        }
+
+
+        return createHindiLineHtml(
+          block.value
+        );
+
+      }
+    )
+    .join("");
+
+}
+
+
+// ======================================================
+// WAIT FOR HINDI FONT
+// ======================================================
+
+async function waitForHindiFont() {
+
+  try {
+
+    const fontFace =
+      new FontFace(
+        "NyxoraDevanagari",
+        `url("${DEVANAGARI_FONT_URL}")`
+      );
+
+
+    const loadedFont =
+      await fontFace.load();
+
+
+    document.fonts.add(
+      loadedFont
+    );
+
+
+    await document.fonts.ready;
+
+
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "Hindi font loading error:",
+      error
+    );
+
+
+    return false;
+
+  }
+
+}
+
+
+// ======================================================
+// CREATE HINDI HTML ELEMENT
+// ======================================================
+
+function createHindiPdfElement(
+  documentData
+) {
+
+  const {
+
+    title =
+      "Nyxora Document",
+
+    type = "",
+
+    subject = "",
+
+    chapter = "",
+
+    content = "",
+
+  } = documentData;
+
+
+  const container =
+    document.createElement(
+      "div"
+    );
+
+
+  container.style.position =
+    "fixed";
+
+  container.style.left =
+    "-10000px";
+
+  container.style.top =
+    "0";
+
+  container.style.width =
+    "794px";
+
+  container.style.background =
+    "#ffffff";
+
+  container.style.color =
+    "#1f2937";
+
+  container.style.padding =
+    "68px";
+
+  container.style.boxSizing =
+    "border-box";
+
+  container.style.fontFamily =
+    '"NyxoraDevanagari", "Noto Sans Devanagari", Arial, sans-serif';
+
+  container.style.fontWeight =
+    "400";
+
+  container.style.textAlign =
+    "left";
+
+
+  const contentHtml =
+    createHindiContentHtml(
+      content
+    );
+
+
+  const metadata = [
+
+    type
+      ? {
+          label:
+            "TYPE",
+
+          value:
+            prepareHindiContent(
+              type
+            ),
+        }
+      : null,
+
+    subject
+      ? {
+          label:
+            "SUBJECT",
+
+          value:
+            prepareHindiContent(
+              subject
+            ),
+        }
+      : null,
+
+    chapter
+      ? {
+          label:
+            "TOPIC",
+
+          value:
+            prepareHindiContent(
+              chapter
+            ),
+        }
+      : null,
+
+  ].filter(
+    Boolean
+  );
+
+
+  const metadataHtml =
+    metadata
+      .map(
+        (item) => `
+          <div
+            style="
+              flex: 1;
+              min-width: 0;
+              padding: 11px 13px;
+              background: #eef2ff;
+              border-radius: 8px;
+            "
+          >
+
+            <div
+              style="
+                color: #4f46e5;
+                font-family: Arial, sans-serif;
+                font-size: 10px;
+                font-weight: 700;
+                margin-bottom: 5px;
+              "
+            >
+              ${item.label}
+            </div>
+
+            <div
+              style="
+                color: #1f2937;
+                font-size: 13px;
+                line-height: 1.45;
+              "
+            >
+              ${escapeHtml(
+                item.value
+              )}
+            </div>
+
+          </div>
+        `
+      )
+      .join("");
+
+
+  container.innerHTML = `
+
+    <div
+      style="
+        font-family:
+          'NyxoraDevanagari',
+          'Noto Sans Devanagari',
+          Arial,
+          sans-serif;
+      "
+    >
+
+      <div
+        style="
+          display: inline-block;
+          padding: 7px 14px;
+          border-radius: 7px;
+          background: #4f46e5;
+          color: #ffffff;
+          font-family: Arial, sans-serif;
+          font-size: 13px;
+          font-weight: 700;
+        "
+      >
+        NYXORA AI
+      </div>
+
+
+      <div
+        style="
+          height: 2px;
+          background: #4f46e5;
+          margin-top: 14px;
+          margin-bottom: 27px;
+        "
+      ></div>
+
+
+      <div
+        style="
+          color: #1e293b;
+          font-size: 29px;
+          font-weight: 700;
+          line-height: 1.45;
+          margin-bottom: 18px;
+        "
+      >
+        ${escapeHtml(
+          prepareHindiContent(
+            title
+          )
+        )}
+      </div>
+
+
+      ${
+        metadata.length
+
+          ? `
+            <div
+              style="
+                display: flex;
+                gap: 9px;
+                margin-bottom: 27px;
+              "
+            >
+              ${metadataHtml}
+            </div>
+          `
+
+          : ""
+      }
+
+
+      <div
+        style="
+          font-size: 15px;
+          line-height: 1.75;
+          white-space: normal;
+          overflow-wrap: break-word;
+          word-break: normal;
+        "
+      >
+        ${contentHtml}
+      </div>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(
+    container
+  );
+
+
+  return container;
+
+}
+
+
+// ======================================================
+// GENERATE HINDI PDF
+//
+// EXISTING BROWSER SHAPING PATH PRESERVED
+// ======================================================
+
+async function generateHindiWorkspacePdf(
+  documentData = {}
+) {
+
+  await waitForHindiFont();
+
+
+  const element =
+    createHindiPdfElement(
+      documentData
+    );
+
+
+  try {
+
+    const canvas =
+      await html2canvas(
+        element,
+        {
+
+          scale:
+            2,
+
+          backgroundColor:
+            "#ffffff",
+
+          useCORS:
+            true,
+
+          logging:
+            false,
+
+          windowWidth:
+            794,
+
+        }
+      );
+
+
+    const pdf =
+      new jsPDF({
+
+        orientation:
+          "portrait",
+
+        unit:
+          "mm",
+
+        format:
+          "a4",
+
+      });
+
+
+    const imageData =
+      canvas.toDataURL(
+        "image/png"
+      );
+
+
+    const pageWidth =
+      PAGE.width;
+
+
+    const pageHeight =
+      PAGE.height;
+
+
+    const marginX =
+      PAGE.marginLeft;
+
+
+    const marginTop =
+      14;
+
+
+    const marginBottom =
+      16;
+
+
+    const usableWidth =
+      pageWidth -
+      marginX * 2;
+
+
+    const usableHeight =
+      pageHeight -
+      marginTop -
+      marginBottom;
+
+
+    const imageWidth =
+      usableWidth;
+
+
+    const imageHeight =
+      (
+        canvas.height *
+        imageWidth
+      ) /
+      canvas.width;
+
+
+    // ==================================================
+    // SINGLE PAGE
+    // ==================================================
+
+    if (
+      imageHeight <=
+      usableHeight
+    ) {
+
+      pdf.addImage(
+        imageData,
+        "PNG",
+
+        marginX,
+        marginTop,
+
+        imageWidth,
+        imageHeight,
+
+        undefined,
+        "FAST"
+      );
+
+    } else {
+
+      // =================================================
+      // MULTI PAGE
+      //
+      // EXISTING CANVAS SLICING PRESERVED
+      // =================================================
+
+      const pageCanvasHeight =
+        Math.floor(
+          canvas.width *
+          usableHeight /
+          imageWidth
+        );
+
+
+      let sourceY =
+        0;
+
+
+      let pageNumber =
+        0;
+
+
+      while (
+        sourceY <
+        canvas.height
+      ) {
+
+        if (
+          pageNumber >
+          0
+        ) {
+
+          pdf.addPage();
+
+        }
+
+
+        const sliceHeight =
+          Math.min(
+            pageCanvasHeight,
+            canvas.height -
+              sourceY
+          );
+
+
+        const pageCanvas =
+          document.createElement(
+            "canvas"
+          );
+
+
+        pageCanvas.width =
+          canvas.width;
+
+
+        pageCanvas.height =
+          sliceHeight;
+
+
+        const context =
+          pageCanvas.getContext(
+            "2d"
+          );
+
+
+        context.fillStyle =
+          "#ffffff";
+
+
+        context.fillRect(
+          0,
+          0,
+          pageCanvas.width,
+          pageCanvas.height
+        );
+
+
+        context.drawImage(
+          canvas,
+
+          0,
+          sourceY,
+          canvas.width,
+          sliceHeight,
+
+          0,
+          0,
+          canvas.width,
+          sliceHeight
+        );
+
+
+        const pageImage =
+          pageCanvas.toDataURL(
+            "image/png"
+          );
+
+
+        const renderedHeight =
+          (
+            sliceHeight *
+            imageWidth
+          ) /
+          canvas.width;
+
+
+        pdf.addImage(
+          pageImage,
+          "PNG",
+
+          marginX,
+          marginTop,
+
+          imageWidth,
+          renderedHeight,
+
+          undefined,
+          "FAST"
+        );
+
+
+        sourceY +=
+          sliceHeight;
+
+
+        pageNumber +=
+          1;
+
+      }
+
+    }
+
+
+    // ==================================================
+    // FOOTERS
+    // ==================================================
+
+    const totalPages =
+      pdf.getNumberOfPages();
+
+
+    for (
+      let pageNumber = 1;
+      pageNumber <= totalPages;
+      pageNumber += 1
+    ) {
+
+      pdf.setPage(
+        pageNumber
+      );
+
+
+      pdf.setDrawColor(
+        226,
+        232,
+        240
+      );
+
+
+      pdf.setLineWidth(
+        0.3
+      );
+
+
+      pdf.line(
+        PAGE.marginLeft,
+        PAGE.height - 13,
+
+        PAGE.width -
+          PAGE.marginRight,
+        PAGE.height - 13
+      );
+
+
+      pdf.setFont(
+        "helvetica",
+        "normal"
+      );
+
+
+      pdf.setFontSize(
+        8
+      );
+
+
+      pdf.setTextColor(
+        100,
+        116,
+        139
+      );
+
+
+      pdf.text(
+        "Generated with Nyxora AI",
+
+        PAGE.marginLeft,
+
+        PAGE.height -
+          7
+      );
+
+
+      pdf.text(
+        `Page ${pageNumber} of ${totalPages}`,
+
+        PAGE.width -
+          PAGE.marginRight,
+
+        PAGE.height -
+          7,
+
+        {
+          align:
+            "right",
+        }
+      );
+
+    }
+
+
+    return pdf;
+
+  } finally {
+
+    element.remove();
+
+  }
+
+}
+
+
+// ======================================================
+// GENERATE CORRECT PDF PATH
+// ======================================================
+
+async function generateFinalWorkspacePdf(
+  documentData = {}
+) {
+
+  if (
+    documentContainsDevanagari(
+      documentData
+    )
+  ) {
+
+    return generateHindiWorkspacePdf(
+      documentData
+    );
+
+  }
+
+
+  return generateWorkspacePdf(
+    documentData
+  );
+
+}
+
+
+// ======================================================
 // DOWNLOAD
 // ======================================================
 
-export function downloadWorkspacePdf(
+export async function downloadWorkspacePdf(
   documentData
 ) {
 
   const pdf =
-    generateWorkspacePdf(
+    await generateFinalWorkspacePdf(
       documentData
     );
 
@@ -416,15 +4251,15 @@ export function downloadWorkspacePdf(
 
 
 // ======================================================
-// PREVIEW URL
+// PREVIEW
 // ======================================================
 
-export function createWorkspacePdfUrl(
+export async function createWorkspacePdfUrl(
   documentData
 ) {
 
   const pdf =
-    generateWorkspacePdf(
+    await generateFinalWorkspacePdf(
       documentData
     );
 

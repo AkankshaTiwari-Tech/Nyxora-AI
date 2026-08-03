@@ -17,6 +17,9 @@ import Chat from "../modules/chat/pages/Chat";
 
 import Workspace from "../modules/workspace/pages/Workspace";
 
+import PDFGenerator
+  from "../modules/workspace/pages/PDFGenerator";
+
 import AIMemory from "../pages/settings/AIMemory";
 
 import ProtectedRoute from "./ProtectedRoute";
@@ -108,6 +111,28 @@ export default function AppRoutes() {
               <MainLayout>
 
                 <Workspace />
+
+              </MainLayout>
+
+            </ProtectedRoute>
+
+          }
+        />
+
+
+        {/* ============================================= */}
+        {/* PDF GENERATOR                                 */}
+        {/* ============================================= */}
+
+        <Route
+          path="/pdf"
+          element={
+
+            <ProtectedRoute>
+
+              <MainLayout>
+
+                <PDFGenerator />
 
               </MainLayout>
 

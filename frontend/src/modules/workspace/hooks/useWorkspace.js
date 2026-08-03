@@ -8,20 +8,24 @@ import {
 import {
   createClass,
   createDocument,
+  createResult,
   createStudent,
 
   deleteClass,
   deleteDocument,
+  deleteResult,
   deleteStudent,
 
   saveAiDocument,
 
   updateClass,
   updateDocument,
+  updateResult,
   updateStudent,
 
   watchClasses,
   watchDocuments,
+  watchResults,
   watchStudents,
 } from "../services/workspaceService";
 
@@ -51,6 +55,12 @@ export default function useWorkspace() {
   const [
     documents,
     setDocuments,
+  ] = useState([]);
+
+
+  const [
+    results,
+    setResults,
   ] = useState([]);
 
 
@@ -85,6 +95,9 @@ export default function useWorkspace() {
     let documentsLoaded =
       false;
 
+    let resultsLoaded =
+      false;
+
 
     const updateLoading =
       () => {
@@ -92,7 +105,8 @@ export default function useWorkspace() {
         if (
           classesLoaded &&
           studentsLoaded &&
-          documentsLoaded
+          documentsLoaded &&
+          resultsLoaded
         ) {
 
           setLoading(
@@ -132,8 +146,14 @@ export default function useWorkspace() {
 
     let unsubscribeDocuments;
 
+    let unsubscribeResults;
+
 
     try {
+
+      // ==================================================
+      // CLASSES
+      // ==================================================
 
       unsubscribeClasses =
         watchClasses(
@@ -156,6 +176,10 @@ export default function useWorkspace() {
         );
 
 
+      // ==================================================
+      // STUDENTS
+      // ==================================================
+
       unsubscribeStudents =
         watchStudents(
           (items) => {
@@ -177,6 +201,10 @@ export default function useWorkspace() {
         );
 
 
+      // ==================================================
+      // DOCUMENTS
+      // ==================================================
+
       unsubscribeDocuments =
         watchDocuments(
           (items) => {
@@ -187,6 +215,31 @@ export default function useWorkspace() {
 
 
             documentsLoaded =
+              true;
+
+
+            updateLoading();
+
+          },
+
+          handleError
+        );
+
+
+      // ==================================================
+      // RESULTS
+      // ==================================================
+
+      unsubscribeResults =
+        watchResults(
+          (items) => {
+
+            setResults(
+              items
+            );
+
+
+            resultsLoaded =
               true;
 
 
@@ -213,6 +266,8 @@ export default function useWorkspace() {
       unsubscribeStudents?.();
 
       unsubscribeDocuments?.();
+
+      unsubscribeResults?.();
 
     };
 
@@ -449,6 +504,59 @@ export default function useWorkspace() {
 
 
   // ====================================================
+  // RESULT ACTIONS
+  // ====================================================
+
+  const addResult =
+    useCallback(
+      (data) =>
+        runAction(
+          () =>
+            createResult(
+              data
+            )
+        ),
+      [
+        runAction,
+      ]
+    );
+
+
+  const editResult =
+    useCallback(
+      (
+        resultId,
+        data
+      ) =>
+        runAction(
+          () =>
+            updateResult(
+              resultId,
+              data
+            )
+        ),
+      [
+        runAction,
+      ]
+    );
+
+
+  const removeResult =
+    useCallback(
+      (resultId) =>
+        runAction(
+          () =>
+            deleteResult(
+              resultId
+            )
+        ),
+      [
+        runAction,
+      ]
+    );
+
+
+  // ====================================================
   // RELATION HELPERS
   // ====================================================
 
@@ -524,11 +632,36 @@ export default function useWorkspace() {
     );
 
 
+  const getResultsByClass =
+    useCallback(
+      (classId) =>
+        results.filter(
+          (result) =>
+            result.classId ===
+            classId
+        ),
+      [
+        results,
+      ]
+    );
+
+
+  const getResultsByStudent =
+    useCallback(
+      (studentId) =>
+        results.filter(
+          (result) =>
+            result.studentId ===
+            studentId
+        ),
+      [
+        results,
+      ]
+    );
+
+
   // ====================================================
   // AI CONTEXT
-  //
-  // Later useChat.js can send this structured context
-  // to Nyxora instead of duplicating Workspace logic.
   // ====================================================
 
   const aiContext =
@@ -609,11 +742,50 @@ export default function useWorkspace() {
             })
           ),
 
+
+        results:
+          results.map(
+            (item) => ({
+
+              id:
+                item.id,
+
+              studentId:
+                item.studentId,
+
+              classId:
+                item.classId,
+
+              title:
+                item.title,
+
+              subject:
+                item.subject,
+
+              chapter:
+                item.chapter,
+
+              marksObtained:
+                item.marksObtained,
+
+              totalMarks:
+                item.totalMarks,
+
+              testDate:
+                item.testDate,
+
+              remarks:
+                item.remarks,
+
+            })
+          ),
+
       }),
       [
         classes,
         students,
         documents,
+        results,
       ]
     );
 
@@ -629,6 +801,7 @@ export default function useWorkspace() {
     classes,
     students,
     documents,
+    results,
 
 
     // Status
@@ -661,6 +834,13 @@ export default function useWorkspace() {
     addAiDocument,
 
 
+    // Results
+
+    addResult,
+    editResult,
+    removeResult,
+
+
     // Relations
 
     getClassById,
@@ -670,6 +850,9 @@ export default function useWorkspace() {
 
     getDocumentsByClass,
     getDocumentsByStudent,
+
+    getResultsByClass,
+    getResultsByStudent,
 
 
     // AI

@@ -24,6 +24,14 @@ import useChat from "../hooks/useChat";
 import useWorkspace
   from "../../workspace/hooks/useWorkspace";
 
+import {
+  saveAiDocument,
+} from "../../workspace/services/workspaceService";
+
+import {
+  WORKSPACE_DOCUMENT_TYPES,
+} from "../../workspace/types/workspaceTypes";
+
 
 // ======================================================
 // CHAT PAGE
@@ -59,6 +67,7 @@ export default function Chat() {
     classes,
     students,
     documents,
+    results,
 
     loading:
       workspaceLoading,
@@ -129,6 +138,48 @@ export default function Chat() {
     );
 
 
+  // ====================================================
+  // RELEVANT STUDENT RESULTS
+  // ====================================================
+
+  const relevantResults =
+    results.filter(
+      (result) => {
+
+        if (
+          selectedStudentId
+        ) {
+
+          return (
+            result.studentId ===
+            selectedStudentId
+          );
+
+        }
+
+
+        if (
+          selectedClassId
+        ) {
+
+          return (
+            result.classId ===
+            selectedClassId
+          );
+
+        }
+
+
+        return false;
+
+      }
+    );
+
+
+  // ====================================================
+  // WORKSPACE AI CONTEXT
+  // ====================================================
+
   const workspaceContext = {
 
     class:
@@ -139,6 +190,9 @@ export default function Chat() {
 
     documents:
       relevantDocuments,
+
+    results:
+      relevantResults,
 
   };
 
@@ -532,6 +586,223 @@ export default function Chat() {
 
 
   // ====================================================
+  // WORKSPACE DOCUMENT TYPE
+  // ====================================================
+
+  const getWorkspaceDocumentType =
+    () => {
+
+      switch (
+        selectedMode
+      ) {
+
+        case "test":
+
+          return (
+            WORKSPACE_DOCUMENT_TYPES.TEST
+          );
+
+
+        case "homework":
+
+          return (
+            WORKSPACE_DOCUMENT_TYPES.HOMEWORK
+          );
+
+
+        case "report":
+
+          return (
+            WORKSPACE_DOCUMENT_TYPES.REPORT
+          );
+
+
+        default:
+
+          return (
+            WORKSPACE_DOCUMENT_TYPES.NOTES
+          );
+
+      }
+
+    };
+
+
+  // ====================================================
+  // WORKSPACE DOCUMENT TITLE
+  // ====================================================
+
+  const createWorkspaceTitle =
+    (
+      content
+    ) => {
+
+      const firstLine =
+        String(
+          content || ""
+        )
+          .split("\n")
+          .map(
+            (line) =>
+              line.trim()
+          )
+          .find(
+            Boolean
+          );
+
+
+      if (
+        firstLine
+      ) {
+
+        const cleaned =
+          firstLine
+            .replace(
+              /^#+\s*/,
+              ""
+            )
+            .replace(
+              /^\*+|\*+$/g,
+              ""
+            )
+            .trim();
+
+
+        if (
+          cleaned
+        ) {
+
+          return cleaned.slice(
+            0,
+            80
+          );
+
+        }
+
+      }
+
+
+      switch (
+        selectedMode
+      ) {
+
+        case "test":
+
+          return "AI Generated Test";
+
+
+        case "homework":
+
+          return "AI Generated Homework";
+
+
+        case "report":
+
+          return "AI Student Report";
+
+
+        case "teacher":
+
+          return "Teacher Notes";
+
+
+        case "doubt":
+
+          return "Doubt Solution";
+
+
+        default:
+
+          return "AI Generated Notes";
+
+      }
+
+    };
+
+
+  // ====================================================
+  // SAVE AI RESPONSE TO WORKSPACE
+  // ====================================================
+
+  const handleSaveToWorkspace =
+    async ({
+      content,
+    }) => {
+
+      const cleanContent =
+        String(
+          content || ""
+        ).trim();
+
+
+      if (
+        !cleanContent
+      ) {
+
+        return false;
+
+      }
+
+
+      try {
+
+        await saveAiDocument({
+
+          title:
+            createWorkspaceTitle(
+              cleanContent
+            ),
+
+          type:
+            getWorkspaceDocumentType(),
+
+          content:
+            cleanContent,
+
+          classId:
+            selectedClassId,
+
+          studentId:
+            selectedStudentId,
+
+          subject:
+            selectedClass
+              ?.subject ||
+            "",
+
+          chapter:
+            "",
+
+          aiMode:
+            selectedMode,
+
+        });
+
+
+        return true;
+
+      } catch (error) {
+
+        console.error(
+          "Save AI response to Workspace error:",
+          error
+        );
+
+
+        alert(
+          error?.message ||
+          "Nyxora could not save this response to Workspace."
+        );
+
+
+        return false;
+
+      }
+
+    };
+
+
+  // ====================================================
   // UI
   // ====================================================
 
@@ -674,30 +945,35 @@ export default function Chat() {
                   onEdit={
                     handleEdit
                   }
+
+                  onSaveToWorkspace={
+                    handleSaveToWorkspace
+                  }
                 />
 
               )
             )}
 
+{isThinking && (
 
-          {isThinking && (
+  <ChatMessage
+    message={{
+      id:
+        "thinking",
 
-            <ChatMessage
-              message={{
-                id:
-                  "thinking",
+      role:
+        "assistant",
 
-                role:
-                  "assistant",
+      message:
+        "",
+    }}
 
-                message:
-                  "",
-              }}
+    isThinking={
+      true
+    }
+  />
 
-              thinking
-            />
-
-          )}
+)}
 
 
           <div
