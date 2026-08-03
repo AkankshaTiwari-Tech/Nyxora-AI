@@ -8,6 +8,11 @@ import {
   useState,
 } from "react";
 
+import {
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+
 import ChatSidebar from "../components/ChatSidebar";
 import ChatHeader from "../components/ChatHeader";
 import ChatInput from "../components/ChatInput";
@@ -16,12 +21,22 @@ import ChatMessage from "../components/ChatMessage";
 import useChatHistory from "../hooks/useChatHistory";
 import useChat from "../hooks/useChat";
 
+import useWorkspace
+  from "../../workspace/hooks/useWorkspace";
+
 
 // ======================================================
 // CHAT PAGE
 // ======================================================
 
 export default function Chat() {
+
+  const location =
+    useLocation();
+
+  const navigate =
+    useNavigate();
+
 
   // ====================================================
   // ASSISTANT MODE
@@ -30,7 +45,102 @@ export default function Chat() {
   const [
     selectedMode,
     setSelectedMode,
-  ] = useState("normal");
+  ] = useState(
+    location.state?.assistantMode ||
+    "normal"
+  );
+
+
+  // ====================================================
+  // WORKSPACE
+  // ====================================================
+
+  const {
+    classes,
+    students,
+    documents,
+
+    loading:
+      workspaceLoading,
+  } = useWorkspace();
+
+
+  const [
+    selectedClassId,
+    setSelectedClassId,
+  ] = useState("");
+
+
+  const [
+    selectedStudentId,
+    setSelectedStudentId,
+  ] = useState("");
+
+
+  const selectedClass =
+    classes.find(
+      (item) =>
+        item.id ===
+        selectedClassId
+    ) || null;
+
+
+  const selectedStudent =
+    students.find(
+      (item) =>
+        item.id ===
+        selectedStudentId
+    ) || null;
+
+
+  // ====================================================
+  // RELEVANT WORKSPACE DOCUMENTS
+  // ====================================================
+
+  const relevantDocuments =
+    documents.filter(
+      (document) => {
+
+        if (
+          selectedStudentId &&
+          document.studentId ===
+            selectedStudentId
+        ) {
+
+          return true;
+
+        }
+
+
+        if (
+          selectedClassId &&
+          document.classId ===
+            selectedClassId
+        ) {
+
+          return true;
+
+        }
+
+
+        return false;
+
+      }
+    );
+
+
+  const workspaceContext = {
+
+    class:
+      selectedClass,
+
+    student:
+      selectedStudent,
+
+    documents:
+      relevantDocuments,
+
+  };
 
 
   // ====================================================
@@ -40,13 +150,124 @@ export default function Chat() {
   const {
     chats,
     setChats,
+
     activeChat,
     activeChatId,
+
     newChat,
     selectChat,
     deleteChat,
     renameChat,
+
+    clearConversation,
+
+    loading:
+      chatHistoryLoading,
+
   } = useChatHistory();
+
+
+  // ====================================================
+  // DASHBOARD NAVIGATION
+  // ====================================================
+
+  const dashboardActionHandled =
+    useRef(false);
+
+
+  useEffect(() => {
+
+    if (
+      chatHistoryLoading
+    ) {
+
+      return;
+
+    }
+
+
+    if (
+      dashboardActionHandled.current
+    ) {
+
+      return;
+
+    }
+
+
+    const shouldCreateChat =
+      location.state
+        ?.createNewChat ===
+      true;
+
+
+    const requestedMode =
+      location.state
+        ?.assistantMode;
+
+
+    if (
+      requestedMode
+    ) {
+
+      setSelectedMode(
+        requestedMode
+      );
+
+    }
+
+
+    if (
+      !shouldCreateChat
+    ) {
+
+      dashboardActionHandled.current =
+        true;
+
+      return;
+
+    }
+
+
+    dashboardActionHandled.current =
+      true;
+
+
+    async function createDashboardChat() {
+
+      try {
+
+        await newChat();
+
+      } catch (error) {
+
+        console.error(
+          "Dashboard new chat error:",
+          error
+        );
+
+      } finally {
+
+        navigate(
+          "/chat",
+          {
+            replace: true,
+          }
+        );
+
+      }
+
+    }
+
+
+    createDashboardChat();
+
+  }, [
+    chatHistoryLoading,
+    location.state,
+    navigate,
+    newChat,
+  ]);
 
 
   // ====================================================
@@ -58,12 +279,24 @@ export default function Chat() {
     regenerate,
     editMessage,
     stop,
+
     isThinking,
+
+    attachmentError,
+    clearAttachmentError,
+
   } = useChat({
+
     activeChatId,
+
     chats,
+
     setChats,
+
     selectedMode,
+
+    workspaceContext,
+
   });
 
 
@@ -77,9 +310,11 @@ export default function Chat() {
 
   useEffect(() => {
 
-    bottomRef.current?.scrollIntoView({
-      behavior: "smooth",
-    });
+    bottomRef.current
+      ?.scrollIntoView({
+        behavior:
+          "smooth",
+      });
 
   }, [
     activeChat?.messages,
@@ -88,53 +323,212 @@ export default function Chat() {
 
 
   // ====================================================
-  // CHAT HANDLERS
+  // NEW CHAT
   // ====================================================
 
-  const handleNewChat = () => {
-    newChat();
-  };
+  const handleNewChat =
+    async () => {
+
+      clearAttachmentError();
+
+      await newChat();
+
+    };
 
 
-  const handleSelectChat = (
-    chatId
-  ) => {
-    selectChat(chatId);
-  };
+  // ====================================================
+  // SELECT CHAT
+  // ====================================================
+
+  const handleSelectChat =
+    (
+      chatId
+    ) => {
+
+      clearAttachmentError();
+
+      selectChat(
+        chatId
+      );
+
+    };
 
 
-  const handleDeleteChat = (
-    chatId
-  ) => {
-    deleteChat(chatId);
-  };
+  // ====================================================
+  // DELETE CHAT
+  // ====================================================
+
+  const handleDeleteChat =
+    async (
+      chatId
+    ) => {
+
+      clearAttachmentError();
+
+      return await deleteChat(
+        chatId
+      );
+
+    };
 
 
-  const handleRenameChat = (
-    chatId,
-    title
-  ) => {
-    renameChat(
+  // ====================================================
+  // RENAME CHAT
+  // ====================================================
+
+  const handleRenameChat =
+    async (
       chatId,
       title
-    );
-  };
+    ) => {
+
+      await renameChat(
+        chatId,
+        title
+      );
 
 
-  const handleRegenerate = () => {
-    regenerate();
-  };
+      return true;
+
+    };
 
 
-  const handleEdit = (
-    messageId,
-    newText
-  ) => {
-    editMessage(
+  // ====================================================
+  // HEADER RENAME
+  // ====================================================
+
+  const handleRenameConversation =
+    async (
+      title
+    ) => {
+
+      if (
+        !activeChatId
+      ) {
+
+        return false;
+
+      }
+
+
+      return await handleRenameChat(
+        activeChatId,
+        title
+      );
+
+    };
+
+
+  // ====================================================
+  // HEADER DELETE
+  // ====================================================
+
+  const handleDeleteConversation =
+    async () => {
+
+      if (
+        !activeChatId ||
+        chats.length <= 1
+      ) {
+
+        return false;
+
+      }
+
+
+      await handleDeleteChat(
+        activeChatId
+      );
+
+
+      return true;
+
+    };
+
+
+  // ====================================================
+  // CLEAR CONVERSATION
+  // ====================================================
+
+  const handleClearConversation =
+    async () => {
+
+      if (
+        !activeChatId
+      ) {
+
+        return false;
+
+      }
+
+
+      clearAttachmentError();
+
+
+      return await clearConversation(
+        activeChatId
+      );
+
+    };
+
+
+  // ====================================================
+  // REGENERATE
+  // ====================================================
+
+  const handleRegenerate =
+    () => {
+
+      regenerate();
+
+    };
+
+
+  // ====================================================
+  // EDIT
+  // ====================================================
+
+  const handleEdit =
+    (
       messageId,
-      newText
-    );
-  };
+      newText,
+      attachmentOptions
+    ) => {
+
+      return editMessage(
+        messageId,
+        newText,
+        attachmentOptions
+      );
+
+    };
+
+
+  // ====================================================
+  // CLASS CHANGE
+  // ====================================================
+
+  const handleClassChange =
+    (
+      classId
+    ) => {
+
+      setSelectedClassId(
+        classId
+      );
+
+
+      if (
+        !classId
+      ) {
+
+        setSelectedStudentId(
+          ""
+        );
+
+      }
+
+    };
 
 
   // ====================================================
@@ -143,83 +537,198 @@ export default function Chat() {
 
   return (
 
-    <div className="flex h-screen bg-[#050816]">
+    <div
+      className="
+        flex
+        h-screen
+        bg-[#050816]
+      "
+    >
 
       <ChatSidebar
-        chats={chats}
+        chats={
+          chats
+        }
+
         activeChatId={
           activeChatId
         }
+
         onNewChat={
           handleNewChat
         }
+
         onSelectChat={
           handleSelectChat
         }
+
         onDeleteChat={
           handleDeleteChat
         }
+
         onRenameChat={
           handleRenameChat
         }
       />
 
 
-      <div className="flex flex-col flex-1">
+      <div
+        className="
+          flex
+          flex-1
+          flex-col
+          min-w-0
+        "
+      >
 
         <ChatHeader
           selectedMode={
             selectedMode
           }
+
           onModeChange={
             setSelectedMode
+          }
+
+          activeChat={
+            activeChat
+          }
+
+          chatCount={
+            chats.length
+          }
+
+          onRenameConversation={
+            handleRenameConversation
+          }
+
+          onClearConversation={
+            handleClearConversation
+          }
+
+          onDeleteConversation={
+            handleDeleteConversation
+          }
+
+          isThinking={
+            isThinking
+          }
+
+          classes={
+            classes
+          }
+
+          students={
+            students
+          }
+
+          selectedClassId={
+            selectedClassId
+          }
+
+          selectedStudentId={
+            selectedStudentId
+          }
+
+          onClassChange={
+            handleClassChange
+          }
+
+          onStudentChange={
+            setSelectedStudentId
+          }
+
+          workspaceLoading={
+            workspaceLoading
           }
         />
 
 
-        <div className="flex-1 overflow-y-auto px-8 py-8">
+        <div
+          className="
+            flex-1
+            overflow-y-auto
+            px-8
+            py-8
+          "
+        >
 
-          {activeChat?.messages.map(
-            (msg) => (
+          {activeChat
+            ?.messages
+            ?.map(
+              (msg) => (
 
-              <ChatMessage
-                key={msg.id}
-                message={msg}
-                onRegenerate={
-                  handleRegenerate
-                }
-                onEdit={
-                  handleEdit
-                }
-              />
+                <ChatMessage
+                  key={
+                    msg.id
+                  }
 
-            )
-          )}
+                  message={
+                    msg
+                  }
+
+                  onRegenerate={
+                    handleRegenerate
+                  }
+
+                  onEdit={
+                    handleEdit
+                  }
+                />
+
+              )
+            )}
 
 
           {isThinking && (
 
             <ChatMessage
               message={{
-                id: "thinking",
-                role: "assistant",
-                message: "",
+                id:
+                  "thinking",
+
+                role:
+                  "assistant",
+
+                message:
+                  "",
               }}
+
               thinking
             />
 
           )}
 
 
-          <div ref={bottomRef} />
+          <div
+            ref={
+              bottomRef
+            }
+          />
 
         </div>
 
 
         <ChatInput
-          onSend={send}
-          onStop={stop}
-          loading={isThinking}
+          onSend={
+            send
+          }
+
+          onStop={
+            stop
+          }
+
+          loading={
+            isThinking
+          }
+
+          attachmentError={
+            attachmentError
+          }
+
+          onClearAttachmentError={
+            clearAttachmentError
+          }
         />
 
       </div>
@@ -227,4 +736,5 @@ export default function Chat() {
     </div>
 
   );
+
 }

@@ -54,13 +54,12 @@ function buildRecentMessages(
     Array.isArray(
       existingMessages
     )
-      ? existingMessages
-          .filter(
-            (entry) =>
-              entry &&
-              typeof entry ===
-                "object"
-          )
+      ? existingMessages.filter(
+          (entry) =>
+            entry &&
+            typeof entry ===
+              "object"
+        )
       : [];
 
 
@@ -89,12 +88,6 @@ function buildRecentMessages(
 
   // ====================================================
   // DUPLICATE PROTECTION
-  //
-  // If the newest stored entry has the exact same user
-  // message, this is most likely a regeneration/retry.
-  //
-  // Replace only that newest entry's AI response instead
-  // of appending another identical recent-memory turn.
   // ====================================================
 
   if (
@@ -185,6 +178,167 @@ function buildRecentMessages(
 
 
 // ======================================================
+// VALIDATE ATTACHMENT
+// ======================================================
+
+function normalizeAttachment(
+  attachment
+) {
+
+  if (
+    !attachment ||
+    typeof attachment !==
+      "object"
+  ) {
+
+    return null;
+
+  }
+
+
+  const data =
+    typeof attachment.data ===
+      "string"
+
+      ? attachment.data.trim()
+
+      : "";
+
+
+  const mimeType =
+    typeof attachment.mimeType ===
+      "string"
+
+      ? attachment.mimeType.trim()
+
+      : "";
+
+
+  const name =
+    typeof attachment.name ===
+      "string"
+
+      ? attachment.name.trim()
+
+      : "Attachment";
+
+
+  if (
+    !data ||
+    !mimeType
+  ) {
+
+    return null;
+
+  }
+
+
+  // ====================================================
+  // CURRENT DIRECT AI ATTACHMENT SUPPORT
+  //
+  // DOCX/TXT/MD are already converted into text by the
+  // frontend and therefore do not need inlineData here.
+  // ====================================================
+
+  const supported =
+    mimeType.startsWith(
+      "image/"
+    ) ||
+    mimeType ===
+      "application/pdf";
+
+
+  if (!supported) {
+
+    console.warn(
+      "⚠️ Unsupported direct AI attachment:",
+      mimeType
+    );
+
+
+    return null;
+
+  }
+
+
+  return {
+
+    data,
+
+    mimeType,
+
+    name,
+
+  };
+
+}
+
+
+// ======================================================
+// NORMALIZE LEGACY IMAGE
+// ======================================================
+
+function normalizeLegacyImage(
+  image
+) {
+
+  if (
+    !image ||
+    typeof image !==
+      "object"
+  ) {
+
+    return null;
+
+  }
+
+
+  const data =
+    typeof image.data ===
+      "string"
+
+      ? image.data.trim()
+
+      : "";
+
+
+  const mimeType =
+    typeof image.mimeType ===
+      "string"
+
+      ? image.mimeType.trim()
+
+      : "";
+
+
+  if (
+    !data ||
+    !mimeType ||
+    !mimeType.startsWith(
+      "image/"
+    )
+  ) {
+
+    return null;
+
+  }
+
+
+  return {
+
+    data,
+
+    mimeType,
+
+    name:
+      "Image",
+
+  };
+
+}
+
+
+// ======================================================
 // CHAT WITH NYXORA AI
 // ======================================================
 
@@ -196,22 +350,26 @@ export async function chatWithAI(
   try {
 
     const {
+
       message,
+
       memoryMessage,
+
+      attachment,
+
+      // Keep legacy image support while the frontend
+      // migration is completed.
       image,
+
       history,
+
       userId,
+
     } = req.body;
 
 
     // ==================================================
     // CLEAN MEMORY MESSAGE
-    //
-    // message:
-    // Full prompt including assistant-mode instructions.
-    //
-    // memoryMessage:
-    // Actual text written by the user.
     // ==================================================
 
     const cleanMemoryMessage =
@@ -230,28 +388,51 @@ export async function chatWithAI(
 
 
     // ==================================================
+    // PREPARE ATTACHMENT
+    //
+    // Prefer the new generic attachment.
+    // Fall back to the old image field if necessary.
+    // ==================================================
+
+    const safeAttachment =
+      normalizeAttachment(
+        attachment
+      ) ||
+      normalizeLegacyImage(
+        image
+      );
+
+
+    // ==================================================
     // VALIDATION
     // ==================================================
 
+    const hasMessage =
+      typeof message ===
+        "string" &&
+      message.trim() !== "";
+
+
     if (
-      (
-        !message ||
-        typeof message !==
-          "string" ||
-        message.trim() === ""
-      ) &&
-      !image
+      !hasMessage &&
+      !safeAttachment
     ) {
 
       return res
         .status(400)
         .json({
+
           reply:
-            "Message or image is required.",
+            "Message or attachment is required.",
+
         });
 
     }
 
+
+    // ==================================================
+    // LOG REQUEST
+    // ==================================================
 
     console.log(
       "👤 Memory User ID:",
@@ -265,6 +446,17 @@ export async function chatWithAI(
       cleanMemoryMessage ||
         "[No text]"
     );
+
+
+    if (safeAttachment) {
+
+      console.log(
+        "📎 AI attachment:",
+        safeAttachment.name,
+        safeAttachment.mimeType
+      );
+
+    }
 
 
     // ==================================================
@@ -308,6 +500,12 @@ export async function chatWithAI(
 
     // ==================================================
     // STEP 2 — EXTRACT LONG-TERM MEMORY
+    //
+    // IMPORTANT:
+    // Only cleanMemoryMessage is analyzed.
+    //
+    // Extracted PDF text and visual PDF content must NOT
+    // automatically become long-term user memory.
     // ==================================================
 
     if (
@@ -378,8 +576,9 @@ export async function chatWithAI(
           error
         );
 
-        // Memory failure should never
-        // prevent the AI response.
+
+        // Memory failure must never prevent
+        // the AI response.
 
       }
 
@@ -417,11 +616,13 @@ export async function chatWithAI(
         generateAIResponseStream(
 
           message ||
-            "Analyze this image.",
+            "Analyze the attached file.",
 
-          image,
+          safeAttachment,
 
-          history || [],
+          Array.isArray(history)
+            ? history
+            : [],
 
           userMemory
 
@@ -459,6 +660,13 @@ export async function chatWithAI(
 
     // ==================================================
     // STEP 5 — SAVE RECENT CONTEXT
+    //
+    // IMPORTANT:
+    // Only cleanMemoryMessage is stored as the user side
+    // of Recent Context.
+    //
+    // PDF Base64 and extracted PDF text are NOT stored
+    // here.
     // ==================================================
 
     if (
@@ -479,7 +687,7 @@ export async function chatWithAI(
           buildRecentMessages(
 
             latestMemory
-              .recentMessages ||
+              ?.recentMessages ||
               [],
 
             cleanMemoryMessage,
@@ -537,8 +745,10 @@ export async function chatWithAI(
       return res
         .status(500)
         .json({
+
           reply:
             "❌ Something went wrong.",
+
         });
 
     }

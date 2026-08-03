@@ -19,24 +19,23 @@ import {
 } from "../../../firebase/firebase";
 
 
-
+// ======================================================
+// CHATS COLLECTION
+// ======================================================
 
 function chatsCollection() {
-
 
   const uid =
     auth.currentUser?.uid;
 
 
-
-  if(!uid){
+  if (!uid) {
 
     throw new Error(
       "User not authenticated"
     );
 
   }
-
 
 
   return collection(
@@ -54,12 +53,25 @@ function chatsCollection() {
 }
 
 
+// ======================================================
+// CHAT DOCUMENT REFERENCE
+// ======================================================
+
+function chatDocRef(
+  chatId
+) {
+
+  const uid =
+    auth.currentUser?.uid;
 
 
+  if (!uid) {
 
+    throw new Error(
+      "User not authenticated"
+    );
 
-
-function chatDocRef(chatId){
+  }
 
 
   return doc(
@@ -68,7 +80,7 @@ function chatDocRef(chatId){
 
     "users",
 
-    auth.currentUser.uid,
+    uid,
 
     "chats",
 
@@ -79,12 +91,25 @@ function chatDocRef(chatId){
 }
 
 
+// ======================================================
+// MESSAGES DOCUMENT REFERENCE
+// ======================================================
+
+function messagesRef(
+  chatId
+) {
+
+  const uid =
+    auth.currentUser?.uid;
 
 
+  if (!uid) {
 
+    throw new Error(
+      "User not authenticated"
+    );
 
-
-function messagesRef(chatId){
+  }
 
 
   return doc(
@@ -93,7 +118,7 @@ function messagesRef(chatId){
 
     "users",
 
-    auth.currentUser.uid,
+    uid,
 
     "chats",
 
@@ -108,16 +133,13 @@ function messagesRef(chatId){
 }
 
 
-
-
-
-
-
+// ======================================================
+// CREATE CHAT
+// ======================================================
 
 export async function createChat(
-  title="New Chat"
-){
-
+  title = "New Chat"
+) {
 
   const ref =
     await addDoc(
@@ -139,22 +161,16 @@ export async function createChat(
     );
 
 
-
   return ref.id;
-
 
 }
 
 
+// ======================================================
+// GET CHATS
+// ======================================================
 
-
-
-
-
-
-
-export async function getChats(){
-
+export async function getChats() {
 
   const q =
     query(
@@ -162,90 +178,78 @@ export async function getChats(){
       chatsCollection(),
 
       orderBy(
-
         "updatedAt",
-
         "desc"
-
       )
 
     );
-
 
 
   const snapshot =
     await getDocs(q);
 
 
-
   const chats = [];
 
 
-
-  for(
-    const chatDoc of snapshot.docs
-  ){
-
+  for (
+    const chatDocument of
+    snapshot.docs
+  ) {
 
     const data =
-      chatDoc.data();
-
+      chatDocument.data();
 
 
     const messagesSnapshot =
       await getDoc(
 
         messagesRef(
-          chatDoc.id
+          chatDocument.id
         )
 
       );
 
 
-
     chats.push({
 
       id:
-        chatDoc.id,
-
+        chatDocument.id,
 
       title:
-        data.title || "New Chat",
-
+        data.title ||
+        "New Chat",
 
       messages:
 
         messagesSnapshot.exists()
 
-          ? messagesSnapshot.data().messages
+          ? (
+              messagesSnapshot
+                .data()
+                .messages ||
+              []
+            )
 
           : [],
 
-
     });
-
 
   }
 
 
-
   return chats;
-
 
 }
 
 
-
-
-
-
-
-
+// ======================================================
+// SUBSCRIBE TO CHATS
+// ======================================================
 
 export function subscribeToChats(
   callback
-){
-
+) {
 
   const q =
     query(
@@ -253,44 +257,41 @@ export function subscribeToChats(
       chatsCollection(),
 
       orderBy(
-
         "updatedAt",
-
         "desc"
-
       )
 
     );
-
 
 
   return onSnapshot(
 
     q,
 
-    (snapshot)=>{
-
+    (snapshot) => {
 
       const chats =
 
         snapshot.docs.map(
 
-          doc=>({
+          (
+            chatDocument
+          ) => ({
 
             id:
-              doc.id,
-
+              chatDocument.id,
 
             title:
-              doc.data().title || "New Chat",
+              chatDocument
+                .data()
+                .title ||
+              "New Chat",
 
-
-            messages:[],
+            messages: [],
 
           })
 
         );
-
 
 
       console.log(
@@ -299,15 +300,14 @@ export function subscribeToChats(
       );
 
 
-
-      callback(chats);
-
+      callback(
+        chats
+      );
 
     },
 
 
-    (error)=>{
-
+    (error) => {
 
       console.error(
 
@@ -317,28 +317,21 @@ export function subscribeToChats(
 
       );
 
-
     }
 
-
   );
-
 
 }
 
 
-
-
-
-
-
-
+// ======================================================
+// SUBSCRIBE TO MESSAGES
+// ======================================================
 
 export function subscribeToMessages(
   chatId,
   callback
-){
-
+) {
 
   console.log(
 
@@ -349,13 +342,13 @@ export function subscribeToMessages(
   );
 
 
-
   return onSnapshot(
 
-    messagesRef(chatId),
+    messagesRef(
+      chatId
+    ),
 
-    (snapshot)=>{
-
+    (snapshot) => {
 
       console.log(
 
@@ -366,14 +359,16 @@ export function subscribeToMessages(
       );
 
 
-
-      if(snapshot.exists()){
-
+      if (
+        snapshot.exists()
+      ) {
 
         const messages =
 
-          snapshot.data().messages || [];
-
+          snapshot
+            .data()
+            .messages ||
+          [];
 
 
         console.log(
@@ -385,25 +380,22 @@ export function subscribeToMessages(
         );
 
 
+        callback(
+          messages
+        );
 
-        callback(messages);
+      } else {
 
+        callback(
+          []
+        );
 
       }
-      else{
-
-
-        callback([]);
-
-
-      }
-
 
     },
 
 
-    (error)=>{
-
+    (error) => {
 
       console.error(
 
@@ -413,32 +405,27 @@ export function subscribeToMessages(
 
       );
 
-
     }
 
-
   );
-
 
 }
 
 
-
-
-
-
-
-
+// ======================================================
+// SAVE MESSAGES
+// ======================================================
 
 export async function saveMessages(
   chatId,
   messages
-){
-
+) {
 
   await setDoc(
 
-    messagesRef(chatId),
+    messagesRef(
+      chatId
+    ),
 
     {
 
@@ -449,10 +436,61 @@ export async function saveMessages(
   );
 
 
+  await updateDoc(
+
+    chatDocRef(
+      chatId
+    ),
+
+    {
+
+      updatedAt:
+        serverTimestamp(),
+
+    }
+
+  );
+
+}
+
+
+// ======================================================
+// CLEAR CHAT MESSAGES
+// ======================================================
+
+export async function clearChatMessages(
+  chatId
+) {
+
+  if (!chatId) {
+
+    throw new Error(
+      "Chat ID is required."
+    );
+
+  }
+
+
+  await setDoc(
+
+    messagesRef(
+      chatId
+    ),
+
+    {
+
+      messages: [],
+
+    }
+
+  );
+
 
   await updateDoc(
 
-    chatDocRef(chatId),
+    chatDocRef(
+      chatId
+    ),
 
     {
 
@@ -464,25 +502,28 @@ export async function saveMessages(
   );
 
 
+  console.log(
+    "🧹 Conversation cleared:",
+    chatId
+  );
+
 }
 
 
-
-
-
-
-
-
+// ======================================================
+// UPDATE CHAT TITLE
+// ======================================================
 
 export async function updateChatTitle(
   chatId,
   title
-){
-
+) {
 
   await updateDoc(
 
-    chatDocRef(chatId),
+    chatDocRef(
+      chatId
+    ),
 
     {
 
@@ -495,27 +536,65 @@ export async function updateChatTitle(
 
   );
 
-
 }
 
 
-
-
-
-
-
-
+// ======================================================
+// DELETE CHAT
+//
+// Firestore does NOT automatically delete nested
+// documents when their parent document is deleted.
+//
+// Nyxora stores messages here:
+//
+// users/{uid}/chats/{chatId}/data/messages
+//
+// Therefore the messages document is deleted first,
+// followed by the parent chat document.
+// ======================================================
 
 export async function deleteChat(
   chatId
-){
+) {
 
+  if (!chatId) {
+
+    throw new Error(
+      "Chat ID is required."
+    );
+
+  }
+
+
+  // ====================================================
+  // STEP 1 — DELETE MESSAGE DATA
+  // ====================================================
 
   await deleteDoc(
 
-    chatDocRef(chatId)
+    messagesRef(
+      chatId
+    )
 
   );
 
+
+  // ====================================================
+  // STEP 2 — DELETE PARENT CHAT
+  // ====================================================
+
+  await deleteDoc(
+
+    chatDocRef(
+      chatId
+    )
+
+  );
+
+
+  console.log(
+    "🗑️ Chat and message data deleted:",
+    chatId
+  );
 
 }

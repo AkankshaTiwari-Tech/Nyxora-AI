@@ -5,56 +5,197 @@ import {
   ClipboardList,
 } from "lucide-react";
 
-const actions = [
-  {
-    title: "New Chat",
-    description: "Start a new AI conversation",
-    icon: <MessageSquarePlus size={28} />,
-  },
-  {
-    title: "Create Note",
-    description: "Generate AI notes",
-    icon: <FileText size={28} />,
-  },
-  {
-    title: "Generate PDF",
-    description: "Create downloadable PDF",
-    icon: <FileDown size={28} />,
-  },
-  {
-    title: "Create Test",
-    description: "Generate exam papers",
-    icon: <ClipboardList size={28} />,
-  },
-];
+import {
+  useNavigate,
+} from "react-router-dom";
+
 
 export default function QuickActions() {
+
+  const navigate =
+    useNavigate();
+
+
+  const actions = [
+
+    {
+      title: "New Chat",
+
+      description:
+        "Start a new AI conversation",
+
+      icon:
+        MessageSquarePlus,
+
+      action: () =>
+        navigate(
+          "/chat",
+          {
+            state: {
+              createNewChat: true,
+            },
+          }
+        ),
+    },
+
+
+    {
+      title: "Create Note",
+
+      description:
+        "Create a Workspace note",
+
+      icon:
+        FileText,
+
+      action: () =>
+        navigate(
+          "/workspace"
+        ),
+    },
+
+
+    {
+      title: "Generate PDF",
+
+      description:
+        "Create a downloadable document",
+
+      icon:
+        FileDown,
+
+      action: () =>
+        navigate(
+          "/workspace"
+        ),
+    },
+
+
+    {
+      title: "Create Test",
+
+      description:
+        "Generate a test with Nyxora AI",
+
+      icon:
+        ClipboardList,
+
+      action: () =>
+        navigate(
+          "/chat",
+          {
+            state: {
+              createNewChat: true,
+              assistantMode: "test",
+            },
+          }
+        ),
+    },
+
+  ];
+
+
   return (
+
     <div className="mt-10">
-      <h2 className="text-2xl font-bold text-white mb-5">
+
+      <h2 className="mb-5 text-2xl font-bold text-white">
         Quick Actions
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {actions.map((action) => (
-          <button
-            key={action.title}
-            className="bg-[#151B2F] rounded-2xl p-6 text-left hover:bg-[#1B2340] transition-all duration-300 hover:scale-[1.02]"
-          >
-            <div className="w-14 h-14 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
-              {action.icon}
-            </div>
 
-            <h3 className="mt-5 text-xl font-semibold text-white">
-              {action.title}
-            </h3>
+      <div
+        className="
+          grid
+          grid-cols-1
+          gap-6
+          md:grid-cols-2
+          xl:grid-cols-4
+        "
+      >
 
-            <p className="mt-2 text-gray-400">
-              {action.description}
-            </p>
-          </button>
-        ))}
+        {actions.map(
+          (action) => {
+
+            const Icon =
+              action.icon;
+
+
+            return (
+
+              <button
+                key={
+                  action.title
+                }
+                type="button"
+                onClick={
+                  action.action
+                }
+                className="
+                  rounded-2xl
+                  border
+                  border-[#20283A]
+                  bg-[#151B2F]
+                  p-6
+                  text-left
+                  transition-all
+                  duration-300
+                  hover:scale-[1.02]
+                  hover:border-indigo-500/30
+                  hover:bg-[#1B2340]
+                "
+              >
+
+                <div
+                  className="
+                    flex
+                    h-14
+                    w-14
+                    items-center
+                    justify-center
+                    rounded-xl
+                    bg-indigo-600
+                    text-white
+                  "
+                >
+                  <Icon
+                    size={28}
+                  />
+                </div>
+
+
+                <h3
+                  className="
+                    mt-5
+                    text-xl
+                    font-semibold
+                    text-white
+                  "
+                >
+                  {action.title}
+                </h3>
+
+
+                <p
+                  className="
+                    mt-2
+                    text-gray-400
+                  "
+                >
+                  {action.description}
+                </p>
+
+              </button>
+
+            );
+
+          }
+        )}
+
       </div>
+
     </div>
+
   );
+
 }

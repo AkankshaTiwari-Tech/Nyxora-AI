@@ -1,4 +1,8 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+} from "react-router-dom";
 
 import AuthLayout from "../layouts/AuthLayout";
 import MainLayout from "../layouts/MainLayout";
@@ -10,6 +14,8 @@ import NotFound from "../pages/NotFound";
 
 import Home from "../modules/home/pages/Home";
 import Chat from "../modules/chat/pages/Chat";
+
+import Workspace from "../modules/workspace/pages/Workspace";
 
 import AIMemory from "../pages/settings/AIMemory";
 
@@ -25,7 +31,9 @@ export default function AppRoutes() {
       <Routes>
 
 
-        {/* Authentication */}
+        {/* ============================================= */}
+        {/* AUTHENTICATION                                */}
+        {/* ============================================= */}
 
         <Route element={<AuthLayout />}>
 
@@ -47,13 +55,12 @@ export default function AppRoutes() {
         </Route>
 
 
-
-        {/* Dashboard */}
+        {/* ============================================= */}
+        {/* DASHBOARD                                     */}
+        {/* ============================================= */}
 
         <Route
-
           path="/dashboard"
-
           element={
 
             <ProtectedRoute>
@@ -67,17 +74,15 @@ export default function AppRoutes() {
             </ProtectedRoute>
 
           }
-
         />
 
 
-
-        {/* AI Chat */}
+        {/* ============================================= */}
+        {/* AI CHAT                                       */}
+        {/* ============================================= */}
 
         <Route
-
           path="/chat"
-
           element={
 
             <ProtectedRoute>
@@ -87,17 +92,37 @@ export default function AppRoutes() {
             </ProtectedRoute>
 
           }
-
         />
 
 
-
-        {/* AI Memory */}
+        {/* ============================================= */}
+        {/* WORKSPACE                                     */}
+        {/* ============================================= */}
 
         <Route
+          path="/workspace"
+          element={
 
+            <ProtectedRoute>
+
+              <MainLayout>
+
+                <Workspace />
+
+              </MainLayout>
+
+            </ProtectedRoute>
+
+          }
+        />
+
+
+        {/* ============================================= */}
+        {/* AI MEMORY                                     */}
+        {/* ============================================= */}
+
+        <Route
           path="/ai-memory"
-
           element={
 
             <ProtectedRoute>
@@ -111,12 +136,12 @@ export default function AppRoutes() {
             </ProtectedRoute>
 
           }
-
         />
 
 
-
-        {/* 404 */}
+        {/* ============================================= */}
+        {/* 404                                           */}
+        {/* ============================================= */}
 
         <Route
           path="*"

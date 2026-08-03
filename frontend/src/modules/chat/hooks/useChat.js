@@ -1,6 +1,10 @@
-import { useState } from "react";
+import {
+  useState,
+} from "react";
 
-import { auth } from "../../../firebase/firebase";
+import {
+  auth,
+} from "../../../firebase/firebase";
 
 import {
   getMemory,
@@ -21,6 +25,7 @@ import {
 
 import {
   extractPdfText,
+  PDF_ERROR_CODES,
 } from "../utils/extractPdfText";
 
 import {
@@ -32,11 +37,18 @@ import {
 // CONFIG
 // ======================================================
 
-const MAX_CHAT_TITLE_LENGTH = 40;
+const MAX_CHAT_TITLE_LENGTH =
+  40;
+
+const MAX_WORKSPACE_DOCUMENTS =
+  8;
+
+const MAX_WORKSPACE_DOCUMENT_CONTENT =
+  2500;
 
 
 // ======================================================
-// ASSISTANT MODE INSTRUCTIONS
+// ASSISTANT MODES
 // ======================================================
 
 const assistantModePrompts = {
@@ -65,8 +77,10 @@ Your job is to help teachers with:
 
 Give teacher-friendly, practical and well-structured responses.
 
-If important information such as class, subject, chapter or board is missing,
-ask for it only when it is genuinely necessary.
+Use available Workspace class or student context when relevant.
+
+If important information is genuinely missing,
+ask a concise clarification.
 `,
 
 
@@ -86,9 +100,10 @@ When generating a test:
 - do not provide answers unless requested
 - use proper mathematical notation when mathematics is involved
 
-If essential information is missing, such as class, subject, chapter,
-marks or difficulty, ask a short clarification instead of inventing
-important requirements.
+Use Workspace context when it provides class, subject,
+student or related academic information.
+
+Do not invent important requirements that are not available.
 `,
 
 
@@ -106,8 +121,7 @@ When appropriate:
 - avoid unnecessary answers unless requested
 - use proper mathematical notation for mathematics
 
-If essential information such as class, subject or topic is missing,
-ask for it when necessary.
+Use available Workspace class and student context when relevant.
 `,
 
 
@@ -123,15 +137,18 @@ Your job is to analyze student academic information such as:
 - weaknesses
 - improvement trends
 
-When data is provided:
+When data is available:
 1. Summarize overall performance.
 2. Identify strengths.
 3. Identify areas needing improvement.
 4. Highlight meaningful patterns.
-5. Suggest practical next steps for the teacher or student.
+5. Suggest practical next steps.
 
-Never invent student data that was not provided.
-Clearly state when there is not enough information for a conclusion.
+Use Workspace student information and related documents
+when they are supplied.
+
+Never invent student data.
+Clearly state when there is not enough information.
 `,
 
 
@@ -143,13 +160,13 @@ not merely give the final answer.
 
 When solving a doubt:
 - explain in simple language
-- adapt to the apparent student level
+- adapt to the student level when known
 - break difficult ideas into steps
 - show calculations clearly when needed
 - give examples when helpful
 - avoid unnecessary complexity
 
-For mathematical problems, explain the reasoning and steps clearly.
+Use Workspace class/student context when relevant.
 
 If the question is ambiguous, ask a concise clarification.
 `,
@@ -158,7 +175,32 @@ If the question is ambiguous, ask a concise clarification.
 
 
 // ======================================================
-// BUILD CHAT TITLE
+// CLEAN VALUE
+// ======================================================
+
+function cleanValue(
+  value
+) {
+
+  if (
+    value === null ||
+    value === undefined
+  ) {
+
+    return "";
+
+  }
+
+
+  return String(
+    value
+  ).trim();
+
+}
+
+
+// ======================================================
+// CHAT TITLE
 // ======================================================
 
 function buildChatTitle(
@@ -167,14 +209,13 @@ function buildChatTitle(
 ) {
 
   const cleanText =
-    String(
-      text || ""
+    cleanValue(
+      text
     )
       .replace(
         /\s+/g,
         " "
-      )
-      .trim();
+      );
 
 
   let title =
@@ -205,11 +246,7 @@ function buildChatTitle(
 
 
 // ======================================================
-// BUILD SAFE FILE METADATA
-//
-// IMPORTANT:
-// Never save the browser File object directly to Firestore.
-// Only save serializable information needed by the UI.
+// FILE METADATA
 // ======================================================
 
 function buildFileMetadata(
@@ -226,7 +263,8 @@ function buildFileMetadata(
   return {
 
     name:
-      file.name || "Attachment",
+      file.name ||
+      "Attachment",
 
     type:
       file.type ||
@@ -243,6 +281,148 @@ function buildFileMetadata(
 
 
 // ======================================================
+// WORKSPACE CONTEXT
+// ======================================================
+
+function buildWorkspaceContextPrompt(
+  workspaceContext
+) {
+
+  if (
+    !workspaceContext
+  ) {
+
+    return "";
+
+  }
+
+
+  const selectedClass =
+    workspaceContext.class;
+
+  const selectedStudent =
+    workspaceContext.student;
+
+  const documents =
+    Array.isArray(
+      workspaceContext.documents
+    )
+
+      ? workspaceContext.documents
+          .slice(
+            0,
+            MAX_WORKSPACE_DOCUMENTS
+          )
+
+      : [];
+
+
+  if (
+    !selectedClass &&
+    !selectedStudent &&
+    documents.length === 0
+  ) {
+
+    return "";
+
+  }
+
+
+  const lines = [
+
+    "WORKSPACE CONTEXT:",
+    "",
+    "The following information comes from the user's Nyxora Workspace.",
+    "Use it only when relevant to the user's request.",
+    "Do not invent missing Workspace information.",
+
+  ];
+
+
+  if (
+    selectedClass
+  ) {
+
+    lines.push(
+      "",
+      "SELECTED CLASS:",
+      `Name: ${cleanValue(selectedClass.name) || "Not provided"}`,
+      `Grade: ${cleanValue(selectedClass.grade) || "Not provided"}`,
+      `Subject: ${cleanValue(selectedClass.subject) || "Not provided"}`,
+      `Board: ${cleanValue(selectedClass.board) || "Not provided"}`,
+      `Description: ${cleanValue(selectedClass.description) || "Not provided"}`
+    );
+
+  }
+
+
+  if (
+    selectedStudent
+  ) {
+
+    lines.push(
+      "",
+      "SELECTED STUDENT:",
+      `Name: ${cleanValue(selectedStudent.name) || "Not provided"}`,
+      `Roll Number: ${cleanValue(selectedStudent.rollNumber) || "Not provided"}`,
+      `Parent Name: ${cleanValue(selectedStudent.parentName) || "Not provided"}`,
+      `Performance: ${cleanValue(selectedStudent.performance) || "Not provided"}`,
+      `Notes: ${cleanValue(selectedStudent.notes) || "Not provided"}`
+    );
+
+  }
+
+
+  if (
+    documents.length > 0
+  ) {
+
+    lines.push(
+      "",
+      "RELATED WORKSPACE DOCUMENTS:"
+    );
+
+
+    documents.forEach(
+      (
+        document,
+        index
+      ) => {
+
+        const content =
+          cleanValue(
+            document.content
+          )
+            .slice(
+              0,
+              MAX_WORKSPACE_DOCUMENT_CONTENT
+            );
+
+
+        lines.push(
+          "",
+          `Document ${index + 1}:`,
+          `Title: ${cleanValue(document.title) || "Untitled"}`,
+          `Type: ${cleanValue(document.type) || "Document"}`,
+          `Subject: ${cleanValue(document.subject) || "Not provided"}`,
+          `Chapter: ${cleanValue(document.chapter) || "Not provided"}`,
+          `Content: ${content || "No content available"}`
+        );
+
+      }
+    );
+
+  }
+
+
+  return lines.join(
+    "\n"
+  );
+
+}
+
+
+// ======================================================
 // CHAT HOOK
 // ======================================================
 
@@ -250,7 +430,10 @@ export default function useChat({
   activeChatId,
   chats,
   setChats,
+
   selectedMode = "normal",
+
+  workspaceContext = null,
 }) {
 
   const [
@@ -259,12 +442,32 @@ export default function useChat({
   ] = useState(false);
 
 
+  const [
+    attachmentError,
+    setAttachmentError,
+  ] = useState("");
+
+
+  // ====================================================
+  // CLEAR ATTACHMENT ERROR
+  // ====================================================
+
+  const clearAttachmentError =
+    () => {
+
+      setAttachmentError("");
+
+    };
+
+
   // ====================================================
   // FILE EXTRACTION
   // ====================================================
 
   const extractFileContent =
-    async (file) => {
+    async (
+      file
+    ) => {
 
       if (!file) {
 
@@ -275,7 +478,10 @@ export default function useChat({
 
       if (
         file.type ===
-        "application/pdf"
+          "application/pdf" ||
+        file.name
+          ?.toLowerCase()
+          .endsWith(".pdf")
       ) {
 
         return await extractPdfText(
@@ -300,15 +506,10 @@ export default function useChat({
 
       if (
         file.type ===
-        "text/plain"
-      ) {
-
-        return await file.text();
-
-      }
-
-
-      if (
+          "text/plain" ||
+        file.name
+          ?.toLowerCase()
+          .endsWith(".txt") ||
         file.name
           ?.toLowerCase()
           .endsWith(".md")
@@ -325,51 +526,173 @@ export default function useChat({
 
 
   // ====================================================
-  // APPLY ASSISTANT MODE
+  // ATTACHMENT ERROR
   // ====================================================
 
-  const buildModePrompt = (
-    userPrompt
-  ) => {
+  const handleAttachmentError =
+    (
+      error
+    ) => {
 
-    const modeInstruction =
-      assistantModePrompts[
-        selectedMode
-      ] ||
-      assistantModePrompts.normal;
+      console.error(
+        "File extraction error:",
+        error
+      );
 
 
-    return `
+      if (
+        error?.code ===
+        PDF_ERROR_CODES
+          .PASSWORD_PROTECTED
+      ) {
+
+        setAttachmentError(
+          error.message ||
+          "⚠️ This PDF is password-protected. Please remove the password and upload it again."
+        );
+
+
+        return false;
+
+      }
+
+
+      if (
+        error?.code ===
+        PDF_ERROR_CODES
+          .INVALID_PDF
+      ) {
+
+        setAttachmentError(
+          error.message ||
+          "This PDF appears to be invalid or corrupted. Please try another file."
+        );
+
+
+        return false;
+
+      }
+
+
+      setAttachmentError(
+        error?.message ||
+        "Nyxora couldn't read this attachment. Please try another file."
+      );
+
+
+      return false;
+
+    };
+
+
+  // ====================================================
+  // FILE PROMPT
+  // ====================================================
+
+  const buildPromptWithFile =
+    async (
+      text,
+      file
+    ) => {
+
+      let userPrompt =
+        cleanValue(
+          text
+        );
+
+
+      if (
+        file &&
+        !file.type?.startsWith(
+          "image/"
+        )
+      ) {
+
+        const extractedText =
+          await extractFileContent(
+            file
+          );
+
+
+        if (
+          extractedText
+        ) {
+
+          userPrompt += `
+
+
+ATTACHED FILE TEXT CONTENT:
+
+${extractedText}`;
+
+        }
+
+      }
+
+
+      return userPrompt;
+
+    };
+
+
+  // ====================================================
+  // FINAL PROMPT
+  // ====================================================
+
+  const buildModePrompt =
+    (
+      userPrompt
+    ) => {
+
+      const modeInstruction =
+        assistantModePrompts[
+          selectedMode
+        ] ||
+        assistantModePrompts.normal;
+
+
+      const workspacePrompt =
+        buildWorkspaceContextPrompt(
+          workspaceContext
+        );
+
+
+      return `
 ${modeInstruction}
+
+${workspacePrompt}
 
 USER REQUEST:
 
 ${userPrompt}
 `.trim();
 
-  };
+    };
 
 
   // ====================================================
-  // SEND MESSAGE
+  // SEND
   // ====================================================
 
   const send =
-    async (payload) => {
+    async (
+      payload
+    ) => {
 
-      if (isThinking) {
+      if (
+        isThinking
+      ) {
 
-        return;
+        return false;
 
       }
 
 
+      setAttachmentError("");
+
+
       const userId =
         auth.currentUser?.uid;
-
-
-      const memory =
-        await getMemory();
 
 
       const text =
@@ -393,11 +716,11 @@ ${userPrompt}
 
 
       if (
-        !String(text).trim() &&
+        !cleanValue(text) &&
         !file
       ) {
 
-        return;
+        return false;
 
       }
 
@@ -410,9 +733,11 @@ ${userPrompt}
         );
 
 
-      if (!currentChat) {
+      if (
+        !currentChat
+      ) {
 
-        return;
+        return false;
 
       }
 
@@ -422,13 +747,50 @@ ${userPrompt}
         [];
 
 
-      // ==================================================
-      // DETECT FIRST REAL USER MESSAGE
-      //
-      // A new chat already contains the Nyxora welcome
-      // assistant message, so we detect whether a USER
-      // message already exists instead of checking length.
-      // ==================================================
+      const cleanUserMessage =
+        cleanValue(
+          text
+        );
+
+
+      let userPrompt;
+
+
+      try {
+
+        userPrompt =
+          await buildPromptWithFile(
+            cleanUserMessage,
+            file
+          );
+
+      } catch (error) {
+
+        return handleAttachmentError(
+          error
+        );
+
+      }
+
+
+      let memory =
+        null;
+
+
+      try {
+
+        memory =
+          await getMemory();
+
+      } catch (error) {
+
+        console.error(
+          "Memory loading error:",
+          error
+        );
+
+      }
+
 
       const hasUserMessage =
         history.some(
@@ -455,102 +817,17 @@ ${userPrompt}
           : currentChat.title;
 
 
-      // ==================================================
-      // CLEAN USER MESSAGE
-      // ==================================================
-
-      const cleanUserMessage =
-        String(
-          text || ""
-        ).trim();
-
-
-      let userPrompt =
-        cleanUserMessage;
-
-
-      // ==================================================
-      // EXTRACT DOCUMENT CONTENT
-      //
-      // Images are handled separately by geminiService.
-      // PDFs/DOCX/TXT/MD are converted to text here.
-      // ==================================================
-
-      if (
-        file &&
-        !file.type?.startsWith(
-          "image/"
-        )
-      ) {
-
-        try {
-
-          const extractedText =
-            await extractFileContent(
-              file
-            );
-
-
-          if (extractedText) {
-
-            userPrompt += `
-
-
-ATTACHED FILE CONTENT:
-
-${extractedText}`;
-
-          }
-
-        } catch (error) {
-
-          console.error(
-            "File extraction error:",
-            error
-          );
-
-
-          throw error;
-
-        }
-
-      }
-
-
-      // ==================================================
-      // BUILD FULL AI PROMPT
-      // ==================================================
-
       const prompt =
         buildModePrompt(
           userPrompt
         );
 
 
-      // ==================================================
-      // CLEAN MESSAGE FOR MEMORY
-      //
-      // Do not store extracted PDF/DOCX text as the user's
-      // actual conversational memory message.
-      // ==================================================
-
-      const memoryMessage =
-        cleanUserMessage;
-
-
-      // ==================================================
-      // SAFE ATTACHMENT METADATA
-      // ==================================================
-
       const fileMetadata =
         buildFileMetadata(
           file
         );
 
-
-      // ==================================================
-      // CREATE USER + AI MESSAGE
-      // ==================================================
 
       const userMessage = {
 
@@ -561,13 +838,15 @@ ${extractedText}`;
           "user",
 
         message:
-          text,
+          cleanUserMessage,
 
         ...(fileMetadata
+
           ? {
               file:
                 fileMetadata,
             }
+
           : {}),
 
       };
@@ -598,54 +877,45 @@ ${extractedText}`;
       ];
 
 
-      // ==================================================
-      // UPDATE LOCAL STATE
-      // ==================================================
+      setChats(
+        (prev) =>
+          prev.map(
+            (chat) => {
 
-      setChats((prev) =>
-        prev.map((chat) => {
+              if (
+                chat.id !==
+                activeChatId
+              ) {
 
-          if (
-            chat.id !==
-            activeChatId
-          ) {
+                return chat;
 
-            return chat;
-
-          }
+              }
 
 
-          return {
+              return {
 
-            ...chat,
+                ...chat,
 
-            title:
-              shouldCreateTitle
-                ? generatedTitle
-                : chat.title,
+                title:
+                  shouldCreateTitle
+                    ? generatedTitle
+                    : chat.title,
 
-            messages:
-              newMessages,
+                messages:
+                  newMessages,
 
-          };
+              };
 
-        })
+            }
+          )
       );
 
-
-      // ==================================================
-      // SAVE MESSAGES TO FIRESTORE
-      // ==================================================
 
       await saveMessages(
         activeChatId,
         newMessages
       );
 
-
-      // ==================================================
-      // SAVE AUTOMATIC CHAT TITLE
-      // ==================================================
 
       if (
         shouldCreateTitle &&
@@ -660,16 +930,10 @@ ${extractedText}`;
             generatedTitle
           );
 
-
-          console.log(
-            "🏷️ Chat title saved:",
-            generatedTitle
-          );
-
         } catch (error) {
 
           console.error(
-            "⚠️ Failed to save chat title:",
+            "Failed to save chat title:",
             error
           );
 
@@ -678,49 +942,61 @@ ${extractedText}`;
       }
 
 
-      // ==================================================
-      // START THINKING
-      // ==================================================
-
-      setIsThinking(true);
+      setIsThinking(
+        true
+      );
 
 
-      // ==================================================
-      // STREAM AI RESPONSE
-      //
-      // IMPORTANT:
-      // Pass the original File object here.
-      // Images need the real File for base64 conversion.
-      // Firestore receives only fileMetadata.
-      // ==================================================
+      try {
 
-      await streamResponse({
+        await streamResponse({
 
-        prompt,
+          prompt,
 
-        memoryMessage,
+          memoryMessage:
+            cleanUserMessage,
 
-        file,
+          file,
 
-        history,
+          history,
 
-        messages:
-          newMessages,
+          messages:
+            newMessages,
 
-        aiMessageId:
-          aiMessage.id,
+          aiMessageId:
+            aiMessage.id,
 
-        activeChatId,
+          activeChatId,
 
-        setChats,
+          setChats,
 
-        setIsThinking,
+          setIsThinking,
 
-        userId,
+          userId,
 
-        memory,
+          memory,
 
-      });
+        });
+
+
+        return true;
+
+      } catch (error) {
+
+        console.error(
+          "AI streaming error:",
+          error
+        );
+
+
+        setIsThinking(
+          false
+        );
+
+
+        return false;
+
+      }
 
     };
 
@@ -732,11 +1008,16 @@ ${extractedText}`;
   const regenerate =
     async () => {
 
-      if (isThinking) {
+      if (
+        isThinking
+      ) {
 
-        return;
+        return false;
 
       }
+
+
+      setAttachmentError("");
 
 
       const activeChat =
@@ -747,41 +1028,99 @@ ${extractedText}`;
         );
 
 
-      if (!activeChat) {
+      if (
+        !activeChat
+      ) {
 
-        return;
+        return false;
+
+      }
+
+
+      const messages =
+        activeChat.messages ||
+        [];
+
+
+      const lastUserIndex =
+        messages
+          .map(
+            (msg) =>
+              msg.role
+          )
+          .lastIndexOf(
+            "user"
+          );
+
+
+      if (
+        lastUserIndex ===
+        -1
+      ) {
+
+        return false;
 
       }
 
 
       const lastUser =
-        [
-          ...activeChat.messages,
-        ]
-          .reverse()
-          .find(
-            (msg) =>
-              msg.role ===
-              "user"
-          );
+        messages[
+          lastUserIndex
+        ];
 
 
-      if (!lastUser) {
+      const assistantIndex =
+        messages.findIndex(
+          (
+            msg,
+            index
+          ) =>
+            index >
+              lastUserIndex &&
+            msg.role ===
+              "assistant"
+        );
 
-        return;
+
+      if (
+        assistantIndex ===
+        -1
+      ) {
+
+        return false;
 
       }
 
 
-      const memory =
-        await getMemory();
+      const lastAssistant =
+        messages[
+          assistantIndex
+        ];
+
+
+      let memory =
+        null;
+
+
+      try {
+
+        memory =
+          await getMemory();
+
+      } catch (error) {
+
+        console.error(
+          "Memory loading error:",
+          error
+        );
+
+      }
 
 
       const cleanUserMessage =
-        String(
-          lastUser.message ||
-          ""
-        ).trim();
+        cleanValue(
+          lastUser.message
+        );
 
 
       const prompt =
@@ -790,76 +1129,88 @@ ${extractedText}`;
         );
 
 
-      const messages =
-        activeChat.messages;
+      setIsThinking(
+        true
+      );
 
 
-      const lastAssistant =
-        [...messages]
-          .reverse()
-          .find(
-            (msg) =>
-              msg.role ===
-              "assistant"
-          );
+      try {
 
+        await streamResponse({
 
-      if (!lastAssistant) {
+          prompt,
 
-        return;
+          memoryMessage:
+            cleanUserMessage,
 
-      }
+          history:
+            messages.slice(
+              0,
+              lastUserIndex
+            ),
 
-
-      setIsThinking(true);
-
-
-      await streamResponse({
-
-        prompt,
-
-        memoryMessage:
-          cleanUserMessage,
-
-        history:
           messages,
 
-        messages,
+          memory,
 
-        memory,
+          aiMessageId:
+            lastAssistant.id,
 
-        aiMessageId:
-          lastAssistant.id,
+          activeChatId,
 
-        activeChatId,
+          setChats,
 
-        setChats,
+          setIsThinking,
 
-        setIsThinking,
+          userId:
+            auth.currentUser?.uid,
 
-        userId:
-          auth.currentUser?.uid,
+        });
 
-      });
+
+        return true;
+
+      } catch (error) {
+
+        console.error(
+          "Regeneration error:",
+          error
+        );
+
+
+        setIsThinking(
+          false
+        );
+
+
+        return false;
+
+      }
 
     };
 
 
   // ====================================================
-  // EDIT MESSAGE
+  // EDIT
   // ====================================================
 
   const editMessage =
     async (
       messageId,
-      newText
+      newText,
+      attachmentOptions = {}
     ) => {
 
-      if (isThinking) {
+      if (
+        isThinking
+      ) {
 
-        return;
+        return false;
 
       }
+
+
+      setAttachmentError("");
 
 
       const activeChat =
@@ -870,15 +1221,13 @@ ${extractedText}`;
         );
 
 
-      if (!activeChat) {
+      if (
+        !activeChat
+      ) {
 
-        return;
+        return false;
 
       }
-
-
-      const memory =
-        await getMemory();
 
 
       const messageIndex =
@@ -891,10 +1240,27 @@ ${extractedText}`;
 
 
       if (
-        messageIndex === -1
+        messageIndex ===
+        -1
       ) {
 
-        return;
+        return false;
+
+      }
+
+
+      const originalMessage =
+        activeChat.messages[
+          messageIndex
+        ];
+
+
+      if (
+        originalMessage.role !==
+        "user"
+      ) {
+
+        return false;
 
       }
 
@@ -914,103 +1280,198 @@ ${extractedText}`;
 
 
       if (
-        assistantIndex === -1
+        assistantIndex ===
+        -1
       ) {
 
-        return;
+        return false;
 
       }
 
 
+      const {
+        newFile = null,
+        removeFile = false,
+      } = attachmentOptions;
+
+
       const cleanUserMessage =
-        String(
-          newText || ""
-        ).trim();
+        cleanValue(
+          newText
+        );
 
 
-      if (!cleanUserMessage) {
+      let finalFileMetadata =
+        originalMessage.file ||
+        null;
 
-        return;
+
+      let fileForAI =
+        null;
+
+
+      if (
+        newFile
+      ) {
+
+        finalFileMetadata =
+          buildFileMetadata(
+            newFile
+          );
+
+
+        fileForAI =
+          newFile;
+
+      } else if (
+        removeFile
+      ) {
+
+        finalFileMetadata =
+          null;
+
+      }
+
+
+      if (
+        !cleanUserMessage &&
+        !finalFileMetadata
+      ) {
+
+        return false;
+
+      }
+
+
+      let userPrompt =
+        cleanUserMessage;
+
+
+      if (
+        newFile
+      ) {
+
+        try {
+
+          userPrompt =
+            await buildPromptWithFile(
+              cleanUserMessage,
+              newFile
+            );
+
+        } catch (error) {
+
+          return handleAttachmentError(
+            error
+          );
+
+        }
+
+      }
+
+
+      let memory =
+        null;
+
+
+      try {
+
+        memory =
+          await getMemory();
+
+      } catch (error) {
+
+        console.error(
+          "Memory loading error:",
+          error
+        );
 
       }
 
 
       const updatedMessages =
-        activeChat.messages
-          .map(
-            (
-              msg,
-              index
-            ) => {
+        activeChat.messages.map(
+          (
+            msg,
+            index
+          ) => {
+
+            if (
+              index ===
+              messageIndex
+            ) {
+
+              const updatedUserMessage = {
+
+                ...msg,
+
+                message:
+                  cleanUserMessage,
+
+              };
+
 
               if (
-                index ===
-                messageIndex
+                finalFileMetadata
               ) {
 
-                return {
+                updatedUserMessage.file =
+                  finalFileMetadata;
 
-                  ...msg,
+              } else {
 
-                  message:
-                    cleanUserMessage,
-
-                };
+                delete updatedUserMessage.file;
 
               }
 
 
-              if (
-                index ===
-                assistantIndex
-              ) {
-
-                return {
-
-                  ...msg,
-
-                  message:
-                    "",
-
-                };
-
-              }
-
-
-              return msg;
+              return updatedUserMessage;
 
             }
-          );
 
 
-      // ==================================================
-      // UPDATE LOCAL STATE
-      // ==================================================
+            if (
+              index ===
+              assistantIndex
+            ) {
 
-      setChats((prev) =>
-        prev.map(
-          (chat) =>
+              return {
 
-            chat.id ===
-            activeChatId
+                ...msg,
 
-              ? {
+                message:
+                  "",
 
-                  ...chat,
+              };
 
-                  messages:
-                    updatedMessages,
+            }
 
-                }
 
-              : chat
-        )
+            return msg;
+
+          }
+        );
+
+
+      setChats(
+        (prev) =>
+          prev.map(
+            (chat) =>
+
+              chat.id ===
+              activeChatId
+
+                ? {
+                    ...chat,
+
+                    messages:
+                      updatedMessages,
+                  }
+
+                : chat
+          )
       );
 
-
-      // ==================================================
-      // SAVE EDITED MESSAGES
-      // ==================================================
 
       await saveMessages(
         activeChatId,
@@ -1020,7 +1481,7 @@ ${extractedText}`;
 
       const prompt =
         buildModePrompt(
-          cleanUserMessage
+          userPrompt
         );
 
 
@@ -1030,64 +1491,86 @@ ${extractedText}`;
         ];
 
 
-      setIsThinking(true);
+      setIsThinking(
+        true
+      );
 
 
-      // ==================================================
-      // REGENERATE RESPONSE AFTER EDIT
-      // ==================================================
+      try {
 
-      await streamResponse({
+        await streamResponse({
 
-        prompt,
+          prompt,
 
-        memoryMessage:
-          cleanUserMessage,
+          memoryMessage:
+            cleanUserMessage,
 
-        history:
-          updatedMessages.slice(
-            0,
-            messageIndex
-          ),
+          file:
+            fileForAI,
 
-        messages:
-          updatedMessages,
+          history:
+            updatedMessages.slice(
+              0,
+              messageIndex
+            ),
 
-        memory,
+          messages:
+            updatedMessages,
 
-        aiMessageId:
-          aiMessage.id,
+          memory,
 
-        activeChatId,
+          aiMessageId:
+            aiMessage.id,
 
-        setChats,
+          activeChatId,
 
-        setIsThinking,
+          setChats,
 
-        userId:
-          auth.currentUser?.uid,
+          setIsThinking,
 
-      });
+          userId:
+            auth.currentUser?.uid,
+
+        });
+
+
+        return true;
+
+      } catch (error) {
+
+        console.error(
+          "Edit regeneration error:",
+          error
+        );
+
+
+        setIsThinking(
+          false
+        );
+
+
+        return false;
+
+      }
 
     };
 
 
   // ====================================================
-  // STOP GENERATION
+  // STOP
   // ====================================================
 
-  const stop = () => {
+  const stop =
+    () => {
 
-    stopGeneration();
+      stopGeneration();
 
-    setIsThinking(false);
+      setIsThinking(
+        false
+      );
 
-  };
+    };
 
-
-  // ====================================================
-  // RETURN
-  // ====================================================
 
   return {
 
@@ -1100,6 +1583,10 @@ ${extractedText}`;
     stop,
 
     isThinking,
+
+    attachmentError,
+
+    clearAttachmentError,
 
   };
 

@@ -5,62 +5,114 @@ import {
   HardDrive,
 } from "lucide-react";
 
-const stats = [
-  {
-    title: "Chats",
-    value: "12",
-    icon: <MessageSquare size={26} />,
-    color: "bg-blue-600",
-  },
-  {
-    title: "Documents",
-    value: "45",
-    icon: <FileText size={26} />,
-    color: "bg-green-600",
-  },
-  {
-    title: "Favorites",
-    value: "10",
-    icon: <Star size={26} />,
-    color: "bg-yellow-500",
-  },
-  {
-    title: "Storage",
-    value: "2.3 GB",
-    icon: <HardDrive size={26} />,
-    color: "bg-purple-600",
-  },
-];
 
-export default function StatsCards() {
+export default function StatsCards({
+  chats = [],
+  documents = [],
+}) {
+
+  const stats = [
+    {
+      title: "Chats",
+      value: chats.length,
+      icon: MessageSquare,
+    },
+    {
+      title: "Documents",
+      value: documents.length,
+      icon: FileText,
+    },
+    {
+      title: "Favorites",
+      value: 0,
+      icon: Star,
+    },
+    {
+      title: "Storage",
+      value: "0 MB",
+      icon: HardDrive,
+    },
+  ];
+
+
   return (
+
     <div className="mt-10">
-      <h2 className="text-2xl font-bold text-white mb-5">
+
+      <h2 className="mb-5 text-2xl font-bold text-white">
         Overview
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-        {stats.map((item) => (
-          <div
-            key={item.title}
-            className="bg-[#151B2F] rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300"
-          >
+
+      <div
+        className="
+          grid
+          grid-cols-1
+          gap-6
+          sm:grid-cols-2
+          xl:grid-cols-4
+        "
+      >
+
+        {stats.map((item) => {
+
+          const Icon =
+            item.icon;
+
+
+          return (
+
             <div
-              className={`w-14 h-14 rounded-xl flex items-center justify-center text-white ${item.color}`}
+              key={item.title}
+              className="
+                rounded-2xl
+                border
+                border-[#20283A]
+                bg-[#151B2F]
+                p-6
+                shadow-md
+                transition-all
+                duration-300
+                hover:border-indigo-500/30
+                hover:shadow-xl
+              "
             >
-              {item.icon}
+
+              <div
+                className="
+                  flex
+                  h-14
+                  w-14
+                  items-center
+                  justify-center
+                  rounded-xl
+                  bg-indigo-600
+                  text-white
+                "
+              >
+                <Icon size={26} />
+              </div>
+
+
+              <h3 className="mt-5 text-gray-400">
+                {item.title}
+              </h3>
+
+
+              <p className="mt-2 text-3xl font-bold text-white">
+                {item.value}
+              </p>
+
             </div>
 
-            <h3 className="mt-5 text-gray-400">
-              {item.title}
-            </h3>
+          );
 
-            <p className="text-3xl font-bold text-white mt-2">
-              {item.value}
-            </p>
-          </div>
-        ))}
+        })}
+
       </div>
+
     </div>
+
   );
+
 }
