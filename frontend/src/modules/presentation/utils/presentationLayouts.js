@@ -3,11 +3,14 @@ const presentationLayouts = {
 
   title: {
 
+
     name:
-      "Title Slide",
+      "Premium Hero",
+
 
     description:
-      "Large centered title with subtitle and branding",
+      "Clean title slide with large typography and minimal branding",
+
 
     type:
       "title",
@@ -17,13 +20,18 @@ const presentationLayouts = {
 
 
 
+
+
   content: {
 
+
     name:
-      "Content Slide",
+      "Editorial Content",
+
 
     description:
-      "Title with bullet points and supporting visual",
+      "Minimal text layout with strong hierarchy and optional visual",
+
 
     type:
       "content",
@@ -33,13 +41,18 @@ const presentationLayouts = {
 
 
 
+
+
   imageText: {
 
+
     name:
-      "Image Text",
+      "Visual Story",
+
 
     description:
-      "Split layout with text and visual",
+      "Split composition with explanation and supporting visual",
+
 
     type:
       "imageText",
@@ -49,13 +62,18 @@ const presentationLayouts = {
 
 
 
+
+
   diagram: {
 
+
     name:
-      "Process Diagram",
+      "Process Flow",
+
 
     description:
-      "Flow based diagram with connected steps",
+      "Clean step-by-step process visualization",
+
 
     type:
       "diagram",
@@ -65,13 +83,18 @@ const presentationLayouts = {
 
 
 
+
+
   comparison: {
 
+
     name:
-      "Comparison",
+      "Comparison View",
+
 
     description:
-      "Two side comparison layout",
+      "Balanced comparison between two concepts",
+
 
     type:
       "comparison",
@@ -81,13 +104,18 @@ const presentationLayouts = {
 
 
 
+
+
   timeline: {
 
+
     name:
-      "Timeline",
+      "Timeline Story",
+
 
     description:
-      "Sequential timeline presentation",
+      "Sequential story progression layout",
+
 
     type:
       "timeline",
@@ -97,13 +125,18 @@ const presentationLayouts = {
 
 
 
+
+
   summary: {
 
+
     name:
-      "Summary",
+      "Key Takeaway",
+
 
     description:
-      "Key takeaway ending slide",
+      "Minimal closing slide with memorable message",
+
 
     type:
       "summary",
@@ -118,6 +151,10 @@ const presentationLayouts = {
 
 
 
+
+
+
+
 export function getPresentationLayout(
 
   layout
@@ -127,11 +164,15 @@ export function getPresentationLayout(
 
   return (
 
+
     presentationLayouts[layout]
+
 
     ||
 
+
     presentationLayouts.content
+
 
   );
 
@@ -142,7 +183,12 @@ export function getPresentationLayout(
 
 
 
+
+
+
+
 export function getAvailableLayouts(){
+
 
   return Object.keys(
 
@@ -152,6 +198,10 @@ export function getAvailableLayouts(){
 
 
 }
+
+
+
+
 
 
 

@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 
 import chatRoutes from "./routes/chatRoutes.js";
 
+import imageRoutes from "./routes/imageRoutes.js";
 
 // ======================================================
 // ENVIRONMENT
@@ -84,6 +85,10 @@ app.use(
   chatRoutes
 );
 
+app.use(
+  "/api/generate-image",
+  imageRoutes
+);
 
 // ======================================================
 // PAYLOAD TOO LARGE ERROR

@@ -3,55 +3,44 @@
 //
 // Hybrid Visual Engine
 //
+// Supports:
+// ✓ Gemini AI image generation
+// ✓ SVG diagrams
+// ✓ SVG icons
+// ✓ PPT compatible assets
+// ✓ Future image providers
+//
 // Flow:
 //
-// slide.visualType
-//        ↓
-// visualGenerationService
-//        ↓
-// ┌─────────────────────────────┐
-// │ Diagram / Flow              │
-// │        ↓                    │
-// │     addShape()              │
-// │                             │
-// │ SVG / Visual Asset          │
-// │        ↓                    │
-// │     addImage()              │
-// │                             │
-// │ AI Generated Image          │
-// │        ↓                    │
-// │     addImage()              │
-// └─────────────────────────────┘
-//
-//        ↓
-//
-// PPTX Export
-//
-// ======================================================
-//
-// Responsibilities:
-//
-// - Decide visual rendering method
-// - Generate local SVG visuals
-// - Generate diagrams
-// - Prepare PPT-ready assets
-// - Support future AI image APIs
+// Slide JSON
+//      ↓
+// visualType
+//      ↓
+// Visual Generator
+//      ↓
+// PPT Export
 //
 // ======================================================
 
 
 
+const IMAGE_API_URL =
+  "http://localhost:5000/api/generate-image";
 
 
 
-export function generateSlideVisual({
 
+
+// ======================================================
+// MAIN VISUAL ROUTER
+// ======================================================
+
+
+export async function generateSlideVisual({
 
   visualType,
 
-
   prompt,
-
 
   diagram,
 
@@ -61,6 +50,19 @@ export function generateSlideVisual({
 
 
   switch(visualType){
+
+
+
+    case "image":
+
+
+      return await generateImageVisual(
+
+        prompt
+
+      );
+
+
 
 
 
@@ -76,6 +78,7 @@ export function generateSlideVisual({
 
 
 
+
     case "icon":
 
 
@@ -85,17 +88,6 @@ export function generateSlideVisual({
 
       );
 
-
-
-
-    case "image":
-
-
-      return generateImageVisual(
-
-        prompt
-
-      );
 
 
 
@@ -118,22 +110,199 @@ export function generateSlideVisual({
 
 
 
+
 // ======================================================
-// IMAGE VISUAL
+// GEMINI IMAGE GENERATION
 //
-// Current:
-// Generates premium SVG visual.
+// Returns:
+// {
+//   type:"image",
+//   format:"base64",
+//   data:"data:image/png;base64,..."
+// }
 //
-// Future:
-// Replace with AI image generation API.
+// ======================================================
+
+
+async function generateImageVisual(
+
+  prompt
+
+){
+
+
+
+  try {
+
+
+
+    const response =
+
+      await fetch(
+
+        IMAGE_API_URL,
+
+        {
+
+
+
+          method:"POST",
+
+
+
+          headers:{
+
+
+
+            "Content-Type":
+
+              "application/json",
+
+
+
+          },
+
+
+
+          body:JSON.stringify({
+
+
+
+            prompt:
+
+`Create a premium cinematic educational visual.
+
+Topic:
+${prompt}
+
+Style:
+- Apple keynote presentation quality
+- TED talk visual style
+- realistic
+- professional lighting
+- clean composition
+- modern educational documentary
+- no text
+- no labels
+- no watermark`
+
+
+
+          })
+
+
+
+        }
+
+      );
+
+
+
+
+
+
+
+    const data =
+
+      await response.json();
+
+
+
+
+
+
+
+    if(
+
+      !data.success ||
+
+      !data.image
+
+    ){
+
+
+      console.error(
+
+        "Gemini image missing"
+
+      );
+
+
+      return null;
+
+
+    }
+
+
+
+
+
+
+
+    return {
+
+
+      type:
+
+        "image",
+
+
+
+      format:
+
+        "base64",
+
+
+
+      data:
+
+        data.image,
+
+
+    };
+
+
+
+
+  }
+
+  catch(error){
+
+
+
+    console.error(
+
+      "Visual generation failed:",
+
+      error
+
+    );
+
+
+
+    return null;
+
+
+
+  }
+
+
+}
+// ======================================================
+// ICON VISUAL GENERATOR
+//
+// Used for:
+// ✓ Concept cards
+// ✓ Feature highlights
+// ✓ Small visual elements
 //
 // Output:
-// Used with pptx.addImage()
+// SVG → PPT Image
 //
 // ======================================================
 
 
-function generateImageVisual(
+function generateIconVisual(
 
   prompt
 
@@ -159,19 +328,21 @@ function generateImageVisual(
     data:
 
 
+
 `
 
 <svg
 
 xmlns="http://www.w3.org/2000/svg"
 
-width="900"
+width="600"
 
-height="550"
+height="600"
 
-viewBox="0 0 900 550"
+viewBox="0 0 600 600"
 
 >
+
 
 
 <defs>
@@ -179,7 +350,7 @@ viewBox="0 0 900 550"
 
 <linearGradient
 
-id="gradient"
+id="iconGradient"
 
 x1="0"
 
@@ -196,7 +367,7 @@ y2="1"
 
 offset="0%"
 
-stop-color="#6366f1"
+stop-color="#2563EB"
 
 />
 
@@ -205,7 +376,7 @@ stop-color="#6366f1"
 
 offset="100%"
 
-stop-color="#a855f7"
+stop-color="#38BDF8"
 
 />
 
@@ -221,13 +392,13 @@ stop-color="#a855f7"
 
 <rect
 
-width="900"
+width="600"
 
-height="550"
+height="600"
 
-rx="50"
+rx="120"
 
-fill="url(#gradient)"
+fill="#F8FAFC"
 
 />
 
@@ -237,15 +408,13 @@ fill="url(#gradient)"
 
 <circle
 
-cx="450"
+cx="300"
 
-cy="190"
+cy="240"
 
-r="90"
+r="110"
 
-fill="white"
-
-opacity="0.15"
+fill="url(#iconGradient)"
 
 />
 
@@ -255,13 +424,13 @@ opacity="0.15"
 
 <text
 
-x="450"
+x="300"
 
-y="210"
+y="275"
 
 fill="white"
 
-font-size="70"
+font-size="90"
 
 font-family="Arial"
 
@@ -277,41 +446,17 @@ text-anchor="middle"
 
 
 
-<text
-
-x="450"
-
-y="330"
-
-fill="white"
-
-font-size="34"
-
-font-family="Arial"
-
-text-anchor="middle"
-
->
-
-AI Visual Concept
-
-</text>
-
-
-
 
 
 <text
 
-x="450"
+x="300"
 
-y="390"
+y="430"
 
-fill="white"
+fill="#0F172A"
 
-opacity="0.85"
-
-font-size="22"
+font-size="24"
 
 font-family="Arial"
 
@@ -321,153 +466,7 @@ text-anchor="middle"
 
 ${escapeXML(
 
-  shortenText(prompt)
-
-)}
-
-</text>
-
-
-
-
-
-</svg>
-
-`
-
-  };
-
-
-}
-// ======================================================
-// ICON VISUAL
-//
-// Used for:
-// - concept cards
-// - feature slides
-// - highlight sections
-//
-// Output:
-// SVG asset → pptx.addImage()
-//
-// ======================================================
-
-
-function generateIconVisual(
-
-  prompt
-
-){
-
-
-  return {
-
-
-    type:
-
-      "image",
-
-
-
-    format:
-
-      "svg",
-
-
-
-    data:
-
-
-`
-
-<svg
-
-xmlns="http://www.w3.org/2000/svg"
-
-width="500"
-
-height="500"
-
-viewBox="0 0 500 500"
-
->
-
-
-<rect
-
-width="500"
-
-height="500"
-
-rx="80"
-
-fill="#111827"
-
-/>
-
-
-
-
-
-<circle
-
-cx="250"
-
-cy="190"
-
-r="90"
-
-fill="#8b5cf6"
-
-/>
-
-
-
-
-
-<text
-
-x="250"
-
-y="220"
-
-fill="white"
-
-font-size="80"
-
-font-family="Arial"
-
-text-anchor="middle"
-
->
-
-✦
-
-</text>
-
-
-
-
-
-<text
-
-x="250"
-
-y="360"
-
-fill="white"
-
-font-size="22"
-
-font-family="Arial"
-
-text-anchor="middle"
-
->
-
-${escapeXML(
-
-  shortenText(prompt)
+shortenText(prompt)
 
 )}
 
@@ -495,15 +494,12 @@ ${escapeXML(
 
 
 // ======================================================
-// DIAGRAM VISUAL
+// DIAGRAM VISUAL GENERATOR
 //
-// Creates process/flow diagrams.
-//
-// Future:
-// Can directly map to pptx.addShape()
-//
-// Current:
-// SVG → pptx.addImage()
+// Keeps SVG because:
+// ✓ Faster
+// ✓ Editable
+// ✓ Perfect for process slides
 //
 // ======================================================
 
@@ -526,6 +522,7 @@ function generateDiagramVisual(
 
 
 
+
   return {
 
 
@@ -544,19 +541,21 @@ function generateDiagramVisual(
     data:
 
 
+
 `
 
 <svg
 
 xmlns="http://www.w3.org/2000/svg"
 
-width="1100"
+width="1200"
 
-height="350"
+height="400"
 
-viewBox="0 0 1100 350"
+viewBox="0 0 1200 400"
 
 >
+
 
 
 <defs>
@@ -564,7 +563,7 @@ viewBox="0 0 1100 350"
 
 <linearGradient
 
-id="box"
+id="boxGradient"
 
 x1="0"
 
@@ -581,7 +580,7 @@ y2="1"
 
 offset="0%"
 
-stop-color="#8b5cf6"
+stop-color="#2563EB"
 
 />
 
@@ -590,7 +589,7 @@ stop-color="#8b5cf6"
 
 offset="100%"
 
-stop-color="#4f46e5"
+stop-color="#38BDF8"
 
 />
 
@@ -604,11 +603,7 @@ stop-color="#4f46e5"
 
 
 
-
-
 ${
-
-
 steps.map(
 
 (step,index)=>`
@@ -617,17 +612,17 @@ steps.map(
 
 <rect
 
-x="${80 + index * 240}"
+x="${80 + index * 260}"
 
-y="110"
+y="120"
 
-width="170"
+width="190"
 
-height="90"
+height="100"
 
-rx="20"
+rx="25"
 
-fill="url(#box)"
+fill="url(#boxGradient)"
 
 />
 
@@ -637,13 +632,13 @@ fill="url(#box)"
 
 <text
 
-x="${165 + index * 240}"
+x="${175 + index * 260}"
 
-y="165"
+y="180"
 
 fill="white"
 
-font-size="20"
+font-size="22"
 
 font-family="Arial"
 
@@ -662,7 +657,6 @@ ${escapeXML(step)}
 
 
 ${
-
 index < steps.length - 1
 
 ?
@@ -671,13 +665,13 @@ index < steps.length - 1
 
 <text
 
-x="${215 + index * 240}"
+x="${225 + index * 260}"
 
-y="165"
+y="180"
 
-fill="white"
+fill="#2563EB"
 
-font-size="35"
+font-size="45"
 
 font-family="Arial"
 
@@ -703,10 +697,7 @@ text-anchor="middle"
 
 ).join("")
 
-
 }
-
-
 
 
 
@@ -718,15 +709,6 @@ text-anchor="middle"
 
 
 }
-
-
-
-
-
-
-
-
-
 // ======================================================
 // HELPERS
 // ======================================================
@@ -741,6 +723,7 @@ function shortenText(
 ){
 
 
+
   if(!text){
 
     return "";
@@ -749,9 +732,19 @@ function shortenText(
 
 
 
-  if(text.length <= limit){
+  const value =
 
-    return text;
+    String(text);
+
+
+
+  if(
+
+    value.length <= limit
+
+  ){
+
+    return value;
 
   }
 
@@ -759,7 +752,7 @@ function shortenText(
 
   return (
 
-    text.substring(
+    value.substring(
 
       0,
 
@@ -798,7 +791,6 @@ function escapeXML(
 
   )
 
-
   .replace(
 
     /&/g,
@@ -806,7 +798,6 @@ function escapeXML(
     "&amp;"
 
   )
-
 
   .replace(
 
@@ -816,7 +807,6 @@ function escapeXML(
 
   )
 
-
   .replace(
 
     />/g,
@@ -825,7 +815,6 @@ function escapeXML(
 
   )
 
-
   .replace(
 
     /"/g,
@@ -833,7 +822,6 @@ function escapeXML(
     "&quot;"
 
   )
-
 
   .replace(
 
@@ -844,5 +832,291 @@ function escapeXML(
   );
 
 
+}
+
+
+
+
+
+
+
+
+
+// ======================================================
+// IMAGE FORMAT CONVERTER
+//
+// Makes Gemini response compatible
+// with pptx.addImage()
+//
+// ======================================================
+
+
+export function prepareVisualForPpt(
+
+  visual
+
+){
+
+
+
+  if(!visual){
+
+    return null;
+
+  }
+
+
+
+
+
+
+
+  if(
+
+    visual.format === "base64"
+
+  ){
+
+
+
+    return {
+
+
+      type:"image",
+
+
+      data:
+
+        visual.data,
+
+
+    };
+
+
+
+  }
+
+
+
+
+
+
+
+  if(
+
+    visual.format === "svg"
+
+  ){
+
+
+
+    return {
+
+
+      type:"image",
+
+
+      data:
+
+        svgToDataUri(
+
+          visual.data
+
+        ),
+
+
+    };
+
+
+
+  }
+
+
+
+
+
+
+
+  return visual;
+
 
 }
+
+
+
+
+
+
+
+
+
+// ======================================================
+// SVG TO DATA URI
+// ======================================================
+
+
+function svgToDataUri(
+
+  svg
+
+){
+
+
+
+  return (
+
+    "data:image/svg+xml;base64," +
+
+    btoa(
+
+      unescape(
+
+        encodeURIComponent(
+
+          svg
+
+        )
+
+      )
+
+    )
+
+  );
+
+
+}
+// ======================================================
+// DEFAULT VISUAL FALLBACK
+//
+// Keeps PPT stable if Gemini fails.
+//
+// IMPORTANT:
+// No fake AI Visual Concept card.
+//
+// Returns null so PPT can skip visual.
+// ======================================================
+
+
+export function fallbackVisual(){
+
+  return null;
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================================
+// CHECK VISUAL SUPPORT
+// ======================================================
+
+
+export function isVisualAvailable(
+
+  visual
+
+){
+
+
+  return !!(
+
+    visual &&
+
+    visual.type === "image" &&
+
+    visual.data
+
+  );
+
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================================
+// VISUAL TYPE NORMALIZER
+//
+// Keeps compatibility with old AI JSON
+// ======================================================
+
+
+export function normalizeVisualType(
+
+  type
+
+){
+
+
+
+  switch(type){
+
+
+
+    case "hero":
+
+    case "image":
+
+      return "image";
+
+
+
+    case "process":
+
+    case "flow":
+
+      return "diagram";
+
+
+
+    case "feature":
+
+    case "icon":
+
+      return "icon";
+
+
+
+    default:
+
+      return "image";
+
+
+
+  }
+
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================================
+// END NYXORA AI VISUAL ENGINE
+//
+// Features:
+//
+// ✓ Gemini image generation ready
+// ✓ Real cinematic visuals
+// ✓ SVG diagrams
+// ✓ SVG icons
+// ✓ PPT compatible
+// ✓ No fake purple placeholders
+// ✓ No AI Visual Concept cards
+//
+// ======================================================

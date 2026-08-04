@@ -1,70 +1,51 @@
 import PptxGenJS from "pptxgenjs";
 
-
-import presentationThemes
-  from "../utils/presentationThemes";
-
-
-import branding
-  from "../utils/branding";
-
+import presentationThemes from "../utils/presentationThemes";
 
 import {
   getPresentationLayout,
 } from "../utils/presentationLayouts";
 
-
 import {
   generateSlideVisual,
+  prepareVisualForPpt,
 } from "./visualGenerationService";
 
 
 
-
-
-
-
 // ======================================================
-// NYXORA AI KEYNOTE STYLE PPT ENGINE
+// NYXORA AI PPT EXPORT ENGINE
 //
-// Flow:
+// Preserved:
+// ✓ PptxGenJS
+// ✓ Layout Engine
+// ✓ AI JSON support
+// ✓ SVG support
+// ✓ AI Image support
+// ✓ Diagram
+// ✓ Comparison
+// ✓ Timeline
+// ✓ Summary
 //
-// AI Slide JSON
-//        ↓
-// Layout Engine
-//        ↓
-// Visual Engine
-//        ↓
-// PPTX Export
-//
-// Style:
-//
-// - Apple Keynote inspired
-// - Minimal
-// - Cinematic
-// - Premium spacing
-//
+// Added:
+// ✓ Premium keynote design
+// ✓ Smooth gradient bars
+// ✓ Cover information
+// ✓ Real AI images
+// ✓ Number circles
+// ✓ Connected flow charts
+// ✓ Theme icons
 // ======================================================
-
-
-
-
-
 
 
 
 export async function exportPresentationToPpt({
 
-
   presentation,
-
 
   themeName = "nyxoraPremium",
 
-
-
 }) {
-
 
 
   const pptx =
@@ -73,24 +54,13 @@ export async function exportPresentationToPpt({
 
 
 
-
-
-
-
-
   const theme =
-
 
     presentationThemes[themeName]
 
-
     ||
 
-
     presentationThemes.nyxoraPremium;
-
-
-
 
 
 
@@ -104,13 +74,9 @@ export async function exportPresentationToPpt({
 
 
 
-
-
   pptx.author =
 
     "Nyxora AI";
-
-
 
 
 
@@ -124,24 +90,11 @@ export async function exportPresentationToPpt({
 
 
 
-
-
-  pptx.subject =
-
-    presentation.title;
-
-
-
-
-
-
-
   pptx.title =
 
-    presentation.title;
+    presentation.title ||
 
-
-
+    "Nyxora AI Presentation";
 
 
 
@@ -155,17 +108,14 @@ export async function exportPresentationToPpt({
       theme.typography.title,
 
 
-
     bodyFontFace:
 
       theme.typography.body,
 
 
-
     lang:
 
       "en-US",
-
 
 
   };
@@ -176,32 +126,67 @@ export async function exportPresentationToPpt({
 
 
 
+  const slides =
 
-  presentation.slides.forEach(
-
-    (slide,index)=>{
-
+    presentation.slides || [];
 
 
-      createSlide({
-
-        pptx,
-
-        slide,
-
-        index,
-
-        theme,
-
-      });
 
 
+
+
+  for(
+
+    let index = 0;
+
+    index < slides.length;
+
+    index++
+
+  ){
+
+
+
+    const slide =
+
+      slides[index];
+
+
+
+
+
+    if(
+
+      !validateSlide(slide)
+
+    ){
+
+      continue;
 
     }
 
-  );
 
 
+
+
+
+    await createSlide({
+
+      pptx,
+
+      slide,
+
+      index,
+
+      theme,
+
+      presentation,
+
+    });
+
+
+
+  }
 
 
 
@@ -210,10 +195,7 @@ export async function exportPresentationToPpt({
 
   await pptx.writeFile({
 
-
-
     fileName:
-
 
       `${
 
@@ -224,9 +206,7 @@ export async function exportPresentationToPpt({
       }.pptx`,
 
 
-
   });
-
 
 
 }
@@ -239,25 +219,22 @@ export async function exportPresentationToPpt({
 
 
 
+// ======================================================
+// CREATE SLIDE
+// ======================================================
 
 
-
-
-function createSlide({
-
+async function createSlide({
 
   pptx,
 
-
   slide,
-
 
   index,
 
-
   theme,
 
-
+  presentation,
 
 }) {
 
@@ -271,32 +248,15 @@ function createSlide({
 
 
 
-
-
-
   applyPremiumBackground(
 
     page,
 
-    theme
+    theme,
+
+    index
 
   );
-
-
-
-
-
-
-
-
-  addBranding(
-
-    page,
-
-    theme
-
-  );
-
 
 
 
@@ -313,12 +273,9 @@ function createSlide({
 
     )?.type
 
-
     ||
 
-
     "content";
-
 
 
 
@@ -339,6 +296,8 @@ function createSlide({
 
         slide,
 
+        presentation,
+
         theme
 
       );
@@ -353,7 +312,7 @@ function createSlide({
     case "diagram":
 
 
-      createDiagramSlide(
+      await createDiagramSlide(
 
         page,
 
@@ -433,7 +392,7 @@ function createSlide({
     default:
 
 
-      createContentSlide(
+      await createContentSlide(
 
         page,
 
@@ -444,10 +403,7 @@ function createSlide({
       );
 
 
-
   }
-
-
 
 
 
@@ -467,11 +423,18 @@ function createSlide({
 
 
 }
+// ======================================================
+// COVER SLIDE
+// ======================================================
+
+
 function createTitleSlide(
 
   page,
 
   slide,
+
+  presentation,
 
   theme
 
@@ -479,73 +442,11 @@ function createTitleSlide(
 
 
 
-  // Main cinematic glow
+  // only one gradient bar on cover
 
+  addGradientBar(
 
-  page.addShape(
-
-    "ellipse",
-
-    {
-
-
-      x:
-
-        4.2,
-
-
-      y:
-
-        1.2,
-
-
-      w:
-
-        4,
-
-
-      h:
-
-        3,
-
-
-
-      fill:{
-
-
-        color:
-
-          cleanColor(
-
-            theme.colors.primary
-
-          ),
-
-
-        transparency:
-
-          65,
-
-
-
-      },
-
-
-
-      line:{
-
-
-        transparency:
-
-          100,
-
-
-
-      },
-
-
-    }
-
+    page
 
   );
 
@@ -554,58 +455,33 @@ function createTitleSlide(
 
 
 
-
-
-
   page.addText(
-
 
     slide.title ||
 
+    presentation.title ||
 
     "Nyxora AI Presentation",
-
 
     {
 
 
-      x:
+      x:1,
 
-        1,
+      y:1.8,
 
+      w:10.5,
 
-      y:
-
-        2,
-
-
-      w:
-
-        11,
+      h:0.8,
 
 
-      h:
-
-        0.8,
+      fontSize:44,
 
 
-
-      fontSize:
-
-        42,
+      bold:true,
 
 
-
-      bold:
-
-        true,
-
-
-
-      align:
-
-        "center",
-
+      align:"center",
 
 
       color:
@@ -617,17 +493,7 @@ function createTitleSlide(
         ),
 
 
-
-      breakLine:
-
-        false,
-
-
-
-      margin:
-
-        0,
-
+      margin:0,
 
 
     }
@@ -641,135 +507,121 @@ function createTitleSlide(
 
 
 
+  page.addText(
 
+    slide.subtitle ||
 
-  if(slide.subtitle){
-
-
-
-    page.addText(
-
-
-      slide.subtitle,
-
-
-      {
-
-
-        x:
-
-          2,
-
-
-        y:
-
-          3.1,
-
-
-        w:
-
-          9,
-
-
-        h:
-
-          0.4,
-
-
-
-        fontSize:
-
-          18,
-
-
-
-        align:
-
-          "center",
-
-
-
-        color:
-
-          cleanColor(
-
-            theme.colors.mutedText
-
-          ),
-
-
-
-        margin:
-
-          0,
-
-
-
-      }
-
-
-    );
-
-
-
-  }
-
-
-
-
-
-
-
-
-
-  page.addShape(
-
-    "line",
+    "Introduction",
 
     {
 
 
-      x:
+      x:2,
 
-        5,
+      y:2.9,
 
-
-      y:
-
-        4.1,
+      w:9,
 
 
-      w:
-
-        2,
+      h:0.4,
 
 
-      h:
-
-        0,
+      fontSize:20,
 
 
-
-      line:{
-
-
-        color:
-
-          cleanColor(
-
-            theme.colors.accent
-
-          ),
+      align:"center",
 
 
+      color:
 
-        width:
+        cleanColor(
 
-          2,
+          theme.colors.mutedText
+
+        ),
+
+
+      margin:0,
+
+
+    }
+
+
+  );
 
 
 
-      },
+
+
+
+
+  page.addText(
+
+`
+
+Presented By
+
+${
+
+presentation.presenter ||
+
+presentation.author ||
+
+""
+
+}
+
+
+
+${
+
+presentation.organization ||
+
+""
+
+}
+
+
+
+${
+
+presentation.date ||
+
+""
+
+}
+
+`,
+
+    {
+
+
+      x:3,
+
+      y:4.3,
+
+      w:7,
+
+
+      h:1.2,
+
+
+      fontSize:17,
+
+
+      align:"center",
+
+
+      color:
+
+        cleanColor(
+
+          theme.colors.mutedText
+
+        ),
+
+
+      margin:0,
 
 
     }
@@ -789,21 +641,373 @@ function createTitleSlide(
 
 
 
+// ======================================================
+// BACKGROUND SYSTEM
+// ======================================================
 
 
+function applyPremiumBackground(
+
+  page,
+
+  theme,
+
+  index
+
+){
+
+
+
+  page.background = {
+
+
+    color:
+
+      cleanColor(
+
+        theme.colors.background ||
+
+        "FFFFFF"
+
+      ),
+
+
+  };
+
+
+
+
+
+
+
+  // no extra line on cover
+
+  if(index !== 0){
+
+
+
+    addGradientBar(
+
+      page
+
+    );
+
+
+
+  }
+
+
+
+
+
+
+
+  // subtle decoration
+
+  if(index % 2 === 0){
+
+
+
+    addDotDecoration(
+
+      page,
+
+      theme
+
+    );
+
+
+  }
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================================
+// SMOOTH BLENDED GRADIENT BAR
+// ======================================================
+
+
+function addGradientBar(
+
+ page
+
+){
+
+
+
+ const svg = `
+
+<svg
+
+xmlns="http://www.w3.org/2000/svg"
+
+width="1600"
+
+height="40"
+
+>
+
+
+
+<defs>
+
+
+<linearGradient
+
+id="premium"
+
+x1="0"
+
+x2="1"
+
+>
+
+
+
+<stop
+
+offset="0"
+
+stop-color="#2563EB"
+
+/>
+
+
+
+<stop
+
+offset="0.25"
+
+stop-color="#06B6D4"
+
+/>
+
+
+
+<stop
+
+offset="0.5"
+
+stop-color="#22C55E"
+
+/>
+
+
+
+<stop
+
+offset="0.75"
+
+stop-color="#EAB308"
+
+/>
+
+
+
+<stop
+
+offset="1"
+
+stop-color="#F97316"
+
+/>
+
+
+
+</linearGradient>
+
+
+</defs>
+
+
+
+
+
+<rect
+
+width="1600"
+
+height="40"
+
+fill="url(#premium)"
+
+/>
+
+
+
+</svg>
+
+`;
+
+
+
+
+
+ page.addImage({
+
+  data:
+
+    svgToDataUri(svg),
+
+
+  x:0,
+
+  y:0,
+
+
+  w:13.33,
+
+  h:0.12,
+
+
+ });
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================================
+// DOT DECORATION
+// Maximum 2 per page
+// ======================================================
+
+
+function addDotDecoration(
+
+ page,
+
+ theme
+
+){
+
+
+
+ const color =
+
+ cleanColor(
+
+  theme.colors.accent ||
+
+  "2563EB"
+
+ );
+
+
+
+
+
+
+
+ for(
+
+  let row=0;
+
+  row<4;
+
+  row++
+
+ ){
+
+
+
+  for(
+
+   let col=0;
+
+   col<5;
+
+   col++
+
+  ){
+
+
+
+   page.addShape(
+
+    "ellipse",
+
+    {
+
+
+      x:
+
+       11.1 +
+
+       col*0.16,
+
+
+      y:
+
+       6.25 +
+
+       row*0.16,
+
+
+      w:
+
+       0.04,
+
+
+      h:
+
+       0.04,
+
+
+
+      fill:{
+
+        color,
+
+        transparency:55,
+
+      },
+
+
+
+      line:{
+
+        transparency:100,
+
+      },
+
+
+    }
+
+
+   );
+
+
+  }
+
+
+ }
+
+
+
+}
 // ======================================================
 // CONTENT SLIDE
-//
-// Keynote style:
-// - Less text
-// - Strong hierarchy
-// - Visual focus
-//
 // ======================================================
 
 
-
-function createContentSlide(
+async function createContentSlide(
 
   page,
 
@@ -815,11 +1019,11 @@ function createContentSlide(
 
 
 
-  addTitle(
+  addTitleIcon(
 
     page,
 
-    slide.title,
+    slide,
 
     theme
 
@@ -831,116 +1035,84 @@ function createContentSlide(
 
 
 
-  if(
+  page.addText(
 
-    slide.points &&
+    slide.title || "",
 
-    slide.points.length
+    {
 
-  ){
+
+      x:1.15,
+
+      y:0.55,
+
+      w:7,
+
+      h:0.45,
+
+
+      fontSize:30,
+
+
+      bold:true,
+
+
+      color:
+
+        cleanColor(
+
+          theme.colors.text
+
+        ),
+
+
+      margin:0,
+
+
+    }
+
+
+  );
+
+
+
+
+
+
+
+  if(slide.headline){
 
 
 
     page.addText(
 
-
-      slide.points.map(
-
-        point => ({
-
-
-          text:
-
-            point,
-
-
-          options:{
-
-
-            bullet:{
-
-
-              indent:
-
-                16,
-
-
-            },
-
-
-
-          },
-
-
-        })
-
-
-      ),
-
-
+      slide.headline,
 
       {
 
 
-        x:
+        x:1.15,
 
-          0.9,
+        y:1.15,
 
+        w:6.5,
 
-        y:
-
-          1.7,
-
-
-        w:
-
-          slide.imagePrompt
-
-          ?
+        h:0.4,
 
 
-          5.2
-
-
-          :
-
-
-          10,
-
-
-
-        h:
-
-          3,
-
-
-
-        fontSize:
-
-          20,
-
-
-
-        breakLine:
-
-          true,
-
+        fontSize:17,
 
 
         color:
 
           cleanColor(
 
-            theme.colors.text
+            theme.colors.mutedText
 
           ),
 
 
-
-        paraSpaceAfterPt:
-
-          18,
-
+        margin:0,
 
 
       }
@@ -958,17 +1130,33 @@ function createContentSlide(
 
 
 
+  renderNumberPoints(
+
+    page,
+
+    slide.points || [],
+
+    theme
+
+  );
+
+
+
+
+
+
+
+  // Real AI image
+
   if(
 
-    slide.imagePrompt ||
-
-    slide.visualType
+    slide.imagePrompt
 
   ){
 
 
 
-    addGeneratedVisual(
+    await addGeneratedImage(
 
       page,
 
@@ -984,449 +1172,116 @@ function createContentSlide(
 
 
 
-
-
-
-
-
-  if(
-
-    slide.keyTakeaway
-
-  ){
-
-
-
-    createInsight(
-
-      page,
-
-      slide.keyTakeaway,
-
-      theme
-
-    );
-
-
-
-  }
-
-
-
 }
-function createDiagramSlide(
 
-  page,
 
-  slide,
 
-  theme
+
+
+
+
+
+
+// ======================================================
+// TITLE ICON
+// ======================================================
+
+
+function addTitleIcon(
+
+ page,
+
+ slide,
+
+ theme
 
 ){
 
 
 
-  addTitle(
+ page.addShape(
 
-    page,
+  "ellipse",
 
-    slide.title,
-
-    theme
-
-  );
+  {
 
 
+   x:0.55,
+
+   y:0.55,
+
+   w:0.45,
+
+   h:0.45,
 
 
+   fill:{
+
+    color:
+
+     cleanColor(
+
+      theme.colors.accent ||
+
+      "2563EB"
+
+     ),
+
+   },
 
 
+   line:{
 
+    transparency:100,
 
-  const steps =
+   },
 
-
-    slide.diagram?.steps || [];
-
-
-
-
-
-
-
-
-  if(
-
-    steps.length === 0
-
-  ){
-
-    createVisualPlaceholder(
-
-      page,
-
-      "No Diagram Data",
-
-      "AI could not generate diagram steps.",
-
-      3,
-
-      2.5,
-
-      6,
-
-      1.5,
-
-      theme
-
-    );
-
-
-    return;
 
   }
 
 
+ );
 
 
 
 
 
 
+ page.addText(
 
-  const startX = 0.8;
+  "✦",
 
+  {
 
-  const boxWidth = 2.1;
 
+   x:0.55,
 
-  const gap = 0.35;
+   y:0.64,
 
+   w:0.45,
 
+   h:0.12,
 
 
+   fontSize:16,
 
 
+   bold:true,
 
-  steps.forEach(
 
-    (step,index)=>{
+   align:"center",
 
 
+   color:"FFFFFF",
 
-      const x =
 
-        startX +
+   margin:0,
 
-        index *
 
-        (
+  }
 
-          boxWidth +
 
-          gap
-
-        );
-
-
-
-
-
-
-
-
-      page.addShape(
-
-        "roundRect",
-
-        {
-
-
-          x,
-
-
-          y:
-
-            2.5,
-
-
-          w:
-
-            boxWidth,
-
-
-          h:
-
-            1.1,
-
-
-
-          rectRadius:
-
-            0.15,
-
-
-
-          fill:{
-
-
-            color:
-
-              cleanColor(
-
-                theme.colors.primary
-
-              ),
-
-
-            transparency:
-
-              15,
-
-
-
-          },
-
-
-
-          line:{
-
-
-            color:
-
-              cleanColor(
-
-                theme.colors.accent
-
-              ),
-
-
-
-            width:
-
-              1,
-
-
-
-          },
-
-
-
-          shadow:{
-
-
-            type:
-
-              "outer",
-
-
-            blur:
-
-              3,
-
-
-            angle:
-
-              45,
-
-
-            distance:
-
-              2,
-
-
-            opacity:
-
-              0.2,
-
-
-
-          },
-
-
-        }
-
-
-      );
-
-
-
-
-
-
-
-
-      page.addText(
-
-
-        step,
-
-
-        {
-
-
-          x:
-
-            x + 0.15,
-
-
-          y:
-
-            2.82,
-
-
-          w:
-
-            boxWidth - 0.3,
-
-
-          h:
-
-            0.5,
-
-
-
-          fontSize:
-
-            getDynamicFontSize(
-
-              step
-
-            ),
-
-
-
-          bold:
-
-            true,
-
-
-
-          align:
-
-            "center",
-
-
-
-          valign:
-
-            "mid",
-
-
-
-          color:
-
-            "FFFFFF",
-
-
-
-          breakLine:
-
-            true,
-
-
-
-          margin:
-
-            0,
-
-
-
-        }
-
-
-      );
-
-
-
-
-
-
-
-
-
-      if(
-
-        index <
-
-        steps.length - 1
-
-      ){
-
-
-
-        page.addText(
-
-          "→",
-
-          {
-
-
-            x:
-
-              x +
-
-              boxWidth +
-
-              0.05,
-
-
-
-            y:
-
-              2.85,
-
-
-
-            w:
-
-              0.3,
-
-
-
-            h:
-
-              0.3,
-
-
-
-            fontSize:
-
-              22,
-
-
-
-            bold:
-
-              true,
-
-
-
-            color:
-
-              cleanColor(
-
-                theme.colors.accent
-
-              ),
-
-
-
-          }
-
-
-        );
-
-
-
-      }
-
-
-
-    }
-
-
-  );
+ );
 
 
 
@@ -1440,279 +1295,646 @@ function createDiagramSlide(
 
 
 
-function getDynamicFontSize(
-
-  text
-
-){
+// ======================================================
+// NUMBERED POINTS
+// ======================================================
 
 
+function renderNumberPoints(
 
-  if(
+ page,
 
-    !text
+ points,
 
-  ){
-
-    return 16;
-
-  }
-
-
-
-  if(
-
-    text.length > 30
-
-  ){
-
-    return 10;
-
-  }
-
-
-
-  if(
-
-    text.length > 20
-
-  ){
-
-    return 12;
-
-  }
-
-
-
-  return 15;
-
-
-
-}
-function addGeneratedVisual(
-
-  page,
-
-  slide,
-
-  theme
+ theme
 
 ){
 
 
 
-  const visual =
+ const colors = [
 
 
-    generateSlideVisual({
+  "2563EB",
 
+  "06B6D4",
 
+  "22C55E",
 
-      visualType:
+  "F97316"
 
+ ];
 
-        slide.visualType ||
 
 
-        "image",
 
 
 
 
-      prompt:
+ points
 
+ .slice(
 
-        slide.imagePrompt ||
+  0,
 
+  4
 
-        "",
+ )
 
+ .forEach(
 
+ (point,index)=>{
 
 
-      diagram:
 
+  const y =
 
-        slide.diagram,
+    1.8 +
 
+    index *
 
+    0.85;
 
-    });
 
 
 
 
+  const color =
 
+    colors[
 
+      index %
 
+      colors.length
 
-  if(
+    ];
 
-    !visual
 
-  ){
 
-    return;
 
-  }
-
-
-
-
-
-
-
-
-  if(
-
-    visual.type === "image"
-
-    &&
-
-    visual.format === "svg"
-
-  ){
-
-
-
-    page.addImage({
-
-
-
-      data:
-
-
-        svgToDataUri(
-
-          visual.data
-
-        ),
-
-
-
-
-      x:
-
-        7.2,
-
-
-
-      y:
-
-        1.7,
-
-
-
-      w:
-
-        4.1,
-
-
-
-      h:
-
-        2.8,
-
-
-
-    });
-
-
-
-  }
-
-
-
-}
-
-
-
-
-
-
-
-
-
-function createInsight(
-
-  page,
-
-  text,
-
-  theme
-
-){
 
 
 
   page.addShape(
 
-    "roundRect",
+   "ellipse",
+
+   {
+
+
+    x:0.8,
+
+    y,
+
+
+    w:0.58,
+
+    h:0.58,
+
+
+    fill:{
+
+      color,
+
+    },
+
+
+    line:{
+
+      color,
+
+      transparency:100,
+
+    },
+
+
+   }
+
+
+  );
+
+
+
+
+
+
+
+  page.addText(
+
+   String(
+
+    index + 1
+
+   ),
+
+   {
+
+
+    x:0.8,
+
+    y:y+0.16,
+
+
+    w:0.58,
+
+    h:0.15,
+
+
+    fontSize:17,
+
+
+    bold:true,
+
+
+    color:"FFFFFF",
+
+
+    align:"center",
+
+
+    margin:0,
+
+
+   }
+
+
+  );
+
+
+
+
+
+
+
+  page.addText(
+
+   point,
+
+   {
+
+
+    x:1.65,
+
+    y:y+0.12,
+
+
+    w:5.2,
+
+    h:0.35,
+
+
+    fontSize:18,
+
+
+    color:
+
+      cleanColor(
+
+        theme.colors.text
+
+      ),
+
+
+    margin:0,
+
+
+   }
+
+
+  );
+
+
+
+ });
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================================
+// REAL AI IMAGE RENDERER
+// No fake placeholder
+// ======================================================
+
+
+async function addGeneratedImage(
+
+ page,
+
+ slide,
+
+ theme
+
+){
+
+
+
+ try{
+
+
+
+  const visual =
+
+    await generateSlideVisual({
+
+
+      visualType:
+
+        "image",
+
+
+
+      prompt:
+
+        slide.imagePrompt,
+
+
+
+    });
+
+
+
+
+
+
+  const prepared =
+
+    prepareVisualForPpt(
+
+      visual
+
+    );
+
+
+
+
+
+
+
+  if(!prepared){
+
+
+    return;
+
+
+  }
+
+
+
+
+
+
+
+
+  page.addImage({
+
+    data:
+
+      prepared.data,
+
+
+    x:7.4,
+
+    y:1.4,
+
+
+    w:4.3,
+
+    h:3.5,
+
+
+  });
+
+
+
+
+
+ }
+
+ catch(error){
+
+
+
+  console.error(
+
+    "Image generation failed",
+
+    error
+
+  );
+
+
+
+ }
+
+
+
+}
+// ======================================================
+// DIAGRAM SLIDE
+// Connected flow chart
+//
+// Added:
+// ✓ arrows
+// ✓ icons
+// ✓ better spacing
+// ======================================================
+
+
+async function createDiagramSlide(
+
+ page,
+
+ slide,
+
+ theme
+
+){
+
+
+
+ addTitleIcon(
+
+  page,
+
+  slide,
+
+  theme
+
+ );
+
+
+
+
+
+ page.addText(
+
+  slide.title || "",
+
+  {
+
+
+   x:1.15,
+
+   y:0.55,
+
+   w:8,
+
+   h:0.45,
+
+
+   fontSize:30,
+
+
+   bold:true,
+
+
+   color:
+
+    cleanColor(
+
+     theme.colors.text
+
+    ),
+
+
+   margin:0,
+
+
+  }
+
+
+ );
+
+
+
+
+
+
+
+ const steps =
+
+   slide.diagram?.steps || [];
+
+
+
+
+
+
+
+ const startX = 0.7;
+
+ const gap = 0.65;
+
+ const width = 1.9;
+
+
+
+
+
+
+
+ steps.forEach(
+
+ (step,index)=>{
+
+
+
+  const x =
+
+    startX +
+
+    index *
+
+    (width + gap);
+
+
+
+
+
+
+
+  // connector arrow
+
+  if(
+
+   index < steps.length - 1
+
+  ){
+
+
+
+   page.addShape(
+
+    "line",
 
     {
 
 
-      x:
+     x:x+width,
 
-        0.9,
-
-
-      y:
-
-        5.5,
+     y:2.8,
 
 
-      w:
+     w:gap,
 
-        5.5,
-
-
-      h:
-
-        0.8,
+     h:0,
 
 
+     line:{
 
-      fill:{
+      color:
 
+       cleanColor(
 
-        color:
+        theme.colors.accent
 
-          cleanColor(
-
-            theme.colors.primary
-
-          ),
+       ),
 
 
-        transparency:
-
-          35,
+      width:2,
 
 
+      endArrowType:
 
-      },
-
-
-
-      line:{
+       "triangle",
 
 
-        color:
-
-          cleanColor(
-
-            theme.colors.accent
-
-          ),
-
-
-
-      },
-
+     },
 
 
     }
+
+
+   );
+
+
+
+  }
+
+
+
+
+
+
+
+
+
+  // node box
+
+  page.addShape(
+
+   "roundRect",
+
+   {
+
+
+    x,
+
+    y:2.25,
+
+
+    w:width,
+
+    h:1.2,
+
+
+    fill:{
+
+     color:
+
+      cleanColor(
+
+       theme.colors.surface ||
+
+       "F8FAFC"
+
+      ),
+
+    },
+
+
+    line:{
+
+     color:
+
+      cleanColor(
+
+       theme.colors.accent ||
+
+       "2563EB"
+
+      ),
+
+
+     width:1.2,
+
+
+    },
+
+
+   }
+
+
+  );
+
+
+
+
+
+
+
+
+  // icon
+
+  page.addShape(
+
+   "ellipse",
+
+   {
+
+
+    x:x+0.7,
+
+    y:2.4,
+
+
+    w:0.45,
+
+    h:0.45,
+
+
+    fill:{
+
+     color:
+
+      cleanColor(
+
+       theme.colors.accent ||
+
+       "2563EB"
+
+      ),
+
+    },
+
+
+    line:{
+
+     transparency:100,
+
+    },
+
+
+   }
 
 
   );
@@ -1726,69 +1948,92 @@ function createInsight(
 
   page.addText(
 
+   "✦",
 
-    "✦ " +
-
-    text,
-
-
-    {
+   {
 
 
-      x:
+    x:x+0.7,
 
-        1.15,
-
-
-      y:
-
-        5.75,
+    y:2.5,
 
 
-      w:
+    w:0.45,
 
-        5,
-
-
-      h:
-
-        0.25,
+    h:0.1,
 
 
-
-      fontSize:
-
-        14,
+    fontSize:14,
 
 
-
-      bold:
-
-        true,
+    align:"center",
 
 
-
-      color:
-
-        cleanColor(
-
-          theme.colors.text
-
-        ),
+    color:"FFFFFF",
 
 
-
-      margin:
-
-        0,
+    margin:0,
 
 
-
-    }
+   }
 
 
   );
 
+
+
+
+
+
+
+
+  page.addText(
+
+   step,
+
+   {
+
+
+    x:x+0.1,
+
+    y:3,
+
+
+    w:1.7,
+
+    h:0.25,
+
+
+    fontSize:13,
+
+
+    bold:true,
+
+
+    align:"center",
+
+
+    color:
+
+     cleanColor(
+
+      theme.colors.text
+
+     ),
+
+
+    margin:0,
+
+
+   }
+
+
+  );
+
+
+
+
+ });
 
 
 }
@@ -1801,7 +2046,24 @@ function createInsight(
 
 
 
+// ======================================================
+// COMPARISON SLIDE
+// ======================================================
+
+
 function createComparisonSlide(
+
+ page,
+
+ slide,
+
+ theme
+
+){
+
+
+
+ addTitleIcon(
 
   page,
 
@@ -1809,75 +2071,110 @@ function createComparisonSlide(
 
   theme
 
-){
-
-
-
-  addTitle(
-
-    page,
-
-    slide.title,
-
-    theme
-
-  );
+ );
 
 
 
 
 
 
+ page.addText(
+
+  slide.title || "",
+
+  {
 
 
-  createComparisonBlock(
+   x:1.15,
 
-    page,
-
-    slide.leftTitle ||
-
-    "Before",
+   y:0.55,
 
 
-    slide.leftPoints || [],
+   w:8,
+
+   h:0.45,
 
 
-    0.9,
+   fontSize:30,
 
 
-    theme
+   bold:true,
 
 
+   color:
 
-  );
+    cleanColor(
 
+     theme.colors.text
 
-
-
-
-
-
-
-  createComparisonBlock(
-
-    page,
-
-    slide.rightTitle ||
-
-    "After",
+    ),
 
 
-    slide.rightPoints || [],
+   margin:0,
 
 
-    6.8,
+  }
 
 
-    theme
+ );
 
 
 
-  );
+
+
+
+
+ createComparisonBlock(
+
+  page,
+
+  slide.leftTitle ||
+
+   "Before",
+
+
+  slide.leftPoints || [],
+
+
+  0.8,
+
+
+  "2563EB",
+
+
+  theme
+
+
+ );
+
+
+
+
+
+
+
+ createComparisonBlock(
+
+  page,
+
+  slide.rightTitle ||
+
+   "After",
+
+
+  slide.rightPoints || [],
+
+
+  6.8,
+
+
+  "22C55E",
+
+
+  theme
+
+
+ );
 
 
 
@@ -1893,589 +2190,126 @@ function createComparisonSlide(
 
 function createComparisonBlock(
 
-  page,
+ page,
 
-  title,
+ title,
 
-  points,
+ points,
 
-  x,
+ x,
 
-  theme
+ accent,
+
+ theme
 
 ){
 
 
 
-  page.addShape(
+ page.addShape(
 
-    "roundRect",
+  "roundRect",
 
-    {
+  {
 
 
-      x,
+   x,
 
+   y:1.7,
 
-      y:
 
-        2,
+   w:5,
 
+   h:3.3,
 
-      w:
 
-        5,
+   fill:{
 
+    color:
 
-      h:
+     "F8FAFC",
 
-        2.8,
+   },
 
 
+   line:{
 
-      fill:{
+    color:accent,
 
+    width:1.5,
 
-        color:
-
-          cleanColor(
-
-            theme.colors.surface
-
-          ),
-
-
-
-        transparency:
-
-          20,
-
-
-
-      },
-
-
-
-      line:{
-
-
-        color:
-
-          cleanColor(
-
-            theme.colors.accent
-
-          ),
-
-
-
-        transparency:
-
-          40,
-
-
-
-      },
-
-
-
-    }
-
-
-  );
-
-
-
-
-
-
-
-
-  page.addText(
-
-
-    title,
-
-
-    {
-
-
-      x:
-
-        x + 0.3,
-
-
-      y:
-
-        2.3,
-
-
-      w:
-
-        4,
-
-
-      h:
-
-        0.3,
-
-
-
-      fontSize:
-
-        22,
-
-
-
-      bold:
-
-        true,
-
-
-
-      color:
-
-        cleanColor(
-
-          theme.colors.accent
-
-        ),
-
-
-
-    }
-
-
-  );
-
-
-
-
-
-
-
-
-  page.addText(
-
-
-    points.map(
-
-      item =>
-
-        "• " + item
-
-    ).join("\n"),
-
-
-
-    {
-
-
-      x:
-
-        x + 0.3,
-
-
-      y:
-
-        2.9,
-
-
-      w:
-
-        4.2,
-
-
-      h:
-
-        1.3,
-
-
-
-      fontSize:
-
-        15,
-
-
-
-      color:
-
-        cleanColor(
-
-          theme.colors.text
-
-        ),
-
-
-
-      breakLine:
-
-        true,
-
-
-
-    }
-
-
-  );
-
-
-
-}
-function createTimelineSlide(
-
-  page,
-
-  slide,
-
-  theme
-
-){
-
-
-
-  addTitle(
-
-    page,
-
-    slide.title,
-
-    theme
-
-  );
-
-
-
-
-
-
-
-
-  const items =
-
-
-    slide.timeline ||
-
-
-    slide.points ||
-
-
-    [];
-
-
-
-
-
-
-
-
-  if(
-
-    items.length === 0
-
-  ){
-
-
-
-    return;
-
+   },
 
 
   }
 
 
+ );
 
 
 
 
 
 
-  items.forEach(
 
-    (item,index)=>{
+ page.addText(
 
+  title,
 
+  {
 
-      const y =
 
-        1.8 +
+   x:x+0.3,
 
-        index *
+   y:2.05,
 
-        0.7;
 
+   w:4,
 
 
+   h:0.3,
 
 
+   fontSize:22,
 
 
+   bold:true,
 
-      page.addShape(
 
-        "ellipse",
+   color:accent,
 
-        {
 
+   margin:0,
 
-          x:
 
-            1,
+  }
 
 
-          y,
+ );
 
 
-          w:
 
-            0.18,
 
 
-          h:
 
-            0.18,
 
+ points
 
+ .slice(0,3)
 
-          fill:{
+ .forEach(
 
+ (item,index)=>{
 
-            color:
 
-              cleanColor(
 
-                theme.colors.accent
+  const y =
 
-              ),
+   2.7 +
 
+   index *
 
-
-          },
-
-
-
-          line:{
-
-
-            color:
-
-              cleanColor(
-
-                theme.colors.accent
-
-              ),
-
-
-
-          },
-
-
-        }
-
-
-      );
-
-
-
-
-
-
-
-
-      page.addText(
-
-
-        item,
-
-
-        {
-
-
-          x:
-
-            1.5,
-
-
-          y:
-
-            y - 0.03,
-
-
-          w:
-
-            8.5,
-
-
-          h:
-
-            0.3,
-
-
-
-          fontSize:
-
-            18,
-
-
-
-          color:
-
-            cleanColor(
-
-              theme.colors.text
-
-            ),
-
-
-
-          margin:
-
-            0,
-
-
-
-        }
-
-
-      );
-
-
-
-
-
-
-
-
-      if(
-
-        index <
-
-        items.length - 1
-
-      ){
-
-
-
-        page.addShape(
-
-          "line",
-
-          {
-
-
-            x:
-
-              1.08,
-
-
-            y:
-
-              y + 0.18,
-
-
-            w:
-
-              0,
-
-
-            h:
-
-              0.45,
-
-
-
-            line:{
-
-
-              color:
-
-                cleanColor(
-
-                  theme.colors.accent
-
-                ),
-
-
-              width:
-
-                1,
-
-
-
-            },
-
-
-          }
-
-
-        );
-
-
-
-      }
-
-
-
-    }
-
-
-  );
-
-
-
-}
-
-
-
-
-
-
-
-
-
-function createSummarySlide(
-
-  page,
-
-  slide,
-
-  theme
-
-){
-
-
-
-  addTitle(
-
-    page,
-
-    slide.title ||
-
-    "Summary",
-
-    theme
-
-  );
-
-
-
-
-
-
-
-
-  const summary =
-
-
-    slide.keyTakeaway ||
-
-
-    slide.points?.join("\n") ||
-
-
-    "";
-
-
+   0.65;
 
 
 
@@ -2485,105 +2319,79 @@ function createSummarySlide(
 
   page.addShape(
 
-    "roundRect",
+   "ellipse",
 
-    {
-
-
-      x:
-
-        1.2,
+   {
 
 
-      y:
+    x:x+0.35,
 
-        2,
-
-
-      w:
-
-        10.5,
+    y,
 
 
-      h:
+    w:0.35,
 
-        2.5,
-
-
-
-      fill:{
+    h:0.35,
 
 
-        color:
+    fill:{
 
-          cleanColor(
+     color:accent,
 
-            theme.colors.surface
+    },
 
-          ),
+
+    line:{
+
+     transparency:100,
+
+    },
+
+
+   }
+
+
+  );
 
 
 
-        transparency:
-
-          15,
 
 
 
-      },
+
+  page.addText(
+
+   String(index+1),
+
+   {
 
 
+    x:x+0.35,
 
-      line:{
-
-
-        color:
-
-          cleanColor(
-
-            theme.colors.accent
-
-          ),
+    y:y+0.08,
 
 
+    w:0.35,
 
-      },
-
-
-
-      shadow:{
+    h:0.1,
 
 
-        type:
-
-          "outer",
+    fontSize:11,
 
 
-        blur:
-
-          5,
+    bold:true,
 
 
-        angle:
-
-          45,
+    color:"FFFFFF",
 
 
-        distance:
-
-          2,
+    align:"center",
 
 
-        opacity:
-
-          0.25,
+    margin:0,
 
 
-
-      },
-
-
-    }
+   }
 
 
   );
@@ -2597,345 +2405,46 @@ function createSummarySlide(
 
   page.addText(
 
+   item,
 
-    summary,
+   {
 
 
-    {
+    x:x+0.85,
 
 
-      x:
+    y:y+0.04,
 
-        1.8,
 
+    w:3.6,
 
-      y:
 
-        2.8,
+    h:0.25,
 
 
-      w:
-
-        9,
-
-
-      h:
-
-        0.8,
-
-
-
-      fontSize:
-
-        22,
-
-
-
-      bold:
-
-        true,
-
-
-
-      align:
-
-        "center",
-
-
-
-      valign:
-
-        "mid",
-
-
-
-      color:
-
-        cleanColor(
-
-          theme.colors.text
-
-        ),
-
-
-
-      margin:
-
-        0,
-
-
-
-    }
-
-
-  );
-
-
-
-}
-function addTitle(
-
-  page,
-
-  title,
-
-  theme
-
-){
-
-
-
-  page.addText(
-
-
-    title || "",
-
-
-    {
-
-
-      x:
-
-        0.8,
-
-
-      y:
-
-        0.45,
-
-
-      w:
-
-        10,
-
-
-      h:
-
-        0.5,
-
-
-
-      fontSize:
-
-        30,
-
-
-
-      bold:
-
-        true,
-
-
-
-      color:
-
-        cleanColor(
-
-          theme.colors.text
-
-        ),
-
-
-
-      margin:
-
-        0,
-
-
-
-    }
-
-
-  );
-
-
-
-}
-
-
-
-
-
-
-
-
-
-function applyPremiumBackground(
-
-  page,
-
-  theme
-
-){
-
-
-
-  page.background = {
-
+    fontSize:15,
 
 
     color:
 
-      cleanColor(
+     cleanColor(
 
-        theme.colors.background
+      theme.colors.text
 
-      ),
-
-
-
-  };
+     ),
 
 
+    margin:0,
 
 
-
-
-
-
-  page.addShape(
-
-    "ellipse",
-
-    {
-
-
-      x:
-
-        10.5,
-
-
-      y:
-
-        -0.8,
-
-
-      w:
-
-        3,
-
-
-      h:
-
-        3,
-
-
-
-      fill:{
-
-
-        color:
-
-          cleanColor(
-
-            theme.colors.primary
-
-          ),
-
-
-
-        transparency:
-
-          75,
-
-
-
-      },
-
-
-
-      line:{
-
-
-        transparency:
-
-          100,
-
-
-
-      },
-
-
-    }
+   }
 
 
   );
 
 
 
-
-
-
-
-
-  page.addShape(
-
-    "ellipse",
-
-    {
-
-
-      x:
-
-        -1,
-
-
-      y:
-
-        5.5,
-
-
-      w:
-
-        3,
-
-
-      h:
-
-        3,
-
-
-
-      fill:{
-
-
-        color:
-
-          cleanColor(
-
-            theme.colors.accent
-
-          ),
-
-
-
-        transparency:
-
-          85,
-
-
-
-      },
-
-
-
-      line:{
-
-
-        transparency:
-
-          100,
-
-
-
-      },
-
-
-    }
-
-
-  );
-
+ });
 
 
 }
@@ -2948,295 +2457,504 @@ function applyPremiumBackground(
 
 
 
-function addBranding(
+// ======================================================
+// TIMELINE SLIDE
+// ======================================================
 
-  page,
 
-  theme
+function createTimelineSlide(
+
+ page,
+
+ slide,
+
+ theme
 
 ){
 
 
 
-  if(
-
-    branding.header.enabled
-
-  ){
-
-
-
-    page.addText(
-
-
-      branding.header.text,
-
-
-      {
-
-
-        x:
-
-          0.5,
-
-
-        y:
-
-          0.2,
-
-
-        w:
-
-          3,
-
-
-        h:
-
-          0.2,
-
-
-
-        fontSize:
-
-          10,
-
-
-
-        bold:
-
-          true,
-
-
-
-        color:
-
-          cleanColor(
-
-            theme.colors.accent
-
-          ),
-
-
-
-        margin:
-
-          0,
-
-
-
-      }
-
-
-    );
-
-
-
-  }
-
-
-
-
-
-
-
-
-  if(
-
-    branding.footer.enabled
-
-  ){
-
-
-
-    page.addText(
-
-
-      branding.footer.text,
-
-
-      {
-
-
-        x:
-
-          0.5,
-
-
-        y:
-
-          7,
-
-
-        w:
-
-          4,
-
-
-        h:
-
-          0.2,
-
-
-
-        fontSize:
-
-          9,
-
-
-
-        color:
-
-          cleanColor(
-
-            theme.colors.mutedText
-
-          ),
-
-
-
-        margin:
-
-          0,
-
-
-
-      }
-
-
-    );
-
-
-
-  }
-
-
-
-}
-
-
-
-
-
-
-
-
-
-function addSlideNumber(
+ addTitleIcon(
 
   page,
 
-  index,
+  slide,
 
   theme
 
-){
+ );
+
+
+
+
+
+
+
+ page.addText(
+
+  slide.title || "",
+
+  {
+
+
+   x:1.15,
+
+   y:0.55,
+
+
+   w:8,
+
+
+   h:0.45,
+
+
+   fontSize:30,
+
+
+   bold:true,
+
+
+   color:
+
+    cleanColor(
+
+     theme.colors.text
+
+    ),
+
+
+   margin:0,
+
+
+  }
+
+
+ );
+
+
+
+
+
+
+
+ const items =
+
+  slide.timeline ||
+
+  slide.points ||
+
+  [];
+
+
+
+
+
+
+
+ items.forEach(
+
+ (item,index)=>{
+
+
+
+  const y =
+
+   1.8 +
+
+   index *
+
+   0.75;
+
+
+
+
+
+
+
+  page.addShape(
+
+   "ellipse",
+
+   {
+
+
+    x:1,
+
+
+    y,
+
+
+    w:0.4,
+
+
+    h:0.4,
+
+
+    fill:{
+
+     color:
+
+      index % 2 === 0
+
+      ?
+
+      "2563EB"
+
+      :
+
+      "22C55E",
+
+    },
+
+
+    line:{
+
+     transparency:100,
+
+    },
+
+
+   }
+
+
+  );
+
+
+
+
 
 
 
   page.addText(
 
+   String(index+1),
 
-    String(index + 1),
-
-
-    {
+   {
 
 
-      x:
-
-        12.6,
+    x:1,
 
 
-      y:
-
-        7,
+    y:y+0.1,
 
 
-      w:
-
-        0.2,
+    w:0.4,
 
 
-      h:
-
-        0.2,
+    h:0.1,
 
 
-
-      fontSize:
-
-        10,
+    fontSize:11,
 
 
-
-      color:
-
-        cleanColor(
-
-          theme.colors.mutedText
-
-        ),
+    bold:true,
 
 
-
-      margin:
-
-        0,
+    color:"FFFFFF",
 
 
+    align:"center",
 
-    }
+
+    margin:0,
+
+
+   }
 
 
   );
 
 
 
+
+
+
+
+  page.addText(
+
+   item,
+
+   {
+
+
+    x:1.7,
+
+
+    y:y+0.05,
+
+
+    w:8,
+
+
+    h:0.25,
+
+
+    fontSize:18,
+
+
+    color:
+
+     cleanColor(
+
+      theme.colors.text
+
+     ),
+
+
+    margin:0,
+
+
+   }
+
+
+  );
+
+
+
+ });
+
+
 }
 // ======================================================
-// SVG IMAGE SUPPORT
-//
-// Used by:
-// visualGenerationService
-//
-// Flow:
-//
-// SVG
-// ↓
-// Data URI
-// ↓
-// pptx.addImage()
-//
+// SUMMARY SLIDE
+// ======================================================
+
+
+function createSummarySlide(
+
+ page,
+
+ slide,
+
+ theme
+
+){
+
+
+
+ addGradientBar(
+
+  page
+
+ );
+
+
+
+
+
+
+
+ page.addText(
+
+  slide.title ||
+
+  "Key Takeaway",
+
+  {
+
+
+   x:0.8,
+
+   y:1.6,
+
+
+   w:11,
+
+
+   h:0.6,
+
+
+   fontSize:40,
+
+
+   bold:true,
+
+
+   align:"center",
+
+
+   color:
+
+    cleanColor(
+
+     theme.colors.text
+
+    ),
+
+
+   margin:0,
+
+
+  }
+
+
+ );
+
+
+
+
+
+
+
+ page.addText(
+
+  slide.keyTakeaway ||
+
+  slide.description ||
+
+  "",
+
+  {
+
+
+   x:1.5,
+
+
+   y:2.8,
+
+
+   w:10,
+
+
+   h:0.8,
+
+
+   fontSize:24,
+
+
+   bold:true,
+
+
+   align:"center",
+
+
+   color:
+
+    cleanColor(
+
+     theme.colors.text
+
+    ),
+
+
+   margin:0,
+
+
+  }
+
+
+ );
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================================
+// SLIDE NUMBER
+// ======================================================
+
+
+function addSlideNumber(
+
+ page,
+
+ index,
+
+ theme
+
+){
+
+
+
+ page.addText(
+
+  String(index+1),
+
+  {
+
+
+   x:12.5,
+
+   y:7,
+
+
+   w:0.25,
+
+   h:0.2,
+
+
+   fontSize:10,
+
+
+   color:
+
+    cleanColor(
+
+     theme.colors.mutedText
+
+    ),
+
+
+   margin:0,
+
+
+  }
+
+
+ );
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================================
+// SVG DATA URI
 // ======================================================
 
 
 function svgToDataUri(
 
-  svg
+ svg
 
 ){
 
 
 
-  return (
+ return (
 
-    "data:image/svg+xml;base64," +
+  "data:image/svg+xml;base64," +
 
-    btoa(
+  btoa(
 
-      unescape(
+   unescape(
 
-        encodeURIComponent(
+    encodeURIComponent(
 
-          svg
-
-        )
-
-      )
+     svg
 
     )
 
-  );
+   )
+
+  )
+
+ );
 
 
 
@@ -3251,281 +2969,33 @@ function svgToDataUri(
 
 
 // ======================================================
-// VISUAL PLACEHOLDER
-//
-// Used when AI visual generation
-// does not return an asset.
-//
-// ======================================================
-
-
-function createVisualPlaceholder(
-
-  page,
-
-  title,
-
-  description,
-
-  x,
-
-  y,
-
-  w,
-
-  h,
-
-  theme
-
-){
-
-
-
-  page.addShape(
-
-    "roundRect",
-
-    {
-
-
-      x,
-
-      y,
-
-      w,
-
-      h,
-
-
-
-      fill:{
-
-
-        color:
-
-          cleanColor(
-
-            theme.colors.surface
-
-          ),
-
-
-
-        transparency:
-
-          20,
-
-
-
-      },
-
-
-
-      line:{
-
-
-        color:
-
-          cleanColor(
-
-            theme.colors.accent
-
-          ),
-
-
-
-      },
-
-
-    }
-
-
-  );
-
-
-
-
-
-
-
-
-  page.addText(
-
-
-    title,
-
-
-    {
-
-
-      x:
-
-        x + 0.2,
-
-
-      y:
-
-        y + 0.25,
-
-
-      w:
-
-        w - 0.4,
-
-
-      h:
-
-        0.3,
-
-
-
-      fontSize:
-
-        18,
-
-
-
-      bold:
-
-        true,
-
-
-
-      align:
-
-        "center",
-
-
-
-      color:
-
-        cleanColor(
-
-          theme.colors.accent
-
-        ),
-
-
-
-      margin:
-
-        0,
-
-
-
-    }
-
-
-  );
-
-
-
-
-
-
-
-
-  page.addText(
-
-
-    description,
-
-
-    {
-
-
-      x:
-
-        x + 0.3,
-
-
-      y:
-
-        y + 0.8,
-
-
-      w:
-
-        w - 0.6,
-
-
-      h:
-
-        h - 1,
-
-
-
-      fontSize:
-
-        13,
-
-
-
-      align:
-
-        "center",
-
-
-
-      color:
-
-        cleanColor(
-
-          theme.colors.text
-
-        ),
-
-
-
-      margin:
-
-        0,
-
-
-
-    }
-
-
-  );
-
-
-
-}
-
-
-
-
-
-
-
-
-
-// ======================================================
-// TEXT HELPERS
+// COLOR CLEANER
 // ======================================================
 
 
 function cleanColor(
 
-  color
+ color
 
 ){
 
 
 
-  return (
+ return String(
 
-    color ||
+  color ||
 
-    "#FFFFFF"
+  "FFFFFF"
 
-  ).replace(
+ )
 
-    "#",
+ .replace(
 
-    ""
+  "#",
 
-  );
+  ""
+
+ );
 
 
 
@@ -3537,28 +3007,57 @@ function cleanColor(
 
 
 
+
+
+// ======================================================
+// VALIDATION
+// ======================================================
+
+
+function validateSlide(
+
+ slide
+
+){
+
+
+
+ return (
+
+  slide &&
+
+  typeof slide === "object"
+
+ );
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================================
+// SAFE TEXT HELPERS
+// ======================================================
 
 
 function safeText(
 
-  value
+ value
 
 ){
 
 
-
-  return (
-
-    value ||
-
-    ""
-
-  );
-
+ return value || "";
 
 
 }
-
 
 
 
@@ -3569,137 +3068,52 @@ function safeText(
 
 function trimText(
 
-  text,
+ text,
 
-  limit = 120
-
-){
-
-
-
-  const value =
-
-    safeText(
-
-      text
-
-    );
-
-
-
-
-
-
-
-  if(
-
-    value.length <= limit
-
-  ){
-
-
-    return value;
-
-
-  }
-
-
-
-
-
-
-
-
-  return (
-
-    value.substring(
-
-      0,
-
-      limit
-
-    )
-
-    +
-
-    "..."
-
-  );
-
-
-
-}
-// ======================================================
-// FUTURE AI IMAGE SUPPORT
-//
-// Future flow:
-//
-// imagePrompt
-//      ↓
-// AI Image Generator
-//      ↓
-// Image URL / Base64
-//      ↓
-// pptx.addImage()
-//
-// ======================================================
-
-
-async function addExternalImage(
-
-  page,
-
-  imageSource,
-
-  x,
-
-  y,
-
-  w,
-
-  h
+ limit = 120
 
 ){
 
 
 
-  if(
+ const value =
 
-    !imageSource
-
-  ){
-
-    return;
-
-  }
+  safeText(text);
 
 
 
 
 
+ if(
 
+  value.length <= limit
 
-  page.addImage({
+ ){
 
+  return value;
 
-
-    path:
-
-      imageSource,
-
-
-
-    x,
-
-    y,
-
-    w,
-
-    h,
+ }
 
 
 
-  });
+
+
+
+ return (
+
+  value.substring(
+
+   0,
+
+   limit
+
+  )
+
+  +
+
+  "..."
+
+ );
 
 
 
@@ -3714,66 +3128,29 @@ async function addExternalImage(
 
 
 // ======================================================
-// EXPORT VALIDATION
+// END NYXORA AI PPT EXPORT ENGINE
 //
-// Prevents broken slides
-// ======================================================
-
-
-function validateSlide(
-
-  slide
-
-){
-
-
-
-  return (
-
-    slide &&
-
-    typeof slide ===
-
-    "object"
-
-  );
-
-
-
-}
-
-
-
-
-
-
-
-
-
-// ======================================================
-// END OF NYXORA AI KEYNOTE PPT ENGINE
+// Preserved:
 //
-// Current Architecture:
+// ✓ PptxGenJS
+// ✓ Export
+// ✓ Layout system
+// ✓ AI JSON
+// ✓ SVG support
+// ✓ Image support
+// ✓ Diagram
+// ✓ Comparison
+// ✓ Timeline
+// ✓ Summary
 //
-// Gemini
-//    ↓
-// Presentation JSON
-//    ↓
-// Layout Engine
-//    ↓
-// Visual Generation Service
-//    ↓
-// addImage()
-// or
-// addShape()
-//    ↓
-// Premium PPTX
+// Added:
 //
-// Ready for:
-//
-// ✓ AI image generation
-// ✓ SVG visuals
-// ✓ Cinematic templates
-// ✓ Smart layouts
+// ✓ Smooth gradient bar
+// ✓ Cover information
+// ✓ AI image rendering
+// ✓ Numbered points
+// ✓ Connected flow charts
+// ✓ Premium spacing
+// ✓ Decorative dots
 //
 // ======================================================
