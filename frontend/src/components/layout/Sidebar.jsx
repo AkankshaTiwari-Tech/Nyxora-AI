@@ -5,12 +5,16 @@ import {
   FileText,
   FileDown,
   ClipboardList,
+  Presentation,
   Star,
   Brain,
   LogOut,
 } from "lucide-react";
 
-import { NavLink, useNavigate } from "react-router-dom";
+import {
+  NavLink,
+  useNavigate,
+} from "react-router-dom";
 
 import NyxoraLogo from "../common/NyxoraLogo";
 
@@ -61,6 +65,12 @@ const menuItems = [
   },
 
   {
+    name: "Presentation",
+    icon: Presentation,
+    path: "/presentation",
+  },
+
+  {
     name: "Favorites",
     icon: Star,
     path: "/favorites",
@@ -69,36 +79,60 @@ const menuItems = [
 ];
 
 
+
 export default function Sidebar() {
 
-  const navigate = useNavigate();
+
+  const navigate =
+    useNavigate();
+
+
 
 
   const handleClick = (item) => {
 
-    if (item.mode === "test") {
 
-      navigate("/chat", {
+    if (
+      item.mode === "test"
+    ) {
 
-        state: {
-          assistantMode: "test",
-        },
 
-      });
+      navigate(
+        "/chat",
+        {
+
+          state: {
+
+            assistantMode:
+              "test",
+
+          },
+
+        }
+      );
+
 
       return;
 
     }
 
 
-    navigate(item.path);
+
+    navigate(
+      item.path
+    );
+
 
   };
 
 
+
+
   return (
 
+
     <aside
+
       className="
         w-72
         min-h-screen
@@ -108,54 +142,70 @@ export default function Sidebar() {
         flex
         flex-col
       "
+
     >
 
 
-      {/* Logo */}
 
       <div
+
         className="
           px-6
           py-8
           border-b
           border-[#20263B]
         "
+
       >
 
+
         <div className="flex items-center gap-4">
+
 
           <NyxoraLogo size={52}/>
 
 
+
           <div>
 
+
             <h1 className="text-2xl font-bold text-white">
+
               Nyxora AI
+
             </h1>
 
 
+
             <p className="text-sm text-indigo-300">
+
               Your AI Workspace
+
             </p>
+
 
           </div>
 
 
         </div>
 
+
       </div>
 
 
 
-      {/* Navigation */}
+
 
       <nav
+
         className="
           flex-1
           px-4
           py-6
         "
+
       >
+
 
         <div className="space-y-2">
 
@@ -163,20 +213,31 @@ export default function Sidebar() {
           {
             menuItems.map((item)=>{
 
-              const Icon = item.icon;
+
+              const Icon =
+                item.icon;
 
 
-              if(item.mode === "test") {
+
+              if(
+                item.mode === "test"
+              ){
+
 
                 return (
 
+
                   <button
 
-                    key={item.name}
+                    key={
+                      item.name
+                    }
+
 
                     onClick={() =>
                       handleClick(item)
                     }
+
 
                     className="
                       w-full
@@ -195,29 +256,42 @@ export default function Sidebar() {
 
                   >
 
+
                     <Icon size={22}/>
 
 
                     <span className="font-medium">
+
                       {item.name}
+
                     </span>
 
 
                   </button>
 
+
                 );
+
 
               }
 
 
 
+
               return (
+
 
                 <NavLink
 
-                  key={item.name}
+                  key={
+                    item.name
+                  }
 
-                  to={item.path}
+
+                  to={
+                    item.path
+                  }
+
 
                   className={({isActive}) =>
 
@@ -235,7 +309,9 @@ export default function Sidebar() {
                     ${
                       isActive
 
-                      ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                      ?
+
+                      "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
 
                       :
 
@@ -243,19 +319,24 @@ export default function Sidebar() {
 
                     }
                     `
+
                   }
 
                 >
+
 
                   <Icon size={22}/>
 
 
                   <span className="font-medium">
+
                     {item.name}
+
                   </span>
 
 
                 </NavLink>
+
 
               );
 
@@ -271,17 +352,21 @@ export default function Sidebar() {
 
 
 
-      {/* Logout */}
+
 
       <div
+
         className="
           p-4
           border-t
           border-[#20263B]
         "
+
       >
 
+
         <button
+
           className="
             w-full
             flex
@@ -295,20 +380,29 @@ export default function Sidebar() {
             hover:text-white
             transition-all
           "
+
         >
+
 
           <LogOut size={22}/>
 
+
           <span>
+
             Logout
+
           </span>
 
+
         </button>
+
 
       </div>
 
 
+
     </aside>
+
 
   );
 
