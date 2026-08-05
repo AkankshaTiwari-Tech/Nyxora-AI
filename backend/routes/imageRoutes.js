@@ -1,184 +1,207 @@
 import express from "express";
 import dotenv from "dotenv";
+import { GoogleGenAI } from "@google/genai";
+
 
 dotenv.config();
 
+
 const router = express.Router();
+
+
+
+// ======================================================
+// GEMINI IMAGE MODELS
+// ======================================================
+
+
+const IMAGE_MODELS = [
+
+  "gemini-2.5-flash-image",
+
+  "gemini-3.1-flash-image",
+
+  "gemini-3-pro-image"
+
+];
+
+
 
 
 // ======================================================
 // GEMINI IMAGE GENERATION
 // ======================================================
 
-router.post(
-  "/",
-  async (req, res) => {
 
-    try {
+async function generateGeminiImage(
 
-      const {
-        prompt
-      } = req.body;
+  prompt
+
+){
 
 
-      if(!prompt){
+  const ai =
 
-        return res.status(400).json({
+  new GoogleGenAI({
 
-          success:false,
+    apiKey:
 
-          message:
-            "Image prompt required."
+      process.env.GEMINI_API_KEY
 
-        });
+  });
 
-      }
+
+
+
+  let lastError = null;
+
+
+
+
+  for(
+
+    const model of IMAGE_MODELS
+
+  ){
+
+
+    try{
+
+
+      console.log(
+
+        "Trying Gemini image model:",
+
+        model
+
+      );
+
+
 
 
 
       const response =
-        await fetch(
 
-          "https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key="
+      await ai.models.generateContent({
 
-          +
+        model,
 
-          process.env.GEMINI_API_KEY,
+
+        contents:[
 
           {
 
-            method:"POST",
-
-            headers:{
-
-              "Content-Type":
-                "application/json",
-
-            },
+            role:"user",
 
 
-            body:JSON.stringify({
+            parts:[
 
-              instances:[
+              {
 
-                {
+                text:
 
-                  prompt
+`Create a premium presentation image.
 
-                }
+Topic:
+${prompt}
 
-              ],
-
-
-              parameters:{
-
-                sampleCount:1,
+Style:
+- Apple keynote quality
+- Professional educational visual
+- Realistic
+- Cinematic lighting
+- Clean composition
+- No text
+- No watermark`
 
               }
 
-            })
-
+            ]
 
           }
 
-        );
-
-
-
-
-
-      const data =
-        await response.json();
-
-
-
-
-
-      if(!response.ok){
-
-        console.error(data);
-
-
-        return res.status(500).json({
-
-          success:false,
-
-          message:
-            "Gemini image generation failed."
-
-        });
-
-      }
-
-
-
-
-
-      const imageData =
-
-        data
-        ?.predictions
-        ?. [0]
-        ?.bytesBase64Encoded;
-
-
-
-
-
-      if(!imageData){
-
-        return res.status(500).json({
-
-          success:false,
-
-          message:
-            "No image returned."
-
-        });
-
-      }
-
-
-
-
-
-
-      res.json({
-
-        success:true,
-
-
-        image:
-
-          `data:image/png;base64,${imageData}`
+        ]
 
 
       });
+
+
+
+
+
+
+
+      const imagePart =
+
+      response
+
+      ?.candidates
+
+      ?. [0]
+
+      ?.content
+
+      ?.parts
+
+      ?.find(
+
+        part =>
+
+        part.inlineData
+
+      );
+
+
+
+
+
+
+
+      if(imagePart){
+
+
+        return {
+
+          source:"gemini",
+
+
+          image:
+
+          `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`
+
+        };
+
+
+      }
+
+
+
+      throw new Error(
+
+        "No Gemini image returned"
+
+      );
 
 
 
     }
 
+
     catch(error){
 
 
-      console.error(
+      console.log(
 
-        "Image generation error:",
+        model,
 
-        error
+        "failed:",
+
+        error.message
 
       );
 
 
-      res.status(500).json({
-
-        success:false,
-
-        message:
-          error.message
-
-      });
+      lastError = error;
 
 
     }
@@ -186,7 +209,375 @@ router.post(
 
   }
 
+
+
+
+
+  throw lastError;
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================================
+// PEXELS FREE IMAGE FALLBACK
+// ======================================================
+
+
+async function generatePexelsImage(
+
+  prompt
+
+){
+
+
+
+  if(
+
+    !process.env.PEXELS_API_KEY
+
+  ){
+
+
+    throw new Error(
+
+      "Pexels API key missing."
+
+    );
+
+
+  }
+
+
+
+
+
+  const response =
+
+  await fetch(
+
+`https://api.pexels.com/v1/search?query=${encodeURIComponent(prompt)}&per_page=1`,
+
+    {
+
+
+      headers:{
+
+
+        Authorization:
+
+        process.env.PEXELS_API_KEY
+
+
+      }
+
+
+    }
+
+  );
+
+
+
+
+
+  const data =
+
+  await response.json();
+
+
+
+
+
+
+  const imageUrl =
+
+  data
+
+  ?.photos
+
+  ?. [0]
+
+  ?.src
+
+  ?.large;
+
+
+
+
+
+
+  if(!imageUrl){
+
+
+    throw new Error(
+
+      "No Pexels image found."
+
+    );
+
+
+  }
+
+
+
+
+
+
+
+  const imageResponse =
+
+  await fetch(
+
+    imageUrl
+
+  );
+
+
+
+
+
+  const buffer =
+
+  await imageResponse.arrayBuffer();
+
+
+
+
+
+
+  const base64 =
+
+  Buffer
+
+  .from(buffer)
+
+  .toString("base64");
+
+
+
+
+
+
+
+  return {
+
+
+    source:"pexels",
+
+
+    image:
+
+    `data:image/jpeg;base64,${base64}`
+
+
+  };
+
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================================
+// FINAL IMAGE GENERATOR
+//
+// Gemini first
+// Pexels fallback
+// ======================================================
+
+
+async function generateImage(
+
+ prompt
+
+){
+
+
+
+  try{
+
+
+    return await generateGeminiImage(
+
+      prompt
+
+    );
+
+
+  }
+
+
+  catch(error){
+
+
+
+    console.log(
+
+      "Gemini image unavailable."
+
+    );
+
+
+
+    return await generatePexelsImage(
+
+      prompt
+
+    );
+
+
+  }
+
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================================
+// POST /api/generate-image
+// ======================================================
+
+
+router.post(
+
+"/",
+
+async(req,res)=>{
+
+
+try{
+
+
+const {
+
+prompt
+
+}=req.body;
+
+
+
+
+
+if(!prompt){
+
+
+return res.status(400).json({
+
+
+success:false,
+
+
+message:
+
+"Image prompt required."
+
+
+});
+
+
+}
+
+
+
+
+
+
+const result =
+
+await generateImage(
+
+prompt
+
 );
+
+
+
+
+
+
+return res.json({
+
+
+success:true,
+
+
+image:
+
+result.image,
+
+
+source:
+
+result.source
+
+
+
+});
+
+
+
+
+
+}
+
+catch(error){
+
+
+
+console.error(
+
+"Image generation failed:",
+
+error
+
+);
+
+
+
+
+
+return res.status(500).json({
+
+
+success:false,
+
+
+message:
+
+error.message
+
+
+
+});
+
+
+}
+
+
+
+}
+
+);
+
+
+
 
 
 

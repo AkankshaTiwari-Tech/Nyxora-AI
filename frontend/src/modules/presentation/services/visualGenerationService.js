@@ -170,21 +170,38 @@ async function generateImageVisual(
 
             prompt:
 
-`Create a premium cinematic educational visual.
+`Create a high-resolution premium presentation photograph for this topic:
 
-Topic:
 ${prompt}
 
-Style:
-- Apple keynote presentation quality
-- TED talk visual style
-- realistic
-- professional lighting
-- clean composition
-- modern educational documentary
+IMAGE REQUIREMENTS:
+- ultra high quality
+- photorealistic
+- sharp professional photography
+- 16:9 landscape composition
+- minimum visual quality equivalent to 1920x1080
+- presentation-ready image
+- premium Pexels and Unsplash photography style
+- realistic natural lighting
+- crisp subject details
+- professional color grading
+- strong visual storytelling
+- clean modern composition
+- subject clearly visible
+- suitable for a professional PowerPoint presentation
+- leave natural breathing space around the main subject
+- avoid excessive background clutter
 - no text
+- no captions
 - no labels
-- no watermark`
+- no logos
+- no watermark
+- no borders
+- no UI elements
+
+COMPOSITION:
+Create the image specifically for a landscape presentation image card.
+Keep the important subject away from extreme edges so the image can be safely cropped to fill the PowerPoint card without cutting off the main subject.`
 
 
 

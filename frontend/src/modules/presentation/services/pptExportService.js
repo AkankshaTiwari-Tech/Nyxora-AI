@@ -12,162 +12,152 @@ import {
 } from "./visualGenerationService";
 
 
-
 // ======================================================
 // NYXORA AI PPT EXPORT ENGINE
 //
-// Preserved:
-// ✓ PptxGenJS
-// ✓ Layout Engine
-// ✓ AI JSON support
-// ✓ SVG support
-// ✓ AI Image support
-// ✓ Diagram
-// ✓ Comparison
-// ✓ Timeline
-// ✓ Summary
+// PRESERVED:
 //
-// Added:
-// ✓ Premium keynote design
-// ✓ Smooth gradient bars
-// ✓ Cover information
-// ✓ Real AI images
-// ✓ Number circles
-// ✓ Connected flow charts
-// ✓ Theme icons
+// ✓ Existing PptxGenJS export
+// ✓ Existing theme engine
+// ✓ Existing layout engine
+// ✓ Existing AI JSON support
+// ✓ Existing image-generation backend
+// ✓ SVG support
+// ✓ Diagram slides
+// ✓ Comparison slides
+// ✓ Timeline slides
+// ✓ Summary slides
+// ✓ Numbered points
+// ✓ Title icons
+// ✓ Slide numbers
+// ✓ Top multicolour presentation line
+//
+// IMPROVED:
+//
+// ✓ At least one generated image on every slide
+// ✓ Adaptive image-card shapes
+// ✓ Wide rectangle images
+// ✓ Square images
+// ✓ Portrait / stretched rectangle images
+// ✓ Image proportions depend on slide content
+//
+// ✓ No multicolour decoration inside image cards
+// ✓ Image itself becomes the card
+// ✓ Images use crop-to-cover instead of stretching
+// ✓ Rounded image corners
+//
+// ✓ Before/After accepts multiple AI JSON formats
+// ✓ Before box no longer remains empty
+// ✓ After box no longer remains empty
+// ✓ Before gets its own image
+// ✓ After gets its own image
+// ✓ Enough room remains for comparison text
+//
+// ✓ Diagram slides use circular generated flow visuals
+// ✓ Timeline gets supporting visual
+// ✓ Summary gets supporting visual
+//
+// ✓ Sparse slides receive supporting information cards
+// ✓ Minimum visual richness improved
+//
+// ✓ Cover gets:
+//      Presented By
+//      Organization
+//      Date
+//
+// IMPORTANT:
+//
+// The existing visualGenerationService remains unchanged.
+// Images continue coming from your current backend.
 // ======================================================
 
 
+const SLIDE_WIDTH = 13.33;
+const SLIDE_HEIGHT = 7.5;
+
+
+const COLORS = [
+  "2563EB",
+  "06B6D4",
+  "22C55E",
+  "EAB308",
+  "F97316",
+];
+
+
+// ======================================================
+// EXPORT PRESENTATION
+// ======================================================
 
 export async function exportPresentationToPpt({
-
   presentation,
-
   themeName = "nyxoraPremium",
-
 }) {
 
-
-  const pptx =
-
-    new PptxGenJS();
-
+  const pptx = new PptxGenJS();
 
 
   const theme =
-
-    presentationThemes[themeName]
-
-    ||
-
+    presentationThemes[themeName] ||
     presentationThemes.nyxoraPremium;
 
 
-
-
-
-  pptx.layout =
-
-    "LAYOUT_WIDE";
-
-
-
+  pptx.layout = "LAYOUT_WIDE";
 
 
   pptx.author =
-
     "Nyxora AI";
-
-
-
 
 
   pptx.company =
-
+    presentation.organization ||
     "Nyxora AI";
 
 
-
-
-
   pptx.title =
-
     presentation.title ||
-
     "Nyxora AI Presentation";
 
 
-
+  pptx.subject =
+    presentation.subtitle ||
+    presentation.description ||
+    "";
 
 
   pptx.theme = {
 
-
     headFontFace:
-
       theme.typography.title,
 
-
     bodyFontFace:
-
       theme.typography.body,
 
-
     lang:
-
       "en-US",
-
 
   };
 
 
-
-
-
-
-
   const slides =
-
     presentation.slides || [];
 
 
-
-
-
-
-  for(
-
+  for (
     let index = 0;
-
     index < slides.length;
-
     index++
-
-  ){
-
-
+  ) {
 
     const slide =
-
       slides[index];
 
 
-
-
-
-    if(
-
-      !validateSlide(slide)
-
-    ){
+    if (!validateSlide(slide)) {
 
       continue;
 
     }
-
-
-
-
 
 
     await createSlide({
@@ -184,45 +174,25 @@ export async function exportPresentationToPpt({
 
     });
 
-
-
   }
-
-
-
-
 
 
   await pptx.writeFile({
 
     fileName:
-
       `${
-
         presentation.title ||
-
         "Nyxora_AI_Presentation"
-
       }.pptx`,
-
 
   });
 
-
 }
-
-
-
-
-
-
-
 
 
 // ======================================================
 // CREATE SLIDE
 // ======================================================
-
 
 async function createSlide({
 
@@ -238,14 +208,8 @@ async function createSlide({
 
 }) {
 
-
-
   const page =
-
     pptx.addSlide();
-
-
-
 
 
   applyPremiumBackground(
@@ -259,38 +223,20 @@ async function createSlide({
   );
 
 
-
-
-
-
-
   const layout =
-
-
     getPresentationLayout(
-
       slide.layout
-
-    )?.type
-
-    ||
-
+    )?.type ||
     "content";
 
 
-
-
-
-
-
-  switch(layout){
-
+  switch (layout) {
 
 
     case "title":
 
 
-      createTitleSlide(
+      await createTitleSlide(
 
         page,
 
@@ -304,8 +250,6 @@ async function createSlide({
 
 
       break;
-
-
 
 
 
@@ -327,12 +271,10 @@ async function createSlide({
 
 
 
-
-
     case "comparison":
 
 
-      createComparisonSlide(
+      await createComparisonSlide(
 
         page,
 
@@ -344,15 +286,13 @@ async function createSlide({
 
 
       break;
-
-
 
 
 
     case "timeline":
 
 
-      createTimelineSlide(
+      await createTimelineSlide(
 
         page,
 
@@ -364,15 +304,13 @@ async function createSlide({
 
 
       break;
-
-
 
 
 
     case "summary":
 
 
-      createSummarySlide(
+      await createSummarySlide(
 
         page,
 
@@ -384,8 +322,6 @@ async function createSlide({
 
 
       break;
-
-
 
 
 
@@ -402,12 +338,7 @@ async function createSlide({
 
       );
 
-
   }
-
-
-
-
 
 
   addSlideNumber(
@@ -420,231 +351,12 @@ async function createSlide({
 
   );
 
-
-
 }
-// ======================================================
-// COVER SLIDE
-// ======================================================
-
-
-function createTitleSlide(
-
-  page,
-
-  slide,
-
-  presentation,
-
-  theme
-
-){
-
-
-
-  // only one gradient bar on cover
-
-  addGradientBar(
-
-    page
-
-  );
-
-
-
-
-
-
-  page.addText(
-
-    slide.title ||
-
-    presentation.title ||
-
-    "Nyxora AI Presentation",
-
-    {
-
-
-      x:1,
-
-      y:1.8,
-
-      w:10.5,
-
-      h:0.8,
-
-
-      fontSize:44,
-
-
-      bold:true,
-
-
-      align:"center",
-
-
-      color:
-
-        cleanColor(
-
-          theme.colors.text
-
-        ),
-
-
-      margin:0,
-
-
-    }
-
-
-  );
-
-
-
-
-
-
-
-  page.addText(
-
-    slide.subtitle ||
-
-    "Introduction",
-
-    {
-
-
-      x:2,
-
-      y:2.9,
-
-      w:9,
-
-
-      h:0.4,
-
-
-      fontSize:20,
-
-
-      align:"center",
-
-
-      color:
-
-        cleanColor(
-
-          theme.colors.mutedText
-
-        ),
-
-
-      margin:0,
-
-
-    }
-
-
-  );
-
-
-
-
-
-
-
-  page.addText(
-
-`
-
-Presented By
-
-${
-
-presentation.presenter ||
-
-presentation.author ||
-
-""
-
-}
-
-
-
-${
-
-presentation.organization ||
-
-""
-
-}
-
-
-
-${
-
-presentation.date ||
-
-""
-
-}
-
-`,
-
-    {
-
-
-      x:3,
-
-      y:4.3,
-
-      w:7,
-
-
-      h:1.2,
-
-
-      fontSize:17,
-
-
-      align:"center",
-
-
-      color:
-
-        cleanColor(
-
-          theme.colors.mutedText
-
-        ),
-
-
-      margin:0,
-
-
-    }
-
-
-  );
-
-
-
-}
-
-
-
-
-
-
-
 
 
 // ======================================================
-// BACKGROUND SYSTEM
+// BACKGROUND
 // ======================================================
-
 
 function applyPremiumBackground(
 
@@ -654,97 +366,56 @@ function applyPremiumBackground(
 
   index
 
-){
-
-
+) {
 
   page.background = {
 
-
     color:
-
       cleanColor(
 
         theme.colors.background ||
-
         "FFFFFF"
 
       ),
 
-
   };
 
 
+  // Keep the premium multicolour line ONLY
+  // at the very top of the slide.
+
+  addGradientBar(page);
 
 
+  if (index !== 0) {
 
-
-
-  // no extra line on cover
-
-  if(index !== 0){
-
-
-
-    addGradientBar(
-
-      page
-
-    );
-
-
-
-  }
-
-
-
-
-
-
-
-  // subtle decoration
-
-  if(index % 2 === 0){
-
-
-
-    addDotDecoration(
+    addSlideDecorations(
 
       page,
 
-      theme
+      theme,
+
+      index
 
     );
 
-
   }
-
-
 
 }
 
 
-
-
-
-
-
-
-
 // ======================================================
-// SMOOTH BLENDED GRADIENT BAR
+// TOP MULTICOLOUR LINE
+//
+// IMPORTANT:
+//
+// This is the ONLY multicolour line used.
+// No multicolour line is added inside image cards.
 // ======================================================
 
+function addGradientBar(page) {
 
-function addGradientBar(
-
- page
-
-){
-
-
-
- const svg = `
+  const svg = `
 
 <svg
 
@@ -754,8 +425,9 @@ width="1600"
 
 height="40"
 
->
+viewBox="0 0 1600 40"
 
+>
 
 
 <defs>
@@ -767,69 +439,66 @@ id="premium"
 
 x1="0"
 
-x2="1"
+y1="0"
+
+x2="1600"
+
+y2="0"
+
+gradientUnits="userSpaceOnUse"
 
 >
 
 
-
 <stop
 
-offset="0"
+offset="0%"
 
 stop-color="#2563EB"
 
 />
 
 
-
 <stop
 
-offset="0.25"
+offset="25%"
 
 stop-color="#06B6D4"
 
 />
 
 
-
 <stop
 
-offset="0.5"
+offset="50%"
 
 stop-color="#22C55E"
 
 />
 
 
-
 <stop
 
-offset="0.75"
+offset="75%"
 
 stop-color="#EAB308"
 
 />
 
 
-
 <stop
 
-offset="1"
+offset="100%"
 
 stop-color="#F97316"
 
 />
 
 
-
 </linearGradient>
 
 
 </defs>
-
-
-
 
 
 <rect
@@ -843,171 +512,823 @@ fill="url(#premium)"
 />
 
 
-
 </svg>
 
 `;
 
 
+  page.addImage({
 
+    data:
+      svgToDataUri(svg),
 
+    x:
+      0,
 
- page.addImage({
+    y:
+      0,
 
-  data:
+    w:
+      SLIDE_WIDTH,
 
-    svgToDataUri(svg),
+    h:
+      0.12,
 
-
-  x:0,
-
-  y:0,
-
-
-  w:13.33,
-
-  h:0.12,
-
-
- });
-
-
+  });
 
 }
 
 
+// ======================================================
+// SLIDE DECORATION SYSTEM
+//
+// Gives inner slides at least two subtle decorative
+// points/elements without disturbing content.
+// ======================================================
+
+function addSlideDecorations(
+
+  page,
+
+  theme,
+
+  index
+
+) {
+
+  if (index % 2 === 0) {
 
 
+    addDotCluster(
+
+      page,
+
+      0.28,
+
+      6.05,
+
+      theme
+
+    );
 
 
+    addAccentPill(
 
+      page,
+
+      12.98,
+
+      1.15,
+
+      0.08,
+
+      0.88,
+
+      "F97316"
+
+    );
+
+
+  } else {
+
+
+    addDotCluster(
+
+      page,
+
+      11.75,
+
+      6.05,
+
+      theme
+
+    );
+
+
+    addAccentPill(
+
+      page,
+
+      0.22,
+
+      1.2,
+
+      0.08,
+
+      0.88,
+
+      "2563EB"
+
+    );
+
+  }
+
+}
 
 
 // ======================================================
 // DOT DECORATION
-// Maximum 2 per page
 // ======================================================
-
 
 function addDotDecoration(
 
- page,
+  page,
 
- theme
+  theme
 
-){
+) {
 
+  addDotCluster(
 
+    page,
 
- const color =
+    11.1,
 
- cleanColor(
+    6.25,
 
-  theme.colors.accent ||
+    theme
 
-  "2563EB"
+  );
 
- );
-
-
-
-
+}
 
 
+// ======================================================
+// DOT CLUSTER
+// ======================================================
 
- for(
+function addDotCluster(
 
-  let row=0;
+  page,
 
-  row<4;
+  startX,
 
-  row++
+  startY,
 
- ){
+  theme
 
+) {
 
+  const color =
+    cleanColor(
 
-  for(
+      theme.colors.accent ||
+      "2563EB"
 
-   let col=0;
-
-   col<5;
-
-   col++
-
-  ){
+    );
 
 
+  for (
+    let row = 0;
+    row < 4;
+    row++
+  ) {
 
-   page.addShape(
+
+    for (
+      let col = 0;
+      col < 5;
+      col++
+    ) {
+
+
+      page.addShape(
+
+        "ellipse",
+
+        {
+
+          x:
+            startX +
+            col * 0.15,
+
+          y:
+            startY +
+            row * 0.15,
+
+          w:
+            0.035,
+
+          h:
+            0.035,
+
+
+          fill: {
+
+            color,
+
+            transparency:
+              55,
+
+          },
+
+
+          line: {
+
+            transparency:
+              100,
+
+          },
+
+        }
+
+      );
+
+    }
+
+  }
+
+}
+
+
+// ======================================================
+// ACCENT PILL
+// ======================================================
+
+function addAccentPill(
+
+  page,
+
+  x,
+
+  y,
+
+  w,
+
+  h,
+
+  color
+
+) {
+
+  page.addShape(
+
+    "roundRect",
+
+    {
+
+      x,
+
+      y,
+
+      w,
+
+      h,
+
+
+      rectRadius:
+        0.04,
+
+
+      fill: {
+
+        color,
+
+      },
+
+
+      line: {
+
+        transparency:
+          100,
+
+      },
+
+    }
+
+  );
+
+}
+
+
+// ======================================================
+// COVER SLIDE
+// ======================================================
+
+async function createTitleSlide(
+
+  page,
+
+  slide,
+
+  presentation,
+
+  theme
+
+) {
+
+
+  addDotCluster(
+
+    page,
+
+    0.3,
+
+    6.02,
+
+    theme
+
+  );
+
+
+  addAccentPill(
+
+    page,
+
+    12.98,
+
+    1.2,
+
+    0.08,
+
+    0.85,
+
+    "F97316"
+
+  );
+
+
+
+  // ==================================================
+  // TITLE
+  // ==================================================
+
+  page.addText(
+
+    slide.title ||
+    presentation.title ||
+    "Nyxora AI Presentation",
+
+    {
+
+      x:
+        0.85,
+
+      y:
+        1.2,
+
+      w:
+        5.35,
+
+      h:
+        1.15,
+
+
+      fontSize:
+        40,
+
+      bold:
+        true,
+
+
+      color:
+        cleanColor(
+          theme.colors.text
+        ),
+
+
+      margin:
+        0,
+
+
+      fit:
+        "shrink",
+
+    }
+
+  );
+
+
+
+  // ==================================================
+  // SUBTITLE
+  // ==================================================
+
+  const subtitle =
+
+    slide.subtitle ||
+
+    presentation.subtitle ||
+
+    presentation.description ||
+
+    "Professional Presentation";
+
+
+  page.addText(
+
+    trimText(
+
+      subtitle,
+
+      180
+
+    ),
+
+    {
+
+      x:
+        0.9,
+
+      y:
+        2.6,
+
+      w:
+        4.8,
+
+      h:
+        0.9,
+
+
+      fontSize:
+        18,
+
+
+      color:
+        cleanColor(
+          theme.colors.mutedText
+        ),
+
+
+      margin:
+        0,
+
+
+      fit:
+        "shrink",
+
+    }
+
+  );
+
+
+
+  // ==================================================
+  // COVER IMAGE
+  // ==================================================
+
+  const coverPrompt =
+
+    slide.imagePrompt ||
+
+    presentation.imagePrompt ||
+
+    `${
+      slide.title ||
+      presentation.title ||
+      "presentation topic"
+    } premium professional presentation photograph`;
+
+
+  await addGeneratedImageCard(
+
+    page,
+
+    coverPrompt,
+
+    {
+
+      x:
+        6.55,
+
+      y:
+        1.15,
+
+      w:
+        5.65,
+
+      h:
+        3.6,
+
+      radius:
+        0.22,
+
+    }
+
+  );
+
+
+
+  // ==================================================
+  // PRESENTED BY / ORGANIZATION / DATE
+  // ==================================================
+
+  addCoverInformationCard(
+
+    page,
+
+    presentation,
+
+    theme
+
+  );
+
+}
+
+
+// ======================================================
+// COVER INFORMATION CARD
+// ======================================================
+
+function addCoverInformationCard(
+
+  page,
+
+  presentation,
+
+  theme
+
+) {
+
+
+  const presenter =
+
+    presentation.presenter ||
+
+    presentation.author ||
+
+    "Nyxora AI";
+
+
+  const organization =
+
+    presentation.organization ||
+
+    "Nyxora AI";
+
+
+  const date =
+
+    presentation.date ||
+
+    getCurrentPresentationDate();
+
+
+
+  page.addShape(
+
+    "roundRect",
+
+    {
+
+      x:
+        1.2,
+
+      y:
+        5.15,
+
+      w:
+        10.8,
+
+      h:
+        1.25,
+
+
+      rectRadius:
+        0.08,
+
+
+      fill: {
+
+        color:
+          cleanColor(
+
+            theme.colors.surface ||
+            "F8FAFC"
+
+          ),
+
+      },
+
+
+      line: {
+
+        color:
+          "E2E8F0",
+
+        width:
+          1,
+
+      },
+
+    }
+
+  );
+
+
+
+  addCoverMeta(
+
+    page,
+
+    "PRESENTED BY",
+
+    presenter,
+
+    1.65,
+
+    "2563EB",
+
+    theme
+
+  );
+
+
+  addCoverMeta(
+
+    page,
+
+    "ORGANIZATION",
+
+    organization,
+
+    5.05,
+
+    "06B6D4",
+
+    theme
+
+  );
+
+
+  addCoverMeta(
+
+    page,
+
+    "DATE",
+
+    date,
+
+    8.45,
+
+    "22C55E",
+
+    theme
+
+  );
+
+}
+
+
+// ======================================================
+// COVER META ITEM
+// ======================================================
+
+function addCoverMeta(
+
+  page,
+
+  label,
+
+  value,
+
+  x,
+
+  accent,
+
+  theme
+
+) {
+
+
+  page.addShape(
 
     "ellipse",
 
     {
 
-
-      x:
-
-       11.1 +
-
-       col*0.16,
-
+      x,
 
       y:
-
-       6.25 +
-
-       row*0.16,
-
+        5.52,
 
       w:
-
-       0.04,
-
+        0.36,
 
       h:
-
-       0.04,
-
+        0.36,
 
 
-      fill:{
+      fill: {
 
-        color,
-
-        transparency:55,
+        color:
+          accent,
 
       },
 
 
+      line: {
 
-      line:{
-
-        transparency:100,
+        transparency:
+          100,
 
       },
-
 
     }
 
-
-   );
-
-
-  }
+  );
 
 
- }
+
+  page.addText(
+
+    label,
+
+    {
+
+      x:
+        x + 0.55,
+
+      y:
+        5.42,
+
+      w:
+        1.8,
+
+      h:
+        0.18,
 
 
+      fontSize:
+        8,
+
+      bold:
+        true,
+
+      charSpacing:
+        1,
+
+
+      color:
+        accent,
+
+
+      margin:
+        0,
+
+    }
+
+  );
+
+
+
+  page.addText(
+
+    trimText(
+
+      value,
+
+      42
+
+    ),
+
+    {
+
+      x:
+        x + 0.55,
+
+      y:
+        5.72,
+
+      w:
+        2.2,
+
+      h:
+        0.3,
+
+
+      fontSize:
+        13,
+
+      bold:
+        true,
+
+
+      color:
+        cleanColor(
+          theme.colors.text
+        ),
+
+
+      margin:
+        0,
+
+
+      fit:
+        "shrink",
+
+    }
+
+  );
 
 }
-// ======================================================
-// CONTENT SLIDE
-// ======================================================
 
 
-async function createContentSlide(
+// ======================================================
+// COMMON SLIDE HEADER
+// ======================================================
+
+function addSlideHeader(
 
   page,
 
@@ -1015,8 +1336,7 @@ async function createContentSlide(
 
   theme
 
-){
-
+) {
 
 
   addTitleIcon(
@@ -1031,110 +1351,253 @@ async function createContentSlide(
 
 
 
-
-
-
-
   page.addText(
 
     slide.title || "",
 
     {
 
+      x:
+        1.15,
 
-      x:1.15,
+      y:
+        0.5,
 
-      y:0.55,
+      w:
+        10.5,
 
-      w:7,
-
-      h:0.45,
-
-
-      fontSize:30,
+      h:
+        0.48,
 
 
-      bold:true,
+      fontSize:
+        30,
+
+      bold:
+        true,
 
 
       color:
-
         cleanColor(
-
           theme.colors.text
-
         ),
 
 
-      margin:0,
+      margin:
+        0,
 
+
+      fit:
+        "shrink",
 
     }
-
 
   );
 
 
 
+  const headline =
+
+    slide.headline ||
+
+    slide.subtitle ||
+
+    "";
 
 
-
-
-  if(slide.headline){
-
+  if (headline) {
 
 
     page.addText(
 
-      slide.headline,
+      trimText(
+
+        headline,
+
+        160
+
+      ),
 
       {
 
+        x:
+          1.15,
 
-        x:1.15,
+        y:
+          1.05,
 
-        y:1.15,
+        w:
+          10.1,
 
-        w:6.5,
+        h:
+          0.34,
 
-        h:0.4,
 
-
-        fontSize:17,
+        fontSize:
+          14,
 
 
         color:
-
           cleanColor(
-
             theme.colors.mutedText
-
           ),
 
 
-        margin:0,
+        margin:
+          0,
 
+
+        fit:
+          "shrink",
 
       }
 
-
     );
-
-
 
   }
 
+}
+
+
+// ======================================================
+// TITLE ICON
+// ======================================================
+
+function addTitleIcon(
+
+  page,
+
+  slide,
+
+  theme
+
+) {
+
+
+  page.addShape(
+
+    "ellipse",
+
+    {
+
+      x:
+        0.55,
+
+      y:
+        0.52,
+
+      w:
+        0.45,
+
+      h:
+        0.45,
+
+
+      fill: {
+
+        color:
+          cleanColor(
+
+            theme.colors.accent ||
+            "2563EB"
+
+          ),
+
+      },
+
+
+      line: {
+
+        transparency:
+          100,
+
+      },
+
+    }
+
+  );
 
 
 
+  page.addText(
+
+    "✦",
+
+    {
+
+      x:
+        0.55,
+
+      y:
+        0.61,
+
+      w:
+        0.45,
+
+      h:
+        0.14,
 
 
+      fontSize:
+        16,
 
-  renderNumberPoints(
+      bold:
+        true,
+
+      align:
+        "center",
+
+
+      color:
+        "FFFFFF",
+
+
+      margin:
+        0,
+
+    }
+
+  );
+
+}
+
+
+// ======================================================
+// CONTENT SLIDE
+//
+// Adaptive layouts:
+//
+// LOW CONTENT
+// → large wide image
+//
+// MEDIUM CONTENT
+// → square image
+//
+// HIGH CONTENT
+// → vertical rectangular image
+//
+// Every content slide gets:
+// ✓ content card
+// ✓ image
+// ✓ supporting card
+// ======================================================
+
+async function createContentSlide(
+
+  page,
+
+  slide,
+
+  theme
+
+) {
+
+
+  addSlideHeader(
 
     page,
 
-    slide.points || [],
+    slide,
 
     theme
 
@@ -1142,526 +1605,1633 @@ async function createContentSlide(
 
 
 
+  const points =
+
+    enrichPoints(
+
+      normalizePoints(
+
+        slide.points ||
+
+        slide.bullets ||
+
+        slide.items ||
+
+        []
+
+      ),
+
+      slide
+
+    );
 
 
 
+  const imageShape =
 
-  // Real AI image
+    chooseImageShape(
 
-  if(
+      points.length,
 
-    slide.imagePrompt
+      slide
 
-  ){
+    );
 
 
 
-    await addGeneratedImage(
+  // ==================================================
+  // WIDE IMAGE LAYOUT
+  // ==================================================
+
+  if (
+    imageShape ===
+    "wide"
+  ) {
+
+
+    addContentPanel(
 
       page,
 
-      slide,
+      0.7,
+
+      1.55,
+
+      4.75,
+
+      5.0,
 
       theme
 
     );
 
 
+    renderNumberPoints(
+
+      page,
+
+      points,
+
+      theme,
+
+      {
+
+        x:
+          1.0,
+
+        y:
+          1.95,
+
+        textWidth:
+          3.35,
+
+        maxPoints:
+          5,
+
+      }
+
+    );
+
+
+
+    await addGeneratedImageCard(
+
+      page,
+
+      buildHighQualityImagePrompt(
+        slide
+      ),
+
+      {
+
+        x:
+          5.85,
+
+        y:
+          1.65,
+
+        w:
+          6.4,
+
+        h:
+          3.55,
+
+        radius:
+          0.18,
+
+      }
+
+    );
+
+
+
+    addSmallInsightCard(
+
+      page,
+
+      slide,
+
+      5.85,
+
+      5.45,
+
+      6.4,
+
+      theme
+
+    );
+
+
+    return;
 
   }
 
 
+
+  // ==================================================
+  // SQUARE IMAGE LAYOUT
+  // ==================================================
+
+  if (
+    imageShape ===
+    "square"
+  ) {
+
+
+    addContentPanel(
+
+      page,
+
+      0.7,
+
+      1.55,
+
+      6.45,
+
+      5.0,
+
+      theme
+
+    );
+
+
+    renderNumberPoints(
+
+      page,
+
+      points,
+
+      theme,
+
+      {
+
+        x:
+          1.0,
+
+        y:
+          1.95,
+
+        textWidth:
+          4.95,
+
+        maxPoints:
+          5,
+
+      }
+
+    );
+
+
+
+    await addGeneratedImageCard(
+
+      page,
+
+      buildHighQualityImagePrompt(
+        slide
+      ),
+
+      {
+
+        x:
+          7.65,
+
+        y:
+          1.75,
+
+        w:
+          4.25,
+
+        h:
+          4.25,
+
+        radius:
+          0.18,
+
+      }
+
+    );
+
+
+
+    addSmallInsightCard(
+
+      page,
+
+      slide,
+
+      7.65,
+
+      6.15,
+
+      4.25,
+
+      theme
+
+    );
+
+
+    return;
+
+  }
+
+
+
+  // ==================================================
+  // PORTRAIT / TALL RECTANGLE IMAGE LAYOUT
+  // ==================================================
+
+  addContentPanel(
+
+    page,
+
+    0.7,
+
+    1.55,
+
+    6.0,
+
+    5.0,
+
+    theme
+
+  );
+
+
+  renderNumberPoints(
+
+    page,
+
+    points,
+
+    theme,
+
+    {
+
+      x:
+        1.0,
+
+      y:
+        1.95,
+
+      textWidth:
+        4.55,
+
+      maxPoints:
+        5,
+
+    }
+
+  );
+
+
+
+  await addGeneratedImageCard(
+
+    page,
+
+    buildHighQualityImagePrompt(
+      slide
+    ),
+
+    {
+
+      x:
+        7.2,
+
+      y:
+        1.65,
+
+      w:
+        5.0,
+
+      h:
+        4.55,
+
+      radius:
+        0.18,
+
+    }
+
+  );
+
+
+
+  addSmallInsightCard(
+
+    page,
+
+    slide,
+
+    7.2,
+
+    6.3,
+
+    5.0,
+
+    theme
+
+  );
 
 }
 
 
-
-
-
-
-
-
-
 // ======================================================
-// TITLE ICON
+// CHOOSE IMAGE SHAPE
 // ======================================================
 
+function chooseImageShape(
 
-function addTitleIcon(
+  pointCount,
 
- page,
+  slide
 
- slide,
-
- theme
-
-){
+) {
 
 
+  const requested =
 
- page.addShape(
+    slide.imageShape ||
 
-  "ellipse",
+    slide.visualShape ||
 
-  {
-
-
-   x:0.55,
-
-   y:0.55,
-
-   w:0.45,
-
-   h:0.45,
+    "";
 
 
-   fill:{
+  if (
 
-    color:
+    requested === "wide" ||
 
-     cleanColor(
+    requested === "square" ||
 
-      theme.colors.accent ||
+    requested === "portrait"
 
-      "2563EB"
+  ) {
 
-     ),
-
-   },
-
-
-   line:{
-
-    transparency:100,
-
-   },
-
+    return requested;
 
   }
 
 
- );
+  // Low content:
+  // use a large cinematic horizontal visual.
 
+  if (
+    pointCount <= 2
+  ) {
 
-
-
-
-
- page.addText(
-
-  "✦",
-
-  {
-
-
-   x:0.55,
-
-   y:0.64,
-
-   w:0.45,
-
-   h:0.12,
-
-
-   fontSize:16,
-
-
-   bold:true,
-
-
-   align:"center",
-
-
-   color:"FFFFFF",
-
-
-   margin:0,
-
+    return "wide";
 
   }
 
 
- );
+  // Medium content:
+  // balanced square visual.
+
+  if (
+    pointCount === 3
+  ) {
+
+    return "square";
+
+  }
 
 
+  // More text:
+  // keep more horizontal space for content.
+
+  return "portrait";
 
 }
 
 
+// ======================================================
+// CONTENT PANEL
+// ======================================================
+
+function addContentPanel(
+
+  page,
+
+  x,
+
+  y,
+
+  w,
+
+  h,
+
+  theme
+
+) {
+
+
+  page.addShape(
+
+    "roundRect",
+
+    {
+
+      x,
+
+      y,
+
+      w,
+
+      h,
+
+
+      rectRadius:
+        0.08,
+
+
+      fill: {
+
+        color:
+          cleanColor(
+
+            theme.colors.surface ||
+            "F8FAFC"
+
+          ),
+
+      },
+
+
+      line: {
+
+        color:
+          "E2E8F0",
+
+        width:
+          1,
+
+      },
+
+
+      shadow: {
+
+        type:
+          "outer",
+
+        color:
+          "64748B",
+
+        opacity:
+          0.08,
+
+        blur:
+          2,
+
+        angle:
+          45,
+
+        distance:
+          1,
+
+      },
+
+    }
+
+  );
+
+}
+
+
+// ======================================================
+// SMALL INSIGHT CARD
+// ======================================================
+
+function addSmallInsightCard(
+
+  page,
+
+  slide,
+
+  x,
+
+  y,
+
+  w,
+
+  theme
+
+) {
+
+
+  const text =
+
+    slide.keyTakeaway ||
+
+    slide.description ||
+
+    slide.headline ||
+
+    "A focused visual summary of the slide's central idea.";
 
 
 
+  page.addShape(
+
+    "roundRect",
+
+    {
+
+      x,
+
+      y,
+
+      w,
+
+      h:
+        0.62,
 
 
+      rectRadius:
+        0.06,
+
+
+      fill: {
+
+        color:
+          cleanColor(
+
+            theme.colors.surface ||
+            "F8FAFC"
+
+          ),
+
+      },
+
+
+      line: {
+
+        color:
+          "E2E8F0",
+
+        width:
+          1,
+
+      },
+
+    }
+
+  );
+
+
+
+  page.addText(
+
+    trimText(
+
+      text,
+
+      120
+
+    ),
+
+    {
+
+      x:
+        x + 0.22,
+
+      y:
+        y + 0.15,
+
+      w:
+        w - 0.44,
+
+      h:
+        0.28,
+
+
+      fontSize:
+        11,
+
+
+      color:
+        cleanColor(
+          theme.colors.text
+        ),
+
+
+      margin:
+        0,
+
+
+      fit:
+        "shrink",
+
+    }
+
+  );
+
+}
 
 
 // ======================================================
 // NUMBERED POINTS
 // ======================================================
 
-
 function renderNumberPoints(
 
- page,
+  page,
 
- points,
+  points,
 
- theme
+  theme,
 
-){
+  options = {}
 
+) {
 
 
- const colors = [
+  const {
 
+    x = 0.8,
 
-  "2563EB",
+    y = 1.8,
 
-  "06B6D4",
+    textWidth = 5.2,
 
-  "22C55E",
+    maxPoints = 5,
 
-  "F97316"
+    startNumber = 1,
 
- ];
+  } = options;
 
 
 
+  normalizePoints(points)
 
+    .slice(
 
+      0,
 
+      maxPoints
 
- points
+    )
 
- .slice(
+    .forEach(
 
-  0,
+      (point, index) => {
 
-  4
 
- )
+        const currentY =
 
- .forEach(
+          y +
 
- (point,index)=>{
+          index * 0.82;
 
 
 
-  const y =
+        const color =
 
-    1.8 +
+          COLORS[
 
-    index *
+            index %
 
-    0.85;
+            COLORS.length
 
+          ];
 
 
 
+        page.addShape(
 
-  const color =
+          "ellipse",
 
-    colors[
+          {
 
-      index %
+            x,
 
-      colors.length
+            y:
+              currentY,
 
-    ];
+            w:
+              0.52,
 
+            h:
+              0.52,
 
 
+            fill: {
 
+              color,
 
+            },
 
 
-  page.addShape(
+            line: {
 
-   "ellipse",
+              transparency:
+                100,
 
-   {
+            },
 
+          }
 
-    x:0.8,
+        );
 
-    y,
 
 
-    w:0.58,
+        page.addText(
 
-    h:0.58,
+          String(
 
+            startNumber +
 
-    fill:{
+            index
 
-      color,
+          ),
 
-    },
+          {
 
+            x,
 
-    line:{
+            y:
+              currentY +
+              0.135,
 
-      color,
+            w:
+              0.52,
 
-      transparency:100,
+            h:
+              0.15,
 
-    },
 
+            fontSize:
+              14,
 
-   }
+            bold:
+              true,
 
 
-  );
+            color:
+              "FFFFFF",
 
 
+            align:
+              "center",
 
 
+            margin:
+              0,
 
+          }
 
+        );
 
-  page.addText(
 
-   String(
 
-    index + 1
+        page.addText(
 
-   ),
+          trimText(
 
-   {
+            point,
 
+            155
 
-    x:0.8,
+          ),
 
-    y:y+0.16,
+          {
 
+            x:
+              x + 0.78,
 
-    w:0.58,
+            y:
+              currentY +
+              0.04,
 
-    h:0.15,
+            w:
+              textWidth,
 
+            h:
+              0.46,
 
-    fontSize:17,
 
+            fontSize:
+              16,
 
-    bold:true,
 
+            color:
+              cleanColor(
+                theme.colors.text
+              ),
 
-    color:"FFFFFF",
 
+            valign:
+              "mid",
 
-    align:"center",
 
+            margin:
+              0,
 
-    margin:0,
 
+            fit:
+              "shrink",
 
-   }
+          }
 
+        );
 
-  );
+      }
 
-
-
-
-
-
-
-  page.addText(
-
-   point,
-
-   {
-
-
-    x:1.65,
-
-    y:y+0.12,
-
-
-    w:5.2,
-
-    h:0.35,
-
-
-    fontSize:18,
-
-
-    color:
-
-      cleanColor(
-
-        theme.colors.text
-
-      ),
-
-
-    margin:0,
-
-
-   }
-
-
-  );
-
-
-
- });
-
-
+    );
 
 }
 
 
-
-
-
-
-
-
-
 // ======================================================
-// REAL AI IMAGE RENDERER
-// No fake placeholder
+// IMAGE CARD SYSTEM
+//
+// IMPORTANT FIX:
+//
+// OLD:
+//
+// outer card
+//    ↓
+// image
+//    ↓
+// blue/cyan coloured lines
+//
+// NEW:
+//
+// rounded cropped image itself = card
+//
+// Therefore:
+//
+// ✓ no coloured line underneath
+// ✓ no white frame around image
+// ✓ no visible image/card mismatch
+// ✓ rounded corners are part of image
+// ✓ crop-to-cover prevents stretching
 // ======================================================
 
+async function addGeneratedImageCard(
 
-async function addGeneratedImage(
+  page,
 
- page,
+  prompt,
 
- slide,
+  box
 
- theme
-
-){
-
+) {
 
 
- try{
+  try {
+
+
+    const visual =
+
+      await generateSlideVisual({
+
+        visualType:
+          "image",
+
+        prompt,
+
+      });
 
 
 
-  const visual =
+    const prepared =
 
-    await generateSlideVisual({
+      prepareVisualForPpt(
 
+        visual
 
-      visualType:
-
-        "image",
-
+      );
 
 
-      prompt:
 
-        slide.imagePrompt,
+    if (
+      !prepared?.data
+    ) {
+
+      return false;
+
+    }
 
 
+
+    const cardImage =
+
+      await createImageCardData(
+
+        prepared.data,
+
+        box.w,
+
+        box.h,
+
+        box.radius ||
+        0.18
+
+      );
+
+
+
+    page.addImage({
+
+      data:
+
+        cardImage ||
+
+        prepared.data,
+
+
+      x:
+        box.x,
+
+      y:
+        box.y,
+
+      w:
+        box.w,
+
+      h:
+        box.h,
 
     });
 
 
 
+    return true;
+
+
+  } catch (error) {
+
+
+    console.error(
+
+      "Image generation failed",
+
+      error
+
+    );
+
+
+    return false;
+
+  }
+
+}
+
+
+// ======================================================
+// CREATE ROUNDED IMAGE CARD
+//
+// This function:
+//
+// 1. loads generated image
+// 2. crops it to target aspect ratio
+// 3. clips actual pixels to rounded rectangle
+// 4. exports transparent PNG
+// 5. inserts that PNG into PowerPoint
+//
+// Result:
+//
+// Image itself has rounded corners.
+// ======================================================
+
+async function createImageCardData(
+
+  dataUri,
+
+  targetWidth,
+
+  targetHeight,
+
+  radiusRatio = 0.18
+
+) {
+
+
+  if (
+
+    typeof document ===
+      "undefined" ||
+
+    typeof Image ===
+      "undefined"
+
+  ) {
+
+    return dataUri;
+
+  }
+
+
+  try {
+
+
+    const image =
+
+      await loadImage(
+
+        dataUri
+
+      );
 
 
 
-  const prepared =
+    const canvas =
 
-    prepareVisualForPpt(
+      document.createElement(
 
-      visual
+        "canvas"
+
+      );
+
+
+
+    const canvasWidth =
+      1600;
+
+
+
+    const canvasHeight =
+
+      Math.max(
+
+        600,
+
+        Math.round(
+
+          canvasWidth *
+
+          (
+
+            targetHeight /
+
+            targetWidth
+
+          )
+
+        )
+
+      );
+
+
+
+    canvas.width =
+      canvasWidth;
+
+
+    canvas.height =
+      canvasHeight;
+
+
+
+    const ctx =
+
+      canvas.getContext(
+
+        "2d"
+
+      );
+
+
+
+    if (!ctx) {
+
+      return dataUri;
+
+    }
+
+
+
+    const radius =
+
+      Math.min(
+
+        canvasWidth,
+
+        canvasHeight
+
+      ) *
+
+      Math.min(
+
+        radiusRatio,
+
+        0.12
+
+      );
+
+
+
+    roundedRectPath(
+
+      ctx,
+
+      0,
+
+      0,
+
+      canvasWidth,
+
+      canvasHeight,
+
+      radius
 
     );
 
 
 
+    ctx.clip();
 
 
 
+    drawImageCover(
 
-  if(!prepared){
+      ctx,
+
+      image,
+
+      canvasWidth,
+
+      canvasHeight
+
+    );
 
 
-    return;
 
+    return canvas.toDataURL(
+
+      "image/png",
+
+      1
+
+    );
+
+
+  } catch (error) {
+
+
+    console.warn(
+
+      "Rounded image conversion failed:",
+
+      error
+
+    );
+
+
+    return dataUri;
+
+  }
+
+}
+
+
+// ======================================================
+// LOAD IMAGE
+// ======================================================
+
+function loadImage(src) {
+
+  return new Promise(
+
+    (
+      resolve,
+      reject
+    ) => {
+
+
+      const image =
+
+        new Image();
+
+
+
+      image.onload =
+
+        () =>
+
+          resolve(image);
+
+
+
+      image.onerror =
+
+        reject;
+
+
+
+      image.src =
+
+        src;
+
+    }
+
+  );
+
+}
+
+
+// ======================================================
+// CROP IMAGE TO COVER
+//
+// Similar to CSS:
+//
+// object-fit: cover
+//
+// This prevents stretched images.
+// ======================================================
+
+function drawImageCover(
+
+  ctx,
+
+  image,
+
+  targetWidth,
+
+  targetHeight
+
+) {
+
+
+  const sourceWidth =
+
+    image.naturalWidth ||
+
+    image.width;
+
+
+
+  const sourceHeight =
+
+    image.naturalHeight ||
+
+    image.height;
+
+
+
+  const sourceRatio =
+
+    sourceWidth /
+
+    sourceHeight;
+
+
+
+  const targetRatio =
+
+    targetWidth /
+
+    targetHeight;
+
+
+
+  let sx = 0;
+
+  let sy = 0;
+
+  let sw =
+    sourceWidth;
+
+  let sh =
+    sourceHeight;
+
+
+
+  if (
+
+    sourceRatio >
+
+    targetRatio
+
+  ) {
+
+
+    sw =
+
+      sourceHeight *
+
+      targetRatio;
+
+
+    sx =
+
+      (
+
+        sourceWidth -
+
+        sw
+
+      ) /
+
+      2;
+
+
+  } else {
+
+
+    sh =
+
+      sourceWidth /
+
+      targetRatio;
+
+
+    sy =
+
+      (
+
+        sourceHeight -
+
+        sh
+
+      ) /
+
+      2;
 
   }
 
 
 
+  ctx.drawImage(
+
+    image,
+
+    sx,
+
+    sy,
+
+    sw,
+
+    sh,
+
+    0,
+
+    0,
+
+    targetWidth,
+
+    targetHeight
+
+  );
+
+}
+
+
+// ======================================================
+// ROUNDED RECTANGLE CLIPPING PATH
+// ======================================================
+
+function roundedRectPath(
+
+  ctx,
+
+  x,
+
+  y,
+
+  width,
+
+  height,
+
+  radius
+
+) {
+
+
+  const r =
+
+    Math.min(
+
+      radius,
+
+      width / 2,
+
+      height / 2
+
+    );
 
 
 
-
-
-  page.addImage({
-
-    data:
-
-      prepared.data,
-
-
-    x:7.4,
-
-    y:1.4,
-
-
-    w:4.3,
-
-    h:3.5,
-
-
-  });
+  ctx.beginPath();
 
 
 
+  ctx.moveTo(
 
+    x + r,
 
- }
-
- catch(error){
-
-
-
-  console.error(
-
-    "Image generation failed",
-
-    error
+    y
 
   );
 
 
 
- }
+  ctx.lineTo(
+
+    x + width - r,
+
+    y
+
+  );
 
 
+
+  ctx.quadraticCurveTo(
+
+    x + width,
+
+    y,
+
+    x + width,
+
+    y + r
+
+  );
+
+
+
+  ctx.lineTo(
+
+    x + width,
+
+    y + height - r
+
+  );
+
+
+
+  ctx.quadraticCurveTo(
+
+    x + width,
+
+    y + height,
+
+    x + width - r,
+
+    y + height
+
+  );
+
+
+
+  ctx.lineTo(
+
+    x + r,
+
+    y + height
+
+  );
+
+
+
+  ctx.quadraticCurveTo(
+
+    x,
+
+    y + height,
+
+    x,
+
+    y + height - r
+
+  );
+
+
+
+  ctx.lineTo(
+
+    x,
+
+    y + r
+
+  );
+
+
+
+  ctx.quadraticCurveTo(
+
+    x,
+
+    y,
+
+    x + r,
+
+    y
+
+  );
+
+
+
+  ctx.closePath();
+
+}
+
+
+// ======================================================
+// HIGH QUALITY IMAGE PROMPT
+//
+// Your backend remains responsible for image generation.
+// This only improves what this PPT service asks it for.
+// ======================================================
+
+function buildHighQualityImagePrompt(
+
+  slide
+
+) {
+
+
+  const original =
+
+    slide.imagePrompt ||
+
+    slide.title ||
+
+    slide.headline ||
+
+    "educational presentation topic";
+
+
+
+  return `
+
+${original}
+
+Create one premium presentation visual.
+
+Requirements:
+
+- high resolution
+- extremely sharp subject
+- clean professional composition
+- realistic or polished educational visual
+- professional lighting
+- strong subject clarity
+- presentation-ready framing
+- balanced composition
+- visually meaningful to the exact topic
+- modern editorial quality
+- premium keynote presentation quality
+
+Image framing:
+
+- keep important subjects away from extreme edges
+- leave safe cropping area
+- image may be cropped into a wide rectangle
+- image may be cropped into a square
+- image may be cropped into a portrait rectangle
+- main subject must remain clearly visible after cropping
+
+Do NOT include:
+
+- text
+- captions
+- labels
+- logos
+- watermark
+- UI
+- decorative coloured bars
+
+`;
 
 }
 // ======================================================
-// DIAGRAM SLIDE
-// Connected flow chart
+// COMPARISON / BEFORE-AFTER SLIDE
 //
-// Added:
-// ✓ arrows
-// ✓ icons
-// ✓ better spacing
+// FIXES:
+//
+// ✓ Reads multiple possible AI JSON structures
+// ✓ Before content no longer stays empty
+// ✓ After content no longer stays empty
+// ✓ Before gets its own image
+// ✓ After gets its own image
+// ✓ Images fit inside their sections
+// ✓ Text gets enough space
+// ✓ No multicolour line inside image cards
 // ======================================================
 
-
-async function createDiagramSlide(
-
- page,
-
- slide,
-
- theme
-
-){
-
-
-
- addTitleIcon(
+async function createComparisonSlide(
 
   page,
 
@@ -1669,1488 +3239,2974 @@ async function createDiagramSlide(
 
   theme
 
- );
+) {
 
 
+  addSlideHeader(
+
+    page,
+
+    slide,
+
+    theme
+
+  );
 
 
+  const comparison =
 
- page.addText(
+    extractComparisonData(
 
-  slide.title || "",
+      slide
+
+    );
+
+
+  // ==================================================
+  // BEFORE SIDE
+  // ==================================================
+
+  await createComparisonBlock(
+
+    page,
+
+    {
+
+      title:
+        comparison.leftTitle,
+
+      points:
+        comparison.leftPoints,
+
+      description:
+        comparison.leftDescription,
+
+      imagePrompt:
+        comparison.leftImagePrompt,
+
+      x:
+        0.7,
+
+      accent:
+        "2563EB",
+
+      theme,
+
+    }
+
+  );
+
+
+  // ==================================================
+  // AFTER SIDE
+  // ==================================================
+
+  await createComparisonBlock(
+
+    page,
+
+    {
+
+      title:
+        comparison.rightTitle,
+
+      points:
+        comparison.rightPoints,
+
+      description:
+        comparison.rightDescription,
+
+      imagePrompt:
+        comparison.rightImagePrompt,
+
+      x:
+        6.85,
+
+      accent:
+        "22C55E",
+
+      theme,
+
+    }
+
+  );
+
+}
+
+
+// ======================================================
+// COMPARISON BLOCK
+//
+// Layout:
+//
+// ┌─────────────────────────────┐
+// │ BEFORE / AFTER              │
+// │                             │
+// │ text          image         │
+// │ text          image         │
+// │ text          image         │
+// │                             │
+// └─────────────────────────────┘
+//
+// The image occupies the right side of each card.
+// Content remains readable on the left.
+// ======================================================
+
+async function createComparisonBlock(
+
+  page,
 
   {
 
+    title,
 
-   x:1.15,
+    points,
 
-   y:0.55,
+    description,
 
-   w:8,
+    imagePrompt,
 
-   h:0.45,
+    x,
 
+    accent,
 
-   fontSize:30,
+    theme,
 
+  }
 
-   bold:true,
-
-
-   color:
-
-    cleanColor(
-
-     theme.colors.text
-
-    ),
+) {
 
 
-   margin:0,
+  const safePoints =
 
+    ensureComparisonPoints(
+
+      points,
+
+      description,
+
+      title
+
+    );
+
+
+  // ==================================================
+  // MAIN CARD
+  // ==================================================
+
+  page.addShape(
+
+    "roundRect",
+
+    {
+
+      x,
+
+      y:
+        1.55,
+
+      w:
+        5.75,
+
+      h:
+        5.05,
+
+
+      rectRadius:
+        0.08,
+
+
+      fill: {
+
+        color:
+          "F8FAFC",
+
+      },
+
+
+      line: {
+
+        color:
+          accent,
+
+        width:
+          1.3,
+
+      },
+
+
+      shadow: {
+
+        type:
+          "outer",
+
+        color:
+          "64748B",
+
+        opacity:
+          0.07,
+
+        blur:
+          2,
+
+        angle:
+          45,
+
+        distance:
+          1,
+
+      },
+
+    }
+
+  );
+
+
+  // ==================================================
+  // SMALL ACCENT RECTANGLE
+  //
+  // This is NOT the old image-card multicolour line.
+  // It is a simple section marker.
+  // ==================================================
+
+  page.addShape(
+
+    "roundRect",
+
+    {
+
+      x:
+        x + 0.28,
+
+      y:
+        1.88,
+
+      w:
+        0.1,
+
+      h:
+        0.58,
+
+
+      rectRadius:
+        0.03,
+
+
+      fill: {
+
+        color:
+          accent,
+
+      },
+
+
+      line: {
+
+        transparency:
+          100,
+
+      },
+
+    }
+
+  );
+
+
+  // ==================================================
+  // TITLE
+  // ==================================================
+
+  page.addText(
+
+    title,
+
+    {
+
+      x:
+        x + 0.58,
+
+      y:
+        1.91,
+
+      w:
+        2.15,
+
+      h:
+        0.32,
+
+
+      fontSize:
+        21,
+
+      bold:
+        true,
+
+
+      color:
+        accent,
+
+
+      margin:
+        0,
+
+
+      fit:
+        "shrink",
+
+    }
+
+  );
+
+
+  // ==================================================
+  // BEFORE / AFTER IMAGE
+  //
+  // Each side generates its own image.
+  // Portrait rectangle works better here because
+  // enough horizontal space must remain for text.
+  // ==================================================
+
+  await addGeneratedImageCard(
+
+    page,
+
+    imagePrompt,
+
+    {
+
+      x:
+        x + 3.2,
+
+      y:
+        1.88,
+
+      w:
+        2.18,
+
+      h:
+        4.3,
+
+      radius:
+        0.16,
+
+    }
+
+  );
+
+
+  // ==================================================
+  // CONTENT POINTS
+  // ==================================================
+
+  safePoints
+
+    .slice(
+
+      0,
+
+      5
+
+    )
+
+    .forEach(
+
+      (item, index) => {
+
+
+        const currentY =
+
+          2.62 +
+
+          index * 0.66;
+
+
+        // ----------------------------------------------
+        // POINT DOT
+        // ----------------------------------------------
+
+        page.addShape(
+
+          "ellipse",
+
+          {
+
+            x:
+              x + 0.38,
+
+            y:
+              currentY + 0.02,
+
+            w:
+              0.22,
+
+            h:
+              0.22,
+
+
+            fill: {
+
+              color:
+                accent,
+
+            },
+
+
+            line: {
+
+              transparency:
+                100,
+
+            },
+
+          }
+
+        );
+
+
+        // ----------------------------------------------
+        // CHECK ICON
+        // ----------------------------------------------
+
+        page.addText(
+
+          "✓",
+
+          {
+
+            x:
+              x + 0.38,
+
+            y:
+              currentY + 0.062,
+
+            w:
+              0.22,
+
+            h:
+              0.08,
+
+
+            fontSize:
+              7,
+
+            bold:
+              true,
+
+
+            align:
+              "center",
+
+
+            color:
+              "FFFFFF",
+
+
+            margin:
+              0,
+
+          }
+
+        );
+
+
+        // ----------------------------------------------
+        // POINT TEXT
+        // ----------------------------------------------
+
+        page.addText(
+
+          trimText(
+
+            item,
+
+            94
+
+          ),
+
+          {
+
+            x:
+              x + 0.75,
+
+            y:
+              currentY,
+
+            w:
+              2.1,
+
+            h:
+              0.38,
+
+
+            fontSize:
+              12,
+
+
+            color:
+              cleanColor(
+                theme.colors.text
+              ),
+
+
+            margin:
+              0,
+
+
+            fit:
+              "shrink",
+
+          }
+
+        );
+
+      }
+
+    );
+
+}
+
+
+// ======================================================
+// EXTRACT COMPARISON DATA
+//
+// AI models may return comparison data differently.
+//
+// This function supports:
+//
+// slide.leftPoints
+// slide.rightPoints
+//
+// slide.beforePoints
+// slide.afterPoints
+//
+// slide.before
+// slide.after
+//
+// slide.comparison.before
+// slide.comparison.after
+//
+// slide.comparison.left
+// slide.comparison.right
+//
+// before.points
+// after.points
+//
+// before.items
+// after.items
+//
+// before.bullets
+// after.bullets
+//
+// before.description
+// after.description
+//
+// This prevents empty comparison cards.
+// ======================================================
+
+function extractComparisonData(
+
+  slide
+
+) {
+
+
+  const comparison =
+
+    slide.comparison ||
+
+    {};
+
+
+  const before =
+
+    comparison.before ||
+
+    comparison.left ||
+
+    slide.before ||
+
+    {};
+
+
+  const after =
+
+    comparison.after ||
+
+    comparison.right ||
+
+    slide.after ||
+
+    {};
+
+
+  // ==================================================
+  // TITLES
+  // ==================================================
+
+  const leftTitle =
+
+    slide.leftTitle ||
+
+    slide.beforeTitle ||
+
+    getObjectTitle(
+
+      before
+
+    ) ||
+
+    "Before";
+
+
+  const rightTitle =
+
+    slide.rightTitle ||
+
+    slide.afterTitle ||
+
+    getObjectTitle(
+
+      after
+
+    ) ||
+
+    "After";
+
+
+  // ==================================================
+  // LEFT POINTS
+  // ==================================================
+
+  const leftPoints =
+
+    firstNonEmptyArray(
+
+      slide.leftPoints,
+
+      slide.beforePoints,
+
+      before.points,
+
+      before.items,
+
+      before.bullets,
+
+      comparison.leftPoints,
+
+      comparison.beforePoints
+
+    );
+
+
+  // ==================================================
+  // RIGHT POINTS
+  // ==================================================
+
+  const rightPoints =
+
+    firstNonEmptyArray(
+
+      slide.rightPoints,
+
+      slide.afterPoints,
+
+      after.points,
+
+      after.items,
+
+      after.bullets,
+
+      comparison.rightPoints,
+
+      comparison.afterPoints
+
+    );
+
+
+  // ==================================================
+  // DESCRIPTIONS
+  // ==================================================
+
+  const leftDescription =
+
+    slide.leftDescription ||
+
+    slide.beforeDescription ||
+
+    before.description ||
+
+    before.text ||
+
+    "";
+
+
+  const rightDescription =
+
+    slide.rightDescription ||
+
+    slide.afterDescription ||
+
+    after.description ||
+
+    after.text ||
+
+    "";
+
+
+  // ==================================================
+  // IMAGE PROMPTS
+  // ==================================================
+
+  const basePrompt =
+
+    slide.imagePrompt ||
+
+    slide.title ||
+
+    "before and after comparison";
+
+
+  const leftImagePrompt =
+
+    slide.leftImagePrompt ||
+
+    slide.beforeImagePrompt ||
+
+    before.imagePrompt ||
+
+    `
+
+${basePrompt}
+
+Show the BEFORE state clearly.
+
+Requirements:
+
+- realistic professional presentation image
+- clearly represent the earlier or less developed state
+- meaningful to the exact comparison topic
+- strong central subject
+- portrait-friendly composition
+- high resolution
+- clean professional lighting
+- no text
+- no captions
+- no labels
+- no watermark
+
+`;
+
+
+  const rightImagePrompt =
+
+    slide.rightImagePrompt ||
+
+    slide.afterImagePrompt ||
+
+    after.imagePrompt ||
+
+    `
+
+${basePrompt}
+
+Show the AFTER state clearly.
+
+Requirements:
+
+- realistic professional presentation image
+- clearly represent the improved, transformed, or later state
+- meaningful to the exact comparison topic
+- strong central subject
+- portrait-friendly composition
+- high resolution
+- clean professional lighting
+- no text
+- no captions
+- no labels
+- no watermark
+
+`;
+
+
+  return {
+
+    leftTitle,
+
+    rightTitle,
+
+
+    leftPoints:
+
+      normalizePoints(
+
+        leftPoints
+
+      ),
+
+
+    rightPoints:
+
+      normalizePoints(
+
+        rightPoints
+
+      ),
+
+
+    leftDescription,
+
+    rightDescription,
+
+    leftImagePrompt,
+
+    rightImagePrompt,
+
+  };
+
+}
+
+
+// ======================================================
+// ENSURE COMPARISON CONTENT
+//
+// If AI returned description instead of points,
+// convert that description into usable points.
+//
+// This prevents:
+// BEFORE [empty]
+// AFTER  [empty]
+// ======================================================
+
+function ensureComparisonPoints(
+
+  points,
+
+  description,
+
+  title
+
+) {
+
+
+  const normalized =
+
+    normalizePoints(
+
+      points
+
+    );
+
+
+  if (
+
+    normalized.length >
+    0
+
+  ) {
+
+    return normalized;
 
   }
 
 
- );
+  if (description) {
+
+    return splitIntoUsefulPoints(
+
+      description
+
+    );
+
+  }
 
 
+  // Last visual fallback.
+  //
+  // This avoids a completely empty card while
+  // remaining generic instead of inventing
+  // specific facts about the topic.
+
+  return [
+
+    `${title} state and conditions`,
+
+    `Key characteristics of the ${String(
+      title
+    ).toLowerCase()} stage`,
+
+    `Important factors visible in this stage`,
+
+  ];
+
+}
 
 
+// ======================================================
+// DIAGRAM / CIRCULAR FLOW SLIDE
+//
+// OLD:
+// simple boxes → arrows → boxes
+//
+// NEW:
+// generated circular visual + readable stage list
+//
+// The generated visual is asked to create:
+// ✓ circular cycle
+// ✓ curved arrows
+// ✓ visual representation of stages
+// ✓ premium presentation quality
+//
+// Text remains outside the image so the actual
+// slide remains readable even if the generated
+// image contains no text.
+// ======================================================
+
+async function createDiagramSlide(
+
+  page,
+
+  slide,
+
+  theme
+
+) {
 
 
+  addSlideHeader(
 
- const steps =
+    page,
 
-   slide.diagram?.steps || [];
+    slide,
 
+    theme
 
-
-
-
-
-
- const startX = 0.7;
-
- const gap = 0.65;
-
- const width = 1.9;
+  );
 
 
+  const steps =
+
+    enrichPoints(
+
+      normalizePoints(
+
+        slide.diagram?.steps ||
+
+        slide.steps ||
+
+        slide.points ||
+
+        []
+
+      ),
+
+      slide
+
+    )
+
+    .slice(
+
+      0,
+
+      6
+
+    );
 
 
+  const flowPrompt =
+
+    buildCircularFlowPrompt(
+
+      slide,
+
+      steps
+
+    );
 
 
+  // ==================================================
+  // GENERATED CIRCULAR FLOW VISUAL
+  // ==================================================
 
- steps.forEach(
+  await addGeneratedImageCard(
 
- (step,index)=>{
+    page,
 
+    flowPrompt,
 
+    {
 
-  const x =
+      x:
+        0.8,
 
-    startX +
+      y:
+        1.55,
 
-    index *
+      w:
+        6.25,
 
-    (width + gap);
+      h:
+        5.0,
 
+      radius:
+        0.16,
 
+    }
 
-
-
-
-
-  // connector arrow
-
-  if(
-
-   index < steps.length - 1
-
-  ){
-
+  );
 
 
-   page.addShape(
+  // ==================================================
+  // STAGE LIST CARD
+  // ==================================================
+
+  addContentPanel(
+
+    page,
+
+    7.45,
+
+    1.55,
+
+    4.95,
+
+    3.5,
+
+    theme
+
+  );
+
+
+  renderNumberPoints(
+
+    page,
+
+    steps,
+
+    theme,
+
+    {
+
+      x:
+        7.78,
+
+      y:
+        1.92,
+
+      textWidth:
+        3.45,
+
+      maxPoints:
+        4,
+
+    }
+
+  );
+
+
+  // ==================================================
+  // TWO SUPPORTING RECTANGLES
+  // ==================================================
+
+  addDiagramInsightCards(
+
+    page,
+
+    slide,
+
+    steps,
+
+    theme
+
+  );
+
+}
+
+
+// ======================================================
+// CIRCULAR FLOW IMAGE PROMPT
+// ======================================================
+
+function buildCircularFlowPrompt(
+
+  slide,
+
+  steps
+
+) {
+
+
+  const topic =
+
+    slide.imagePrompt ||
+
+    slide.title ||
+
+    "process cycle";
+
+
+  const stepText =
+
+    steps
+
+      .slice(
+
+        0,
+
+        6
+
+      )
+
+      .join(
+
+        " -> "
+
+      );
+
+
+  return `
+
+Create a premium circular process-flow visual for a professional PowerPoint presentation.
+
+Main topic:
+
+${topic}
+
+The process contains these stages:
+
+${stepText}
+
+Visual composition:
+
+- use a circular cycle layout
+- arrange the process clockwise
+- create a strong central focal point
+- show each stage around the central circle
+- connect stages using elegant curved arrows
+- represent each stage visually using meaningful objects, scenes, symbols, or realistic visual elements
+- make the full cycle easy to understand visually
+- balanced spacing around the circle
+- clean modern educational infographic composition
+- polished professional presentation quality
+- high resolution
+- landscape presentation composition
+- premium keynote quality
+- modern editorial visual style
+- clear visual hierarchy
+
+Important:
+
+- avoid paragraphs
+- avoid tiny text
+- no watermark
+- no logo
+- no random decorative bars
+- no unnecessary UI
+- keep important visual elements away from image edges
+- make the complete circular process visible after cropping
+
+`;
+
+}
+
+
+// ======================================================
+// DIAGRAM SUPPORTING CARDS
+// ======================================================
+
+function addDiagramInsightCards(
+
+  page,
+
+  slide,
+
+  steps,
+
+  theme
+
+) {
+
+
+  addMiniInfoCard(
+
+    page,
+
+    "KEY INSIGHT",
+
+    slide.keyTakeaway ||
+
+    slide.description ||
+
+    "The stages connect continuously to form one complete process.",
+
+    7.45,
+
+    5.32,
+
+    2.35,
+
+    "2563EB",
+
+    theme
+
+  );
+
+
+  addMiniInfoCard(
+
+    page,
+
+    "STAGES",
+
+    `${
+      steps.length
+    } connected stages`,
+
+    10.05,
+
+    5.32,
+
+    2.35,
+
+    "22C55E",
+
+    theme
+
+  );
+
+}
+
+
+// ======================================================
+// MINI INFORMATION CARD
+// ======================================================
+
+function addMiniInfoCard(
+
+  page,
+
+  label,
+
+  text,
+
+  x,
+
+  y,
+
+  w,
+
+  accent,
+
+  theme
+
+) {
+
+
+  page.addShape(
+
+    "roundRect",
+
+    {
+
+      x,
+
+      y,
+
+      w,
+
+      h:
+        1.12,
+
+
+      rectRadius:
+        0.07,
+
+
+      fill: {
+
+        color:
+          cleanColor(
+
+            theme.colors.surface ||
+
+            "F8FAFC"
+
+          ),
+
+      },
+
+
+      line: {
+
+        color:
+          "E2E8F0",
+
+        width:
+          1,
+
+      },
+
+    }
+
+  );
+
+
+  page.addText(
+
+    label,
+
+    {
+
+      x:
+        x + 0.22,
+
+      y:
+        y + 0.2,
+
+      w:
+        w - 0.44,
+
+      h:
+        0.18,
+
+
+      fontSize:
+        9,
+
+      bold:
+        true,
+
+      charSpacing:
+        0.8,
+
+
+      color:
+        accent,
+
+
+      margin:
+        0,
+
+    }
+
+  );
+
+
+  page.addText(
+
+    trimText(
+
+      text,
+
+      100
+
+    ),
+
+    {
+
+      x:
+        x + 0.22,
+
+      y:
+        y + 0.48,
+
+      w:
+        w - 0.44,
+
+      h:
+        0.42,
+
+
+      fontSize:
+        12,
+
+      bold:
+        true,
+
+
+      color:
+        cleanColor(
+          theme.colors.text
+        ),
+
+
+      margin:
+        0,
+
+
+      fit:
+        "shrink",
+
+    }
+
+  );
+
+}
+
+
+// ======================================================
+// TIMELINE SLIDE
+//
+// Existing timeline concept preserved.
+//
+// Improved:
+//
+// ✓ main timeline card
+// ✓ numbered timeline
+// ✓ generated image
+// ✓ supporting insight card
+// ======================================================
+
+async function createTimelineSlide(
+
+  page,
+
+  slide,
+
+  theme
+
+) {
+
+
+  addSlideHeader(
+
+    page,
+
+    slide,
+
+    theme
+
+  );
+
+
+  const items =
+
+    enrichPoints(
+
+      normalizePoints(
+
+        slide.timeline ||
+
+        slide.points ||
+
+        []
+
+      ),
+
+      slide
+
+    )
+
+    .slice(
+
+      0,
+
+      6
+
+    );
+
+
+  // ==================================================
+  // TIMELINE CARD
+  // ==================================================
+
+  addContentPanel(
+
+    page,
+
+    0.75,
+
+    1.55,
+
+    7.25,
+
+    5.05,
+
+    theme
+
+  );
+
+
+  // ==================================================
+  // VERTICAL TIMELINE LINE
+  // ==================================================
+
+  page.addShape(
 
     "line",
 
     {
 
+      x:
+        1.45,
 
-     x:x+width,
+      y:
+        1.95,
 
-     y:2.8,
+      w:
+        0,
+
+      h:
+        4.0,
 
 
-     w:gap,
+      line: {
 
-     h:0,
+        color:
+          "CBD5E1",
+
+        width:
+          2,
+
+      },
+
+    }
+
+  );
 
 
-     line:{
+  // ==================================================
+  // TIMELINE ITEMS
+  // ==================================================
+
+  items.forEach(
+
+    (
+      item,
+      index
+    ) => {
+
+
+      const y =
+
+        1.85 +
+
+        index * 0.67;
+
+
+      const color =
+
+        COLORS[
+
+          index %
+
+          COLORS.length
+
+        ];
+
+
+      page.addShape(
+
+        "ellipse",
+
+        {
+
+          x:
+            1.24,
+
+          y,
+
+          w:
+            0.42,
+
+          h:
+            0.42,
+
+
+          fill: {
+
+            color,
+
+          },
+
+
+          line: {
+
+            color:
+              "FFFFFF",
+
+            width:
+              1.3,
+
+          },
+
+        }
+
+      );
+
+
+      page.addText(
+
+        String(
+
+          index + 1
+
+        ),
+
+        {
+
+          x:
+            1.24,
+
+          y:
+            y + 0.105,
+
+          w:
+            0.42,
+
+          h:
+            0.11,
+
+
+          fontSize:
+            10,
+
+          bold:
+            true,
+
+
+          color:
+            "FFFFFF",
+
+
+          align:
+            "center",
+
+
+          margin:
+            0,
+
+        }
+
+      );
+
+
+      page.addText(
+
+        trimText(
+
+          item,
+
+          125
+
+        ),
+
+        {
+
+          x:
+            1.95,
+
+          y:
+            y - 0.01,
+
+          w:
+            5.35,
+
+          h:
+            0.42,
+
+
+          fontSize:
+            14,
+
+
+          color:
+            cleanColor(
+              theme.colors.text
+            ),
+
+
+          margin:
+            0,
+
+
+          fit:
+            "shrink",
+
+        }
+
+      );
+
+    }
+
+  );
+
+
+  // ==================================================
+  // TIMELINE IMAGE
+  // ==================================================
+
+  await addGeneratedImageCard(
+
+    page,
+
+    buildHighQualityImagePrompt(
+
+      slide
+
+    ),
+
+    {
+
+      x:
+        8.45,
+
+      y:
+        1.75,
+
+      w:
+        3.75,
+
+      h:
+        3.75,
+
+      radius:
+        0.18,
+
+    }
+
+  );
+
+
+  // ==================================================
+  // SUPPORTING CARD
+  // ==================================================
+
+  addSmallInsightCard(
+
+    page,
+
+    slide,
+
+    8.45,
+
+    5.72,
+
+    3.75,
+
+    theme
+
+  );
+
+}
+
+
+// ======================================================
+// SUMMARY SLIDE
+//
+// Existing summary feature preserved.
+//
+// Improved:
+//
+// ✓ main takeaway card
+// ✓ two secondary rectangles
+// ✓ generated square image
+// ======================================================
+
+async function createSummarySlide(
+
+  page,
+
+  slide,
+
+  theme
+
+) {
+
+
+  addSlideHeader(
+
+    page,
+
+    {
+
+      ...slide,
+
+      title:
+
+        slide.title ||
+
+        "Key Takeaway",
+
+    },
+
+    theme
+
+  );
+
+
+  const takeaway =
+
+    slide.keyTakeaway ||
+
+    slide.description ||
+
+    slide.headline ||
+
+    "The most important idea from this presentation.";
+
+
+  // ==================================================
+  // MAIN TAKEAWAY CARD
+  // ==================================================
+
+  page.addShape(
+
+    "roundRect",
+
+    {
+
+      x:
+        0.8,
+
+      y:
+        1.65,
+
+      w:
+        6.0,
+
+      h:
+        2.05,
+
+
+      rectRadius:
+        0.09,
+
+
+      fill: {
+
+        color:
+          cleanColor(
+
+            theme.colors.surface ||
+
+            "F8FAFC"
+
+          ),
+
+      },
+
+
+      line: {
+
+        color:
+          "E2E8F0",
+
+        width:
+          1,
+
+      },
+
+    }
+
+  );
+
+
+  page.addText(
+
+    trimText(
+
+      takeaway,
+
+      300
+
+    ),
+
+    {
+
+      x:
+        1.2,
+
+      y:
+        2.08,
+
+      w:
+        5.2,
+
+      h:
+        1.12,
+
+
+      fontSize:
+        21,
+
+      bold:
+        true,
+
+
+      align:
+        "center",
+
+      valign:
+        "mid",
+
 
       color:
-
-       cleanColor(
-
-        theme.colors.accent
-
-       ),
+        cleanColor(
+          theme.colors.text
+        ),
 
 
-      width:2,
+      margin:
+        0,
 
 
-      endArrowType:
+      fit:
+        "shrink",
 
-       "triangle",
+    }
+
+  );
 
 
-     },
+  const summaryPoints =
 
+    enrichPoints(
+
+      normalizePoints(
+
+        slide.points ||
+
+        slide.summaryPoints ||
+
+        []
+
+      ),
+
+      slide
+
+    );
+
+
+  // ==================================================
+  // SUMMARY RECTANGLE 1
+  // ==================================================
+
+  addSummaryMiniCard(
+
+    page,
+
+    summaryPoints[0] ||
+
+    "Understand the core idea",
+
+    0.8,
+
+    4.05,
+
+    "2563EB",
+
+    theme
+
+  );
+
+
+  // ==================================================
+  // SUMMARY RECTANGLE 2
+  // ==================================================
+
+  addSummaryMiniCard(
+
+    page,
+
+    summaryPoints[1] ||
+
+    "Apply the key takeaway",
+
+    3.9,
+
+    4.05,
+
+    "22C55E",
+
+    theme
+
+  );
+
+
+  // ==================================================
+  // SUMMARY IMAGE
+  // ==================================================
+
+  await addGeneratedImageCard(
+
+    page,
+
+    buildHighQualityImagePrompt(
+
+      slide
+
+    ),
+
+    {
+
+      x:
+        7.35,
+
+      y:
+        1.65,
+
+      w:
+        4.85,
+
+      h:
+        4.85,
+
+      radius:
+        0.2,
+
+    }
+
+  );
+
+}
+
+
+// ======================================================
+// SUMMARY MINI CARD
+// ======================================================
+
+function addSummaryMiniCard(
+
+  page,
+
+  text,
+
+  x,
+
+  y,
+
+  accent,
+
+  theme
+
+) {
+
+
+  page.addShape(
+
+    "roundRect",
+
+    {
+
+      x,
+
+      y,
+
+      w:
+        2.85,
+
+      h:
+        1.55,
+
+
+      rectRadius:
+        0.07,
+
+
+      fill: {
+
+        color:
+          cleanColor(
+
+            theme.colors.surface ||
+
+            "F8FAFC"
+
+          ),
+
+      },
+
+
+      line: {
+
+        color:
+          "E2E8F0",
+
+        width:
+          1,
+
+      },
+
+    }
+
+  );
+
+
+  page.addShape(
+
+    "ellipse",
+
+    {
+
+      x:
+        x + 0.25,
+
+      y:
+        y + 0.48,
+
+      w:
+        0.42,
+
+      h:
+        0.42,
+
+
+      fill: {
+
+        color:
+          accent,
+
+      },
+
+
+      line: {
+
+        transparency:
+          100,
+
+      },
+
+    }
+
+  );
+
+
+  page.addText(
+
+    "✓",
+
+    {
+
+      x:
+        x + 0.25,
+
+      y:
+        y + 0.58,
+
+      w:
+        0.42,
+
+      h:
+        0.12,
+
+
+      fontSize:
+        11,
+
+      bold:
+        true,
+
+
+      align:
+        "center",
+
+
+      color:
+        "FFFFFF",
+
+
+      margin:
+        0,
+
+    }
+
+  );
+
+
+  page.addText(
+
+    trimText(
+
+      text,
+
+      105
+
+    ),
+
+    {
+
+      x:
+        x + 0.9,
+
+      y:
+        y + 0.35,
+
+      w:
+        1.65,
+
+      h:
+        0.72,
+
+
+      fontSize:
+        14,
+
+      bold:
+        true,
+
+
+      valign:
+        "mid",
+
+
+      color:
+        cleanColor(
+          theme.colors.text
+        ),
+
+
+      margin:
+        0,
+
+
+      fit:
+        "shrink",
+
+    }
+
+  );
+
+}
+
+
+// ======================================================
+// CONTENT ENRICHMENT
+//
+// IMPORTANT:
+//
+// This does NOT replace existing points.
+//
+// Existing points always stay.
+//
+// If a slide contains very little information,
+// existing headline / description / takeaway fields
+// are reused to fill visual empty space.
+// ======================================================
+
+function enrichPoints(
+
+  points,
+
+  slide
+
+) {
+
+
+  const result =
+
+    normalizePoints(
+
+      points
+
+    );
+
+
+  const candidates = [
+
+    slide.description,
+
+    slide.headline,
+
+    slide.keyTakeaway,
+
+    slide.subtitle,
+
+  ]
+
+    .filter(Boolean)
+
+    .map(
+
+      value =>
+
+        String(value)
+
+    );
+
+
+  for (
+
+    const candidate
+
+    of candidates
+
+  ) {
+
+
+    if (
+
+      result.length >= 3
+
+    ) {
+
+      break;
 
     }
 
 
-   );
+    if (
+
+      !result.includes(
+
+        candidate
+
+      )
+
+    ) {
 
 
+      result.push(
+
+        candidate
+
+      );
+
+    }
 
   }
 
 
-
-
-
-
-
-
-
-  // node box
-
-  page.addShape(
-
-   "roundRect",
-
-   {
-
-
-    x,
-
-    y:2.25,
-
-
-    w:width,
-
-    h:1.2,
-
-
-    fill:{
-
-     color:
-
-      cleanColor(
-
-       theme.colors.surface ||
-
-       "F8FAFC"
-
-      ),
-
-    },
-
-
-    line:{
-
-     color:
-
-      cleanColor(
-
-       theme.colors.accent ||
-
-       "2563EB"
-
-      ),
-
-
-     width:1.2,
-
-
-    },
-
-
-   }
-
-
-  );
-
-
-
-
-
-
-
-
-  // icon
-
-  page.addShape(
-
-   "ellipse",
-
-   {
-
-
-    x:x+0.7,
-
-    y:2.4,
-
-
-    w:0.45,
-
-    h:0.45,
-
-
-    fill:{
-
-     color:
-
-      cleanColor(
-
-       theme.colors.accent ||
-
-       "2563EB"
-
-      ),
-
-    },
-
-
-    line:{
-
-     transparency:100,
-
-    },
-
-
-   }
-
-
-  );
-
-
-
-
-
-
-
-
-  page.addText(
-
-   "✦",
-
-   {
-
-
-    x:x+0.7,
-
-    y:2.5,
-
-
-    w:0.45,
-
-    h:0.1,
-
-
-    fontSize:14,
-
-
-    align:"center",
-
-
-    color:"FFFFFF",
-
-
-    margin:0,
-
-
-   }
-
-
-  );
-
-
-
-
-
-
-
-
-  page.addText(
-
-   step,
-
-   {
-
-
-    x:x+0.1,
-
-    y:3,
-
-
-    w:1.7,
-
-    h:0.25,
-
-
-    fontSize:13,
-
-
-    bold:true,
-
-
-    align:"center",
-
-
-    color:
-
-     cleanColor(
-
-      theme.colors.text
-
-     ),
-
-
-    margin:0,
-
-
-   }
-
-
-  );
-
-
-
-
- });
-
+  return result;
 
 }
 
 
-
-
-
-
-
-
-
 // ======================================================
-// COMPARISON SLIDE
+// NORMALIZE POINTS
+//
+// Supports:
+//
+// ["point"]
+//
+// OR
+//
+// [
+//   { text: "point" },
+//   { title: "point" },
+//   { description: "point" },
+//   { label: "point" }
+// ]
 // ======================================================
 
+function normalizePoints(
 
-function createComparisonSlide(
+  points
 
- page,
-
- slide,
-
- theme
-
-){
+) {
 
 
+  if (
 
- addTitleIcon(
+    !Array.isArray(
 
-  page,
+      points
 
-  slide,
+    )
 
-  theme
+  ) {
 
- );
-
-
-
-
-
-
- page.addText(
-
-  slide.title || "",
-
-  {
-
-
-   x:1.15,
-
-   y:0.55,
-
-
-   w:8,
-
-   h:0.45,
-
-
-   fontSize:30,
-
-
-   bold:true,
-
-
-   color:
-
-    cleanColor(
-
-     theme.colors.text
-
-    ),
-
-
-   margin:0,
-
+    return [];
 
   }
 
 
- );
+  return points
+
+    .map(
+
+      point => {
 
 
+        if (
+
+          typeof point ===
+
+          "string"
+
+        ) {
+
+          return point;
+
+        }
 
 
+        if (
+
+          point &&
+
+          typeof point ===
+
+          "object"
+
+        ) {
 
 
+          return (
 
- createComparisonBlock(
+            point.text ||
 
-  page,
+            point.title ||
 
-  slide.leftTitle ||
+            point.description ||
 
-   "Before",
+            point.label ||
 
+            point.value ||
 
-  slide.leftPoints || [],
+            ""
 
+          );
 
-  0.8,
-
-
-  "2563EB",
-
-
-  theme
+        }
 
 
- );
+        return "";
 
+      }
 
+    )
 
-
-
-
-
- createComparisonBlock(
-
-  page,
-
-  slide.rightTitle ||
-
-   "After",
-
-
-  slide.rightPoints || [],
-
-
-  6.8,
-
-
-  "22C55E",
-
-
-  theme
-
-
- );
-
-
+    .filter(Boolean);
 
 }
 
 
+// ======================================================
+// FIRST NON-EMPTY ARRAY
+// ======================================================
+
+function firstNonEmptyArray(
+
+  ...values
+
+) {
 
 
+  for (
+
+    const value
+
+    of values
+
+  ) {
 
 
+    if (
+
+      Array.isArray(
+
+        value
+
+      ) &&
+
+      value.length > 0
+
+    ) {
 
 
+      return value;
 
-function createComparisonBlock(
-
- page,
-
- title,
-
- points,
-
- x,
-
- accent,
-
- theme
-
-){
-
-
-
- page.addShape(
-
-  "roundRect",
-
-  {
-
-
-   x,
-
-   y:1.7,
-
-
-   w:5,
-
-   h:3.3,
-
-
-   fill:{
-
-    color:
-
-     "F8FAFC",
-
-   },
-
-
-   line:{
-
-    color:accent,
-
-    width:1.5,
-
-   },
-
+    }
 
   }
 
 
- );
-
-
-
-
-
-
-
- page.addText(
-
-  title,
-
-  {
-
-
-   x:x+0.3,
-
-   y:2.05,
-
-
-   w:4,
-
-
-   h:0.3,
-
-
-   fontSize:22,
-
-
-   bold:true,
-
-
-   color:accent,
-
-
-   margin:0,
-
-
-  }
-
-
- );
-
-
-
-
-
-
-
- points
-
- .slice(0,3)
-
- .forEach(
-
- (item,index)=>{
-
-
-
-  const y =
-
-   2.7 +
-
-   index *
-
-   0.65;
-
-
-
-
-
-
-
-  page.addShape(
-
-   "ellipse",
-
-   {
-
-
-    x:x+0.35,
-
-    y,
-
-
-    w:0.35,
-
-    h:0.35,
-
-
-    fill:{
-
-     color:accent,
-
-    },
-
-
-    line:{
-
-     transparency:100,
-
-    },
-
-
-   }
-
-
-  );
-
-
-
-
-
-
-
-  page.addText(
-
-   String(index+1),
-
-   {
-
-
-    x:x+0.35,
-
-    y:y+0.08,
-
-
-    w:0.35,
-
-    h:0.1,
-
-
-    fontSize:11,
-
-
-    bold:true,
-
-
-    color:"FFFFFF",
-
-
-    align:"center",
-
-
-    margin:0,
-
-
-   }
-
-
-  );
-
-
-
-
-
-
-
-
-  page.addText(
-
-   item,
-
-   {
-
-
-    x:x+0.85,
-
-
-    y:y+0.04,
-
-
-    w:3.6,
-
-
-    h:0.25,
-
-
-    fontSize:15,
-
-
-    color:
-
-     cleanColor(
-
-      theme.colors.text
-
-     ),
-
-
-    margin:0,
-
-
-   }
-
-
-  );
-
-
-
- });
-
+  return [];
 
 }
 
 
-
-
-
-
-
-
-
 // ======================================================
-// TIMELINE SLIDE
+// GET OBJECT TITLE
 // ======================================================
 
+function getObjectTitle(
 
-function createTimelineSlide(
+  value
 
- page,
-
- slide,
-
- theme
-
-){
+) {
 
 
+  if (
 
- addTitleIcon(
+    value &&
 
-  page,
+    typeof value ===
 
-  slide,
+      "object" &&
 
-  theme
+    !Array.isArray(value)
 
- );
-
-
-
+  ) {
 
 
+    return (
 
+      value.title ||
 
- page.addText(
+      value.label ||
 
-  slide.title || "",
+      value.name ||
 
-  {
+      ""
 
-
-   x:1.15,
-
-   y:0.55,
-
-
-   w:8,
-
-
-   h:0.45,
-
-
-   fontSize:30,
-
-
-   bold:true,
-
-
-   color:
-
-    cleanColor(
-
-     theme.colors.text
-
-    ),
-
-
-   margin:0,
-
+    );
 
   }
 
 
- );
-
-
-
-
-
-
-
- const items =
-
-  slide.timeline ||
-
-  slide.points ||
-
-  [];
-
-
-
-
-
-
-
- items.forEach(
-
- (item,index)=>{
-
-
-
-  const y =
-
-   1.8 +
-
-   index *
-
-   0.75;
-
-
-
-
-
-
-
-  page.addShape(
-
-   "ellipse",
-
-   {
-
-
-    x:1,
-
-
-    y,
-
-
-    w:0.4,
-
-
-    h:0.4,
-
-
-    fill:{
-
-     color:
-
-      index % 2 === 0
-
-      ?
-
-      "2563EB"
-
-      :
-
-      "22C55E",
-
-    },
-
-
-    line:{
-
-     transparency:100,
-
-    },
-
-
-   }
-
-
-  );
-
-
-
-
-
-
-
-  page.addText(
-
-   String(index+1),
-
-   {
-
-
-    x:1,
-
-
-    y:y+0.1,
-
-
-    w:0.4,
-
-
-    h:0.1,
-
-
-    fontSize:11,
-
-
-    bold:true,
-
-
-    color:"FFFFFF",
-
-
-    align:"center",
-
-
-    margin:0,
-
-
-   }
-
-
-  );
-
-
-
-
-
-
-
-  page.addText(
-
-   item,
-
-   {
-
-
-    x:1.7,
-
-
-    y:y+0.05,
-
-
-    w:8,
-
-
-    h:0.25,
-
-
-    fontSize:18,
-
-
-    color:
-
-     cleanColor(
-
-      theme.colors.text
-
-     ),
-
-
-    margin:0,
-
-
-   }
-
-
-  );
-
-
-
- });
-
-
-}
-// ======================================================
-// SUMMARY SLIDE
-// ======================================================
-
-
-function createSummarySlide(
-
- page,
-
- slide,
-
- theme
-
-){
-
-
-
- addGradientBar(
-
-  page
-
- );
-
-
-
-
-
-
-
- page.addText(
-
-  slide.title ||
-
-  "Key Takeaway",
-
-  {
-
-
-   x:0.8,
-
-   y:1.6,
-
-
-   w:11,
-
-
-   h:0.6,
-
-
-   fontSize:40,
-
-
-   bold:true,
-
-
-   align:"center",
-
-
-   color:
-
-    cleanColor(
-
-     theme.colors.text
-
-    ),
-
-
-   margin:0,
-
-
-  }
-
-
- );
-
-
-
-
-
-
-
- page.addText(
-
-  slide.keyTakeaway ||
-
-  slide.description ||
-
-  "",
-
-  {
-
-
-   x:1.5,
-
-
-   y:2.8,
-
-
-   w:10,
-
-
-   h:0.8,
-
-
-   fontSize:24,
-
-
-   bold:true,
-
-
-   align:"center",
-
-
-   color:
-
-    cleanColor(
-
-     theme.colors.text
-
-    ),
-
-
-   margin:0,
-
-
-  }
-
-
- );
-
-
+  return "";
 
 }
 
 
+// ======================================================
+// SPLIT DESCRIPTION INTO POINTS
+//
+// Useful when AI gives:
+//
+// before.description:
+// "Old process was manual. Work took longer.
+//  Data was fragmented."
+//
+// instead of:
+//
+// before.points: [...]
+//
+// This converts the description into usable items.
+// ======================================================
+
+function splitIntoUsefulPoints(
+
+  text
+
+) {
 
 
+  const value =
+
+    String(
+
+      text ||
+
+      ""
+
+    );
 
 
+  const pieces =
 
+    value
+
+      .split(
+
+        /[.;]\s+|\n+/g
+
+      )
+
+      .map(
+
+        item =>
+
+          item.trim()
+
+      )
+
+      .filter(Boolean);
+
+
+  if (
+
+    pieces.length > 0
+
+  ) {
+
+
+    return pieces.slice(
+
+      0,
+
+      5
+
+    );
+
+  }
+
+
+  return [
+
+    value,
+
+  ].filter(Boolean);
+
+}
 
 
 // ======================================================
 // SLIDE NUMBER
 // ======================================================
 
-
 function addSlideNumber(
 
- page,
+  page,
 
- index,
+  index,
 
- theme
+  theme
 
-){
-
-
-
- page.addText(
-
-  String(index+1),
-
-  {
+) {
 
 
-   x:12.5,
+  page.addShape(
 
-   y:7,
+    "ellipse",
+
+    {
+
+      x:
+        12.42,
+
+      y:
+        6.88,
+
+      w:
+        0.36,
+
+      h:
+        0.36,
 
 
-   w:0.25,
+      fill: {
 
-   h:0.2,
+        color:
+          cleanColor(
+
+            theme.colors.surface ||
+
+            "F8FAFC"
+
+          ),
+
+      },
 
 
-   fontSize:10,
+      line: {
+
+        color:
+          "E2E8F0",
+
+        width:
+          0.7,
+
+      },
+
+    }
+
+  );
 
 
-   color:
+  page.addText(
 
-    cleanColor(
+    String(
 
-     theme.colors.mutedText
+      index + 1
 
     ),
 
+    {
 
-   margin:0,
+      x:
+        12.42,
 
+      y:
+        6.98,
+
+      w:
+        0.36,
+
+      h:
+        0.1,
+
+
+      fontSize:
+        9,
+
+      bold:
+        true,
+
+
+      align:
+        "center",
+
+
+      color:
+        cleanColor(
+          theme.colors.mutedText
+        ),
+
+
+      margin:
+        0,
+
+    }
+
+  );
+
+}
+
+
+// ======================================================
+// CURRENT PRESENTATION DATE
+// ======================================================
+
+function getCurrentPresentationDate() {
+
+
+  try {
+
+
+    return new Intl.DateTimeFormat(
+
+      "en-US",
+
+      {
+
+        year:
+          "numeric",
+
+        month:
+          "long",
+
+        day:
+          "numeric",
+
+      }
+
+    ).format(
+
+      new Date()
+
+    );
+
+
+  } catch (error) {
+
+
+    return new Date()
+
+      .toLocaleDateString();
 
   }
 
-
- );
-
-
-
 }
 
 
-
-
-
-
-
-
-
 // ======================================================
-// SVG DATA URI
+// SVG TO DATA URI
 // ======================================================
-
 
 function svgToDataUri(
 
- svg
+  svg
 
-){
+) {
 
 
+  return (
 
- return (
+    "data:image/svg+xml;base64," +
 
-  "data:image/svg+xml;base64," +
+    btoa(
 
-  btoa(
+      unescape(
 
-   unescape(
+        encodeURIComponent(
 
-    encodeURIComponent(
+          svg
 
-     svg
+        )
+
+      )
 
     )
 
-   )
-
-  )
-
- );
-
-
+  );
 
 }
-
-
-
-
-
-
-
 
 
 // ======================================================
 // COLOR CLEANER
 // ======================================================
 
-
 function cleanColor(
 
- color
+  color
 
-){
-
-
-
- return String(
-
-  color ||
-
-  "FFFFFF"
-
- )
-
- .replace(
-
-  "#",
-
-  ""
-
- );
+) {
 
 
+  return String(
+
+    color ||
+
+    "FFFFFF"
+
+  ).replace(
+
+    "#",
+
+    ""
+
+  );
 
 }
 
 
-
-
-
-
-
-
-
 // ======================================================
-// VALIDATION
+// VALIDATE SLIDE
 // ======================================================
-
 
 function validateSlide(
 
- slide
+  slide
 
-){
-
-
-
- return (
-
-  slide &&
-
-  typeof slide === "object"
-
- );
+) {
 
 
+  return (
+
+    slide &&
+
+    typeof slide ===
+
+      "object"
+
+  );
 
 }
 
 
-
-
-
-
-
-
-
 // ======================================================
-// SAFE TEXT HELPERS
+// SAFE TEXT
 // ======================================================
-
 
 function safeText(
 
- value
+  value
 
-){
+) {
 
 
- return value || "";
-
+  return value || "";
 
 }
 
 
-
-
-
-
-
+// ======================================================
+// TRIM TEXT
+// ======================================================
 
 function trimText(
 
- text,
+  text,
 
- limit = 120
+  limit = 120
 
-){
-
-
-
- const value =
-
-  safeText(text);
+) {
 
 
+  const value =
+
+    String(
+
+      safeText(
+
+        text
+
+      )
+
+    );
 
 
+  if (
 
- if(
+    value.length <=
 
-  value.length <= limit
+    limit
 
- ){
-
-  return value;
-
- }
+  ) {
 
 
+    return value;
+
+  }
 
 
+  return (
 
+    value.substring(
 
- return (
+      0,
 
-  value.substring(
+      limit
 
-   0,
+    ) +
 
-   limit
+    "..."
 
-  )
-
-  +
-
-  "..."
-
- );
-
-
+  );
 
 }
-
-
-
-
-
-
-
 
 
 // ======================================================
 // END NYXORA AI PPT EXPORT ENGINE
 //
-// Preserved:
+// FINAL FEATURES:
 //
-// ✓ PptxGenJS
-// ✓ Export
-// ✓ Layout system
-// ✓ AI JSON
-// ✓ SVG support
-// ✓ Image support
-// ✓ Diagram
-// ✓ Comparison
-// ✓ Timeline
-// ✓ Summary
+// ✓ Existing PPT export retained
+// ✓ Existing theme engine retained
+// ✓ Existing layout engine retained
+// ✓ Existing image backend retained
 //
-// Added:
+// ✓ Top multicolour line retained
+// ✓ No multicolour line inside image cards
 //
-// ✓ Smooth gradient bar
-// ✓ Cover information
-// ✓ AI image rendering
-// ✓ Numbered points
-// ✓ Connected flow charts
-// ✓ Premium spacing
-// ✓ Decorative dots
+// ✓ Rounded generated images
+// ✓ Image itself appears as card
+// ✓ Crop-to-cover image fitting
+// ✓ No stretched images
+//
+// ✓ Wide image layouts
+// ✓ Square image layouts
+// ✓ Portrait rectangle image layouts
+// ✓ Adaptive image sizing
+//
+// ✓ At least one generated image on every slide type
+//
+// ✓ Before has content
+// ✓ After has content
+// ✓ Before has its own image
+// ✓ After has its own image
+//
+// ✓ Comparison supports multiple JSON structures
+//
+// ✓ Diagram uses generated circular flow-chart visual
+// ✓ Flow stages remain readable outside generated image
+//
+// ✓ Timeline gets generated image
+// ✓ Summary gets generated image
+//
+// ✓ Sparse content slides are enriched from existing
+//   slide data without deleting original content
+//
+// ✓ At least two supporting visual/card elements
+//   are used where the layout allows them
+//
+// ✓ Cover contains:
+//      Presented By
+//      Organization
+//      Date
 //
 // ======================================================
