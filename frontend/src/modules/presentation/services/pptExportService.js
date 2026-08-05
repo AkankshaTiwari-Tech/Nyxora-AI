@@ -87,6 +87,14 @@ const COLORS = [
 
 // ======================================================
 // EXPORT PRESENTATION
+//
+// IMPROVED:
+//
+// ✓ Existing slides preserved
+// ✓ Existing diagram slides preserved
+// ✓ Detects whether PPT already has a flow/diagram
+// ✓ Automatically adds circular flow slide if missing
+// ✓ Never duplicates an existing diagram unnecessarily
 // ======================================================
 
 export async function exportPresentationToPpt({
@@ -94,7 +102,8 @@ export async function exportPresentationToPpt({
   themeName = "nyxoraPremium",
 }) {
 
-  const pptx = new PptxGenJS();
+  const pptx =
+    new PptxGenJS();
 
 
   const theme =
@@ -102,7 +111,8 @@ export async function exportPresentationToPpt({
     presentationThemes.nyxoraPremium;
 
 
-  pptx.layout = "LAYOUT_WIDE";
+  pptx.layout =
+    "LAYOUT_WIDE";
 
 
   pptx.author =
@@ -139,9 +149,86 @@ export async function exportPresentationToPpt({
   };
 
 
-  const slides =
-    presentation.slides || [];
+  // ==================================================
+  // ORIGINAL SLIDES
+  // ==================================================
 
+  const originalSlides =
+    Array.isArray(
+      presentation.slides
+    )
+      ? presentation.slides
+      : [];
+
+
+  // IMPORTANT:
+  // Copy array so original presentation data
+  // is never mutated.
+
+  const slides = [
+    ...originalSlides,
+  ];
+
+
+  // ==================================================
+  // GUARANTEE ONE FLOW CHART
+  // ==================================================
+
+  const hasFlowChart =
+    presentationHasFlowChart(
+      slides
+    );
+
+
+  if (!hasFlowChart) {
+
+    const automaticFlowSlide =
+      createAutomaticFlowSlide(
+        presentation,
+        slides
+      );
+
+
+    if (automaticFlowSlide) {
+
+      // Keep summary/conclusion as the final slide
+      // whenever possible.
+
+      const summaryIndex =
+        slides.findIndex(
+          slide =>
+            isSummaryLikeSlide(
+              slide
+            )
+        );
+
+
+      if (
+        summaryIndex !== -1
+      ) {
+
+        slides.splice(
+          summaryIndex,
+          0,
+          automaticFlowSlide
+        );
+
+      } else {
+
+        slides.push(
+          automaticFlowSlide
+        );
+
+      }
+
+    }
+
+  }
+
+
+  // ==================================================
+  // CREATE ALL SLIDES
+  // ==================================================
 
   for (
     let index = 0;
@@ -153,7 +240,11 @@ export async function exportPresentationToPpt({
       slides[index];
 
 
-    if (!validateSlide(slide)) {
+    if (
+      !validateSlide(
+        slide
+      )
+    ) {
 
       continue;
 
@@ -177,6 +268,10 @@ export async function exportPresentationToPpt({
   }
 
 
+  // ==================================================
+  // EXPORT
+  // ==================================================
+
   await pptx.writeFile({
 
     fileName:
@@ -188,171 +283,790 @@ export async function exportPresentationToPpt({
   });
 
 }
-
-
 // ======================================================
 // CREATE SLIDE
+//
+// CENTRAL SLIDE ROUTER
+//
+// IMPORTANT:
+//
+// ✓ Restores export functionality
+// ✓ Preserves all new layouts
+// ✓ Awaits every async slide renderer
+// ✓ Preserves generated images
+// ✓ Preserves circular flow chart
+// ✓ Preserves comparison images
+// ✓ Preserves timeline images
+// ✓ Preserves summary images
+// ✓ Preserves slide numbers
 // ======================================================
 
 async function createSlide({
-
   pptx,
-
   slide,
-
   index,
-
   theme,
-
   presentation,
-
 }) {
+
+  // ==================================================
+  // CREATE POWERPOINT PAGE
+  // ==================================================
 
   const page =
     pptx.addSlide();
 
 
+  // ==================================================
+  // PREMIUM BACKGROUND
+  //
+  // Includes:
+  // ✓ top multicolour line
+  // ✓ page decorations
+  // ==================================================
+
   applyPremiumBackground(
-
     page,
-
     theme,
-
     index
-
   );
 
 
-  const layout =
-    getPresentationLayout(
-      slide.layout
-    )?.type ||
-    "content";
+  // ==================================================
+  // RESOLVE LAYOUT
+  // ==================================================
 
+  const requestedLayout =
+    String(
+      slide?.layout ||
+      "content"
+    ).toLowerCase();
+
+
+  const resolvedLayout =
+    getPresentationLayout(
+      requestedLayout
+    );
+
+
+  const layout =
+    String(
+      resolvedLayout?.type ||
+      requestedLayout ||
+      "content"
+    ).toLowerCase();
+
+
+  // ==================================================
+  // SLIDE ROUTER
+  // ==================================================
 
   switch (layout) {
 
+    // ================================================
+    // TITLE / COVER
+    // ================================================
 
     case "title":
 
+    case "cover":
 
       await createTitleSlide(
-
         page,
-
         slide,
-
         presentation,
-
         theme
-
       );
-
 
       break;
 
 
+    // ================================================
+    // DIAGRAM / FLOW
+    // ================================================
 
     case "diagram":
 
+    case "flow":
+
+    case "process":
+
+    case "cycle":
+
+    case "workflow":
+
+    case "circular-flow":
 
       await createDiagramSlide(
-
         page,
-
         slide,
-
         theme
-
       );
-
 
       break;
 
 
+    // ================================================
+    // COMPARISON / BEFORE AFTER
+    // ================================================
 
     case "comparison":
 
+    case "before-after":
+
+    case "before_after":
 
       await createComparisonSlide(
-
         page,
-
         slide,
-
         theme
-
       );
-
 
       break;
 
 
+    // ================================================
+    // TIMELINE
+    // ================================================
 
     case "timeline":
 
-
       await createTimelineSlide(
-
         page,
-
         slide,
-
         theme
-
       );
-
 
       break;
 
 
+    // ================================================
+    // SUMMARY / CONCLUSION
+    // ================================================
 
     case "summary":
 
+    case "conclusion":
 
       await createSummarySlide(
-
         page,
-
         slide,
-
         theme
-
       );
-
 
       break;
 
 
+    // ================================================
+    // NORMAL CONTENT
+    // ================================================
+
+    case "content":
 
     default:
 
-
       await createContentSlide(
-
         page,
-
         slide,
-
         theme
-
       );
+
+      break;
 
   }
 
 
+  // ==================================================
+  // SLIDE NUMBER
+  // ==================================================
+
   addSlideNumber(
-
     page,
-
     index,
-
     theme
+  );
+
+
+  return page;
+}
+
+// ======================================================
+// DETECT EXISTING FLOW CHART
+//
+// Prevents duplicate flow slides.
+//
+// Recognizes:
+//
+// diagram
+// flow
+// process
+// cycle
+// workflow
+// circular-flow
+// ======================================================
+
+function presentationHasFlowChart(
+  slides
+) {
+
+  return slides.some(
+    slide => {
+
+      if (!slide) {
+        return false;
+      }
+
+
+      const layout =
+        String(
+          slide.layout || ""
+        )
+          .toLowerCase();
+
+
+      const visualType =
+        String(
+          slide.visualType || ""
+        )
+          .toLowerCase();
+
+
+      const diagramType =
+        String(
+          slide.diagram?.type || ""
+        )
+          .toLowerCase();
+
+
+      if (
+        layout === "diagram" ||
+        layout === "flow" ||
+        layout === "process" ||
+        layout === "cycle" ||
+        layout === "workflow" ||
+        layout === "circular-flow"
+      ) {
+
+        return true;
+
+      }
+
+
+      if (
+        visualType === "diagram" ||
+        visualType === "flow" ||
+        visualType === "process"
+      ) {
+
+        return true;
+
+      }
+
+
+      if (
+        diagramType === "flow" ||
+        diagramType === "process" ||
+        diagramType === "cycle" ||
+        diagramType === "circular"
+      ) {
+
+        return true;
+
+      }
+
+
+      if (
+        Array.isArray(
+          slide.diagram?.steps
+        ) &&
+        slide.diagram.steps.length >= 2
+      ) {
+
+        return true;
+
+      }
+
+
+      return false;
+
+    }
+  );
+
+}
+
+
+// ======================================================
+// AUTOMATIC CIRCULAR FLOW SLIDE
+//
+// Used only when the AI presentation does NOT
+// already contain a diagram.
+//
+// IMPORTANT:
+//
+// ✓ Does not remove existing slides
+// ✓ Does not modify existing content
+// ✓ Uses presentation's existing content
+// ✓ Does not invent specific facts
+// ======================================================
+
+function createAutomaticFlowSlide(
+  presentation,
+  slides
+) {
+
+  const stages =
+    collectFlowStages(
+      presentation,
+      slides
+    );
+
+
+  if (
+    stages.length < 2
+  ) {
+
+    return null;
+
+  }
+
+
+  const topic =
+    presentation.title ||
+    "Presentation";
+
+
+  return {
+
+    layout:
+      "diagram",
+
+
+    visualType:
+      "diagram",
+
+
+    title:
+      `${topic} — Process Flow`,
+
+
+    headline:
+      "A connected view of the key stages and ideas",
+
+
+    description:
+      presentation.description ||
+      presentation.subtitle ||
+      "A visual overview showing how the major ideas connect.",
+
+
+    keyTakeaway:
+      "Each stage contributes to the complete process and connects with the next.",
+
+
+    diagram: {
+
+      type:
+        "circular",
+
+      steps:
+        stages,
+
+    },
+
+
+    steps:
+      stages,
+
+
+    imagePrompt:
+      `${topic} circular process flow showing the major stages and their relationship`,
+
+  };
+
+}
+
+
+// ======================================================
+// COLLECT FLOW STAGES
+//
+// Uses existing PPT information.
+//
+// Priority:
+//
+// 1. Existing slide points
+// 2. Existing slide headlines
+// 3. Existing slide titles
+//
+// Maximum 6 stages.
+// ======================================================
+
+function collectFlowStages(
+  presentation,
+  slides
+) {
+
+  const stages = [];
+
+
+  // ==================================================
+  // FIRST TRY IMPORTANT POINTS
+  // ==================================================
+
+  for (
+    const slide
+    of slides
+  ) {
+
+    if (
+      stages.length >= 6
+    ) {
+
+      break;
+
+    }
+
+
+    if (!slide) {
+      continue;
+    }
+
+
+    const points =
+      normalizePoints(
+
+        slide.points ||
+
+        slide.bullets ||
+
+        slide.items ||
+
+        []
+
+      );
+
+
+    for (
+      const point
+      of points
+    ) {
+
+      if (
+        stages.length >= 6
+      ) {
+
+        break;
+
+      }
+
+
+      addUniqueFlowStage(
+        stages,
+        point
+      );
+
+    }
+
+  }
+
+
+  // ==================================================
+  // THEN USE HEADLINES
+  // ==================================================
+
+  if (
+    stages.length < 4
+  ) {
+
+    for (
+      const slide
+      of slides
+    ) {
+
+      if (
+        stages.length >= 6
+      ) {
+
+        break;
+
+      }
+
+
+      if (
+        slide?.headline
+      ) {
+
+        addUniqueFlowStage(
+
+          stages,
+
+          slide.headline
+
+        );
+
+      }
+
+    }
+
+  }
+
+
+  // ==================================================
+  // THEN USE SLIDE TITLES
+  // ==================================================
+
+  if (
+    stages.length < 4
+  ) {
+
+    for (
+      const slide
+      of slides
+    ) {
+
+      if (
+        stages.length >= 6
+      ) {
+
+        break;
+
+      }
+
+
+      if (
+        slide?.title &&
+        !isGenericFlowTitle(
+          slide.title
+        )
+      ) {
+
+        addUniqueFlowStage(
+
+          stages,
+
+          slide.title
+
+        );
+
+      }
+
+    }
+
+  }
+
+
+  // ==================================================
+  // PRESENTATION LEVEL FALLBACK
+  // ==================================================
+
+  if (
+    stages.length < 2
+  ) {
+
+    if (
+      presentation.subtitle
+    ) {
+
+      addUniqueFlowStage(
+
+        stages,
+
+        presentation.subtitle
+
+      );
+
+    }
+
+
+    if (
+      presentation.description
+    ) {
+
+      const descriptionPoints =
+        splitIntoUsefulPoints(
+
+          presentation.description
+
+        );
+
+
+      descriptionPoints.forEach(
+        point => {
+
+          if (
+            stages.length < 6
+          ) {
+
+            addUniqueFlowStage(
+
+              stages,
+
+              point
+
+            );
+
+          }
+
+        }
+      );
+
+    }
+
+  }
+
+
+  return stages
+    .slice(
+      0,
+      6
+    );
+
+}
+
+
+// ======================================================
+// ADD UNIQUE FLOW STAGE
+// ======================================================
+
+function addUniqueFlowStage(
+  stages,
+  value
+) {
+
+  if (!value) {
+    return;
+  }
+
+
+  const cleaned =
+    trimText(
+      String(value).trim(),
+      65
+    );
+
+
+  if (!cleaned) {
+    return;
+  }
+
+
+  const exists =
+    stages.some(
+      stage =>
+        stage
+          .toLowerCase() ===
+        cleaned
+          .toLowerCase()
+    );
+
+
+  if (!exists) {
+
+    stages.push(
+      cleaned
+    );
+
+  }
+
+}
+
+
+// ======================================================
+// GENERIC FLOW TITLE CHECK
+// ======================================================
+
+function isGenericFlowTitle(
+  title
+) {
+
+  const value =
+    String(
+      title || ""
+    )
+      .toLowerCase();
+
+
+  return (
+
+    value.includes(
+      "introduction"
+    ) ||
+
+    value.includes(
+      "thank you"
+    ) ||
+
+    value.includes(
+      "summary"
+    ) ||
+
+    value.includes(
+      "conclusion"
+    ) ||
+
+    value.includes(
+      "key takeaway"
+    )
 
   );
 
 }
 
+
+// ======================================================
+// SUMMARY DETECTOR
+//
+// Allows automatic flow slide to be inserted BEFORE
+// the final summary/conclusion.
+// ======================================================
+
+function isSummaryLikeSlide(
+  slide
+) {
+
+  if (!slide) {
+    return false;
+  }
+
+
+  const layout =
+    String(
+      slide.layout || ""
+    )
+      .toLowerCase();
+
+
+  const title =
+    String(
+      slide.title || ""
+    )
+      .toLowerCase();
+
+
+  return (
+
+    layout === "summary" ||
+
+    layout === "conclusion" ||
+
+    title.includes(
+      "summary"
+    ) ||
+
+    title.includes(
+      "conclusion"
+    ) ||
+
+    title.includes(
+      "key takeaway"
+    ) ||
+
+    title.includes(
+      "thank you"
+    )
+
+  );
+
+}
 
 // ======================================================
 // BACKGROUND
@@ -1172,75 +1886,142 @@ function addCoverInformationCard(
 
 // ======================================================
 // COVER META ITEM
+//
+// Presented By → User icon
+// Organization → Building icon
+// Date → Calendar icon
 // ======================================================
 
 function addCoverMeta(
-
   page,
-
   label,
-
   value,
-
   x,
-
   accent,
-
   theme
-
 ) {
+  const normalizedLabel =
+    String(label)
+      .toLowerCase();
 
+
+  let icon =
+    "●";
+
+
+  if (
+    normalizedLabel.includes(
+      "presented"
+    )
+  ) {
+    icon =
+      "👤";
+  }
+
+
+  if (
+    normalizedLabel.includes(
+      "organization"
+    )
+  ) {
+    icon =
+      "▦";
+  }
+
+
+  if (
+    normalizedLabel.includes(
+      "date"
+    )
+  ) {
+    icon =
+      "▣";
+  }
+
+
+  // ==================================================
+  // COLOURED CIRCLE
+  // ==================================================
 
   page.addShape(
-
     "ellipse",
-
     {
-
       x,
 
       y:
-        5.52,
+        5.42,
 
       w:
-        0.36,
+        0.55,
 
       h:
-        0.36,
+        0.55,
 
 
       fill: {
-
         color:
           accent,
-
       },
 
 
       line: {
-
         transparency:
           100,
-
       },
-
     }
-
   );
 
 
+  // ==================================================
+  // ICON INSIDE CIRCLE
+  // ==================================================
 
   page.addText(
-
-    label,
-
+    icon,
     {
-
-      x:
-        x + 0.55,
+      x,
 
       y:
-        5.42,
+        5.545,
+
+      w:
+        0.55,
+
+      h:
+        0.2,
+
+
+      fontSize:
+        14,
+
+      bold:
+        true,
+
+
+      color:
+        "FFFFFF",
+
+      align:
+        "center",
+
+      margin:
+        0,
+    }
+  );
+
+
+  // ==================================================
+  // LABEL
+  // ==================================================
+
+  page.addText(
+    label,
+    {
+      x:
+        x + 0.72,
+
+      y:
+        5.38,
 
       w:
         1.8,
@@ -1262,36 +2043,30 @@ function addCoverMeta(
       color:
         accent,
 
-
       margin:
         0,
-
     }
-
   );
 
 
+  // ==================================================
+  // VALUE
+  // ==================================================
 
   page.addText(
-
     trimText(
-
       value,
-
       42
-
     ),
-
     {
-
       x:
-        x + 0.55,
+        x + 0.72,
 
       y:
-        5.72,
+        5.68,
 
       w:
-        2.2,
+        2.05,
 
       h:
         0.3,
@@ -1313,14 +2088,10 @@ function addCoverMeta(
       margin:
         0,
 
-
       fit:
         "shrink",
-
     }
-
   );
-
 }
 
 
@@ -2250,215 +3021,455 @@ function addSmallInsightCard(
 
 
 // ======================================================
-// NUMBERED POINTS
+// NUMBERED POINT BUBBLE SYSTEM
+//
+// DESIGN:
+//
+// ┌───────────────────────────────────────────────┐
+// │ │  (1)  ✦  Point text                       │
+// │ │                                             │
+// └───────────────────────────────────────────────┘
+//
+// ✓ Number circle INSIDE bubble
+// ✓ Matching vertical accent line
+// ✓ Context icon before text
+// ✓ Separate bubbles
+// ✓ Consistent connected visual system
 // ======================================================
 
 function renderNumberPoints(
-
   page,
-
   points,
-
   theme,
-
   options = {}
-
 ) {
-
-
   const {
-
     x = 0.8,
-
     y = 1.8,
-
     textWidth = 5.2,
-
     maxPoints = 5,
-
     startNumber = 1,
-
   } = options;
 
 
+  const normalizedPoints =
+    normalizePoints(points)
+      .slice(
+        0,
+        maxPoints
+      );
 
-  normalizePoints(points)
 
-    .slice(
+  normalizedPoints.forEach(
+    (point, index) => {
 
-      0,
+      const currentY =
+        y +
+        index * 0.82;
 
-      maxPoints
 
-    )
+      const color =
+        COLORS[
+          index %
+          COLORS.length
+        ];
 
-    .forEach(
 
-      (point, index) => {
+      const bubbleX =
+        x;
 
 
-        const currentY =
+      const bubbleY =
+        currentY;
 
-          y +
 
-          index * 0.82;
+      const bubbleWidth =
+        textWidth +
+        0.8;
 
 
+      const bubbleHeight =
+        0.68;
 
-        const color =
 
-          COLORS[
+      // ==================================================
+      // MAIN BUBBLE
+      // ==================================================
 
-            index %
+      page.addShape(
+        "roundRect",
+        {
+          x:
+            bubbleX,
 
-            COLORS.length
+          y:
+            bubbleY,
 
-          ];
+          w:
+            bubbleWidth,
 
+          h:
+            bubbleHeight,
 
 
-        page.addShape(
+          rectRadius:
+            0.07,
 
-          "ellipse",
 
-          {
-
-            x,
-
-            y:
-              currentY,
-
-            w:
-              0.52,
-
-            h:
-              0.52,
-
-
-            fill: {
-
-              color,
-
-            },
-
-
-            line: {
-
-              transparency:
-                100,
-
-            },
-
-          }
-
-        );
-
-
-
-        page.addText(
-
-          String(
-
-            startNumber +
-
-            index
-
-          ),
-
-          {
-
-            x,
-
-            y:
-              currentY +
-              0.135,
-
-            w:
-              0.52,
-
-            h:
-              0.15,
-
-
-            fontSize:
-              14,
-
-            bold:
-              true,
-
-
-            color:
-              "FFFFFF",
-
-
-            align:
-              "center",
-
-
-            margin:
-              0,
-
-          }
-
-        );
-
-
-
-        page.addText(
-
-          trimText(
-
-            point,
-
-            155
-
-          ),
-
-          {
-
-            x:
-              x + 0.78,
-
-            y:
-              currentY +
-              0.04,
-
-            w:
-              textWidth,
-
-            h:
-              0.46,
-
-
-            fontSize:
-              16,
-
-
+          fill: {
             color:
               cleanColor(
-                theme.colors.text
+                theme.colors.surface ||
+                "FFFFFF"
               ),
+          },
 
 
-            valign:
-              "mid",
+          line: {
+            color:
+              "E2E8F0",
+
+            width:
+              0.8,
+          },
 
 
-            margin:
-              0,
+          shadow: {
+            type:
+              "outer",
+
+            color:
+              "64748B",
+
+            opacity:
+              0.06,
+
+            blur:
+              1.5,
+
+            angle:
+              45,
+
+            distance:
+              0.7,
+          },
+        }
+      );
 
 
-            fit:
-              "shrink",
+      // ==================================================
+      // MATCHING VERTICAL LINE
+      // ==================================================
 
-          }
+      page.addShape(
+        "roundRect",
+        {
+          x:
+            bubbleX + 0.08,
 
+          y:
+            bubbleY + 0.08,
+
+          w:
+            0.06,
+
+          h:
+            bubbleHeight - 0.16,
+
+
+          rectRadius:
+            0.025,
+
+
+          fill: {
+            color,
+          },
+
+
+          line: {
+            transparency:
+              100,
+          },
+        }
+      );
+
+
+      // ==================================================
+      // NUMBER CIRCLE — NOW INSIDE BUBBLE
+      // ==================================================
+
+      page.addShape(
+        "ellipse",
+        {
+          x:
+            bubbleX + 0.25,
+
+          y:
+            bubbleY + 0.11,
+
+          w:
+            0.46,
+
+          h:
+            0.46,
+
+
+          fill: {
+            color,
+          },
+
+
+          line: {
+            transparency:
+              100,
+          },
+        }
+      );
+
+
+      page.addText(
+        String(
+          startNumber +
+          index
+        ),
+        {
+          x:
+            bubbleX + 0.25,
+
+          y:
+            bubbleY + 0.225,
+
+          w:
+            0.46,
+
+          h:
+            0.12,
+
+
+          fontSize:
+            11,
+
+          bold:
+            true,
+
+
+          color:
+            "FFFFFF",
+
+
+          align:
+            "center",
+
+          margin:
+            0,
+        }
+      );
+
+
+      // ==================================================
+      // POINT ICON
+      // ==================================================
+
+      const pointIcon =
+        getPointIcon(
+          point,
+          index
         );
 
-      }
 
-    );
+      page.addText(
+        pointIcon,
+        {
+          x:
+            bubbleX + 0.84,
 
+          y:
+            bubbleY + 0.19,
+
+          w:
+            0.34,
+
+          h:
+            0.25,
+
+
+          fontSize:
+            15,
+
+          bold:
+            true,
+
+
+          color,
+
+
+          align:
+            "center",
+
+          margin:
+            0,
+        }
+      );
+
+
+      // ==================================================
+      // POINT TEXT
+      // ==================================================
+
+      page.addText(
+        trimText(
+          point,
+          155
+        ),
+        {
+          x:
+            bubbleX + 1.3,
+
+          y:
+            bubbleY + 0.1,
+
+          w:
+            bubbleWidth - 1.52,
+
+          h:
+            bubbleHeight - 0.2,
+
+
+          fontSize:
+            13.5,
+
+
+          color:
+            cleanColor(
+              theme.colors.text
+            ),
+
+
+          valign:
+            "mid",
+
+          margin:
+            0,
+
+          fit:
+            "shrink",
+        }
+      );
+
+    }
+  );
+}
+// ======================================================
+// SMART POINT ICON
+//
+// Gives heading/point text a contextual symbol.
+// ======================================================
+
+function getPointIcon(
+  point,
+  index = 0
+) {
+  const text =
+    String(
+      point || ""
+    ).toLowerCase();
+
+
+  if (
+    text.includes("idea") ||
+    text.includes("insight") ||
+    text.includes("innovation")
+  ) {
+    return "💡";
+  }
+
+
+  if (
+    text.includes("user") ||
+    text.includes("people") ||
+    text.includes("student") ||
+    text.includes("customer") ||
+    text.includes("team")
+  ) {
+    return "👤";
+  }
+
+
+  if (
+    text.includes("organization") ||
+    text.includes("company") ||
+    text.includes("business")
+  ) {
+    return "▦";
+  }
+
+
+  if (
+    text.includes("date") ||
+    text.includes("time") ||
+    text.includes("schedule")
+  ) {
+    return "◷";
+  }
+
+
+  if (
+    text.includes("growth") ||
+    text.includes("result") ||
+    text.includes("performance")
+  ) {
+    return "↗";
+  }
+
+
+  if (
+    text.includes("security") ||
+    text.includes("protect") ||
+    text.includes("safe")
+  ) {
+    return "◆";
+  }
+
+
+  if (
+    text.includes("process") ||
+    text.includes("workflow") ||
+    text.includes("step")
+  ) {
+    return "➜";
+  }
+
+
+  if (
+    text.includes("goal") ||
+    text.includes("target")
+  ) {
+    return "◎";
+  }
+
+
+  if (
+    text.includes("data") ||
+    text.includes("analytics") ||
+    text.includes("report")
+  ) {
+    return "▥";
+  }
+
+
+  const defaults = [
+    "✦",
+    "◆",
+    "●",
+    "➜",
+    "✓",
+  ];
+
+
+  return defaults[
+    index %
+    defaults.length
+  ];
 }
 
 
@@ -4142,49 +5153,30 @@ function ensureComparisonPoints(
 
 
 // ======================================================
-// DIAGRAM / CIRCULAR FLOW SLIDE
+// CIRCULAR FLOW CHART SLIDE
 //
-// OLD:
-// simple boxes → arrows → boxes
-//
-// NEW:
-// generated circular visual + readable stage list
-//
-// The generated visual is asked to create:
-// ✓ circular cycle
-// ✓ curved arrows
-// ✓ visual representation of stages
-// ✓ premium presentation quality
-//
-// Text remains outside the image so the actual
-// slide remains readable even if the generated
-// image contains no text.
+// ✓ Generated central circular visual
+// ✓ Different colour for every stage
+// ✓ Matching stage bubbles
+// ✓ Different-colour connecting arrows
+// ✓ Existing COLORS palette reused
+// ✓ Key Insight with bulb
 // ======================================================
 
 async function createDiagramSlide(
-
   page,
-
   slide,
-
   theme
-
 ) {
 
-
   addSlideHeader(
-
     page,
-
     slide,
-
     theme
-
   );
 
 
   const steps =
-
     enrichPoints(
 
       normalizePoints(
@@ -4202,210 +5194,538 @@ async function createDiagramSlide(
       slide
 
     )
-
-    .slice(
-
-      0,
-
-      6
-
-    );
+      .slice(
+        0,
+        6
+      );
 
 
   const flowPrompt =
-
     buildCircularFlowPrompt(
-
       slide,
-
       steps
-
     );
 
 
   // ==================================================
-  // GENERATED CIRCULAR FLOW VISUAL
+  // LEFT — GENERATED CIRCULAR VISUAL
   // ==================================================
 
   await addGeneratedImageCard(
-
     page,
-
     flowPrompt,
-
     {
-
       x:
-        0.8,
+        0.72,
 
       y:
         1.55,
 
       w:
-        6.25,
+        5.55,
 
       h:
-        5.0,
+        5.05,
 
       radius:
         0.16,
-
     }
-
   );
 
 
   // ==================================================
-  // STAGE LIST CARD
+  // RIGHT — COLOURED FLOW STAGES
   // ==================================================
 
   addContentPanel(
-
     page,
-
-    7.45,
-
+    6.65,
     1.55,
-
-    4.95,
-
-    3.5,
-
+    5.72,
+    5.05,
     theme
-
   );
 
 
-  renderNumberPoints(
-
+  renderCircularFlowStages(
     page,
-
     steps,
-
     theme,
-
     {
-
       x:
-        7.78,
+        6.95,
 
       y:
-        1.92,
+        1.85,
 
-      textWidth:
-        3.45,
-
-      maxPoints:
-        4,
-
+      w:
+        5.1,
     }
-
   );
 
 
   // ==================================================
-  // TWO SUPPORTING RECTANGLES
+  // KEY INSIGHT
   // ==================================================
 
-  addDiagramInsightCards(
-
+  addMiniInfoCard(
     page,
-
-    slide,
-
-    steps,
-
+    "KEY INSIGHT",
+    slide.keyTakeaway ||
+      slide.description ||
+      "Every stage connects to the next while contributing to the complete cycle.",
+    6.95,
+    5.45,
+    5.1,
+    "EAB308",
     theme
+  );
 
+}
+// ======================================================
+// COLOURED CIRCULAR FLOW STAGES
+//
+// Each stage:
+//
+// ┌────────────────────────────────────┐
+// │ │ (1)  ✦ Stage                    │
+// └────────────────────────────────────┘
+//          ↓
+//       coloured arrow
+//          ↓
+// ┌────────────────────────────────────┐
+//
+// ✓ Number inside bubble
+// ✓ Vertical matching line
+// ✓ Heading icon
+// ✓ Arrow matches stage palette
+// ======================================================
+
+function renderCircularFlowStages(
+  page,
+  steps,
+  theme,
+  options = {}
+) {
+
+  const {
+    x = 7,
+    y = 1.8,
+    w = 5,
+  } = options;
+
+
+  const safeSteps =
+    normalizePoints(
+      steps
+    )
+      .slice(
+        0,
+        5
+      );
+
+
+  safeSteps.forEach(
+    (step, index) => {
+
+      const color =
+        COLORS[
+          index %
+          COLORS.length
+        ];
+
+
+      const currentY =
+        y +
+        index * 0.68;
+
+
+      // ==================================================
+      // STAGE BUBBLE
+      // ==================================================
+
+      page.addShape(
+        "roundRect",
+        {
+          x,
+          y:
+            currentY,
+
+          w,
+          h:
+            0.55,
+
+
+          rectRadius:
+            0.06,
+
+
+          fill: {
+            color:
+              cleanColor(
+                theme.colors.surface ||
+                "FFFFFF"
+              ),
+          },
+
+
+          line: {
+            color:
+              "E2E8F0",
+
+            width:
+              0.8,
+          },
+        }
+      );
+
+
+      // ==================================================
+      // MATCHING VERTICAL LINE
+      // ==================================================
+
+      page.addShape(
+        "roundRect",
+        {
+          x:
+            x + 0.08,
+
+          y:
+            currentY + 0.07,
+
+          w:
+            0.055,
+
+          h:
+            0.41,
+
+
+          rectRadius:
+            0.02,
+
+
+          fill: {
+            color,
+          },
+
+
+          line: {
+            transparency:
+              100,
+          },
+        }
+      );
+
+
+      // ==================================================
+      // NUMBER CIRCLE INSIDE
+      // ==================================================
+
+      page.addShape(
+        "ellipse",
+        {
+          x:
+            x + 0.25,
+
+          y:
+            currentY + 0.09,
+
+          w:
+            0.37,
+
+          h:
+            0.37,
+
+
+          fill: {
+            color,
+          },
+
+
+          line: {
+            transparency:
+              100,
+          },
+        }
+      );
+
+
+      page.addText(
+        String(
+          index + 1
+        ),
+        {
+          x:
+            x + 0.25,
+
+          y:
+            currentY + 0.185,
+
+          w:
+            0.37,
+
+          h:
+            0.1,
+
+
+          fontSize:
+            9,
+
+          bold:
+            true,
+
+          color:
+            "FFFFFF",
+
+          align:
+            "center",
+
+          margin:
+            0,
+        }
+      );
+
+
+      // ==================================================
+      // CONTEXT ICON
+      // ==================================================
+
+      page.addText(
+        getPointIcon(
+          step,
+          index
+        ),
+        {
+          x:
+            x + 0.78,
+
+          y:
+            currentY + 0.15,
+
+          w:
+            0.3,
+
+          h:
+            0.2,
+
+          fontSize:
+            13,
+
+          bold:
+            true,
+
+          color,
+
+          align:
+            "center",
+
+          margin:
+            0,
+        }
+      );
+
+
+      // ==================================================
+      // STAGE TEXT
+      // ==================================================
+
+      page.addText(
+        trimText(
+          step,
+          90
+        ),
+        {
+          x:
+            x + 1.2,
+
+          y:
+            currentY + 0.1,
+
+          w:
+            w - 1.42,
+
+          h:
+            0.32,
+
+
+          fontSize:
+            11.5,
+
+          bold:
+            true,
+
+          color:
+            cleanColor(
+              theme.colors.text
+            ),
+
+          valign:
+            "mid",
+
+          margin:
+            0,
+
+          fit:
+            "shrink",
+        }
+      );
+
+
+      // ==================================================
+      // COLOURED CONNECTING ARROW
+      // ==================================================
+
+      if (
+        index <
+        safeSteps.length - 1
+      ) {
+
+        const nextColor =
+          COLORS[
+            (
+              index + 1
+            ) %
+            COLORS.length
+          ];
+
+
+        page.addText(
+          "↓",
+          {
+            x:
+              x + w - 0.5,
+
+            y:
+              currentY + 0.52,
+
+            w:
+              0.28,
+
+            h:
+              0.2,
+
+            fontSize:
+              15,
+
+            bold:
+              true,
+
+            color:
+              nextColor,
+
+            align:
+              "center",
+
+            margin:
+              0,
+          }
+        );
+
+      }
+
+    }
   );
 
 }
 
 
-// ======================================================
-// CIRCULAR FLOW IMAGE PROMPT
-// ======================================================
+
+
+
 
 function buildCircularFlowPrompt(
-
   slide,
-
   steps
-
 ) {
 
-
   const topic =
-
     slide.imagePrompt ||
-
     slide.title ||
-
     "process cycle";
 
 
   const stepText =
-
     steps
-
       .slice(
-
         0,
-
         6
-
       )
-
-      .join(
-
-        " -> "
-
-      );
+      .map(
+        (step, index) =>
+          `${
+            index + 1
+          }. ${step}`
+      )
+      .join("\n");
 
 
   return `
 
 Create a premium circular process-flow visual for a professional PowerPoint presentation.
 
-Main topic:
-
+TOPIC:
 ${topic}
 
-The process contains these stages:
-
+STAGES:
 ${stepText}
 
-Visual composition:
+CREATE A TRUE CIRCULAR FLOW CHART.
 
-- use a circular cycle layout
-- arrange the process clockwise
-- create a strong central focal point
-- show each stage around the central circle
-- connect stages using elegant curved arrows
-- represent each stage visually using meaningful objects, scenes, symbols, or realistic visual elements
-- make the full cycle easy to understand visually
-- balanced spacing around the circle
-- clean modern educational infographic composition
-- polished professional presentation quality
+Arrange every stage clockwise around one central circular area.
+
+Use this exact presentation colour palette in sequence:
+
+Stage 1: blue #2563EB
+Stage 2: cyan #06B6D4
+Stage 3: green #22C55E
+Stage 4: yellow #EAB308
+Stage 5: orange #F97316
+Stage 6: blue #2563EB
+
+CONNECTING ARROWS:
+
+- use curved arrows
+- arrows must follow the circular direction
+- each arrow should visually correspond to the colour of the stage it connects
+- arrows must clearly show clockwise progression
+- make the cycle visibly connected
+
+STAGE VISUALS:
+
+- give every stage a meaningful visual symbol
+- symbols should correspond to the meaning of that stage
+- use polished modern icons or realistic visual objects
+- keep every stage visually distinct
+
+CENTER:
+
+- use one strong central visual representing the overall topic
+- keep the center clean and visually dominant
+
+STYLE:
+
+- premium keynote presentation quality
+- clean modern infographic
+- professional educational design
 - high resolution
-- landscape presentation composition
-- premium keynote quality
-- modern editorial visual style
-- clear visual hierarchy
+- balanced spacing
+- strong visual hierarchy
+- polished lighting and depth
+- landscape composition
 
-Important:
+IMPORTANT:
 
-- avoid paragraphs
-- avoid tiny text
+- keep the complete circle visible
+- keep important elements away from image edges
+- allow safe rounded-card cropping
+- no paragraphs
+- no tiny unreadable labels
 - no watermark
 - no logo
 - no random decorative bars
-- no unnecessary UI
-- keep important visual elements away from image edges
-- make the complete circular process visible after cropping
+- no UI screenshot
 
 `;
-
 }
 
 
@@ -4478,39 +5798,29 @@ function addDiagramInsightCards(
 
 // ======================================================
 // MINI INFORMATION CARD
+//
+// Key Insight:
+// ✓ large bulb icon
+//
+// Other cards:
+// ✓ contextual symbol
 // ======================================================
 
 function addMiniInfoCard(
-
   page,
-
   label,
-
   text,
-
   x,
-
   y,
-
   w,
-
   accent,
-
   theme
-
 ) {
-
-
   page.addShape(
-
     "roundRect",
-
     {
-
       x,
-
       y,
-
       w,
 
       h:
@@ -4522,48 +5832,132 @@ function addMiniInfoCard(
 
 
       fill: {
-
         color:
           cleanColor(
-
             theme.colors.surface ||
-
             "F8FAFC"
-
           ),
-
       },
 
 
       line: {
-
         color:
           "E2E8F0",
 
         width:
           1,
-
       },
-
     }
-
   );
 
 
-  page.addText(
+  // ==================================================
+  // ICON CIRCLE
+  // ==================================================
 
-    label,
-
+  page.addShape(
+    "ellipse",
     {
-
       x:
-        x + 0.22,
+        x + 0.2,
 
       y:
-        y + 0.2,
+        y + 0.27,
 
       w:
-        w - 0.44,
+        0.58,
+
+      h:
+        0.58,
+
+
+      fill: {
+        color:
+          accent,
+
+        transparency:
+          88,
+      },
+
+
+      line: {
+        color:
+          accent,
+
+        width:
+          1,
+      },
+    }
+  );
+
+
+  // ==================================================
+  // LARGE KEY INSIGHT BULB
+  // ==================================================
+
+  const isInsight =
+    String(label)
+      .toLowerCase()
+      .includes(
+        "insight"
+      );
+
+
+  const icon =
+    isInsight
+      ? "💡"
+      : getPointIcon(
+          label,
+          0
+        );
+
+
+  page.addText(
+    icon,
+    {
+      x:
+        x + 0.2,
+
+      y:
+        y + 0.385,
+
+      w:
+        0.58,
+
+      h:
+        0.25,
+
+
+      fontSize:
+        isInsight
+          ? 20
+          : 16,
+
+
+      align:
+        "center",
+
+      margin:
+        0,
+    }
+  );
+
+
+  // ==================================================
+  // LABEL
+  // ==================================================
+
+  page.addText(
+    label,
+    {
+      x:
+        x + 0.95,
+
+      y:
+        y + 0.18,
+
+      w:
+        w - 1.15,
 
       h:
         0.18,
@@ -4582,42 +5976,37 @@ function addMiniInfoCard(
       color:
         accent,
 
-
       margin:
         0,
-
     }
-
   );
 
 
+  // ==================================================
+  // TEXT
+  // ==================================================
+
   page.addText(
-
     trimText(
-
       text,
-
       100
-
     ),
-
     {
-
       x:
-        x + 0.22,
+        x + 0.95,
 
       y:
         y + 0.48,
 
       w:
-        w - 0.44,
+        w - 1.15,
 
       h:
-        0.42,
+        0.4,
 
 
       fontSize:
-        12,
+        11.5,
 
       bold:
         true,
@@ -4632,16 +6021,11 @@ function addMiniInfoCard(
       margin:
         0,
 
-
       fit:
         "shrink",
-
     }
-
   );
-
 }
-
 
 // ======================================================
 // TIMELINE SLIDE

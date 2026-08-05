@@ -47,6 +47,28 @@ import NyxoraButton
 
 
 
+// ======================================================
+// PRESENTATION PAGE
+//
+// Theme selection has been removed from this page.
+//
+// Nyxora Premium is now always used internally.
+//
+// Existing features preserved:
+//
+// ✓ Generate presentation
+// ✓ AI generation
+// ✓ Custom prompt
+// ✓ Subject
+// ✓ Class
+// ✓ Slide count
+// ✓ Workspace saving
+// ✓ Workspace loading
+// ✓ Slide preview
+// ✓ PPTX export
+// ✓ Existing PPT design engine
+// ======================================================
+
 
 export default function Presentation() {
 
@@ -78,22 +100,6 @@ export default function Presentation() {
 
   const [
 
-    theme,
-
-    setTheme,
-
-  ] = useState(
-
-    "nyxoraPremium"
-
-  );
-
-
-
-
-
-  const [
-
     loading,
 
     setLoading,
@@ -116,8 +122,6 @@ export default function Presentation() {
 
 
 
-
-
   const [
 
     presentationId,
@@ -130,26 +134,37 @@ export default function Presentation() {
 
 
 
+  // ====================================================
+  // FIXED INTERNAL THEME
+  //
+  // Users no longer need to select a presentation theme.
+  // ====================================================
+
+  const DEFAULT_PRESENTATION_THEME =
+
+    "nyxoraPremium";
 
 
 
-  useEffect(()=>{
+
+
+  useEffect(() => {
 
 
     loadWorkspacePresentation();
 
 
-
-  },[]);
-
+  }, []);
 
 
 
 
 
+  // ====================================================
+  // LOAD LATEST WORKSPACE PRESENTATION
+  // ====================================================
 
-
-  async function loadWorkspacePresentation(){
+  async function loadWorkspacePresentation() {
 
 
 
@@ -165,15 +180,13 @@ export default function Presentation() {
 
 
 
-      if(!user){
+      if (!user) {
 
 
         return;
 
 
       }
-
-
 
 
 
@@ -193,9 +206,7 @@ export default function Presentation() {
 
 
 
-
-
-      if(saved){
+      if (saved) {
 
 
 
@@ -204,6 +215,7 @@ export default function Presentation() {
           saved.id
 
         );
+
 
 
 
@@ -230,25 +242,13 @@ export default function Presentation() {
 
 
 
-
-
-        setTheme(
-
-          saved.theme ||
-
-          "nyxoraPremium"
-
-        );
-
-
-
       }
 
 
 
     }
 
-    catch(error){
+    catch (error) {
 
 
 
@@ -267,31 +267,30 @@ export default function Presentation() {
 
 
   }
-    async function handleGenerate(data){
+
+
+
+
+
+  // ====================================================
+  // GENERATE PRESENTATION
+  // ====================================================
+
+  async function handleGenerate(data) {
+
 
 
     try {
 
 
+
       setLoading(true);
+
 
       setError("");
 
+
       setSlides([]);
-
-
-
-
-
-
-
-      setTheme(
-
-        data.theme
-
-      );
-
-
 
 
 
@@ -327,9 +326,13 @@ export default function Presentation() {
 
 
 
+          // ============================================
+          // FIXED INTERNAL THEME
+          // ============================================
+
           theme:
 
-            data.theme,
+            DEFAULT_PRESENTATION_THEME,
 
 
 
@@ -345,16 +348,11 @@ export default function Presentation() {
 
 
 
-
-
       const generatedTitle =
 
         result.title ||
 
         data.topic;
-
-
-
 
 
 
@@ -370,16 +368,11 @@ export default function Presentation() {
 
 
 
-
-
-
       setTitle(
 
         generatedTitle
 
       );
-
-
 
 
 
@@ -395,18 +388,13 @@ export default function Presentation() {
 
 
 
-
-
       // ==================================================
       // SAVE TO NYXORA WORKSPACE
       //
       // Generate
       //    ↓
       // Firestore Workspace
-      //
       // ==================================================
-
-
 
       const user =
 
@@ -416,8 +404,7 @@ export default function Presentation() {
 
 
 
-
-      if(user){
+      if (user) {
 
 
 
@@ -451,14 +438,17 @@ export default function Presentation() {
 
 
 
+            // ============================================
+            // ALWAYS SAVE DEFAULT THEME
+            // ============================================
+
             theme:
 
-              data.theme,
+              DEFAULT_PRESENTATION_THEME,
 
 
 
           });
-
 
 
 
@@ -476,12 +466,9 @@ export default function Presentation() {
 
 
 
-
-
-
     }
 
-    catch(error){
+    catch (error) {
 
 
 
@@ -497,14 +484,11 @@ export default function Presentation() {
 
 
 
-
       setError(
-
 
         error.message ||
 
         "Unable to generate presentation."
-
 
       );
 
@@ -530,19 +514,19 @@ export default function Presentation() {
 
 
 
+  // ====================================================
+  // EXPORT PRESENTATION
+  // ====================================================
+
+  function handleExport() {
 
 
 
-
-  function handleExport(){
-
-
-
-    if(
+    if (
 
       slides.length === 0
 
-    ){
+    ) {
 
 
       return;
@@ -554,13 +538,11 @@ export default function Presentation() {
 
 
 
-
-
     exportPresentationToPpt({
 
 
 
-      presentation:{
+      presentation: {
 
 
 
@@ -576,9 +558,13 @@ export default function Presentation() {
 
 
 
+      // ================================================
+      // ALWAYS USE NYXORA PREMIUM
+      // ================================================
+
       themeName:
 
-        theme,
+        DEFAULT_PRESENTATION_THEME,
 
 
 
@@ -587,7 +573,12 @@ export default function Presentation() {
 
 
   }
-    return (
+
+
+
+
+
+  return (
 
 
 
@@ -608,6 +599,9 @@ export default function Presentation() {
 
 
 
+      {/* =================================================
+          PAGE HEADER
+      ================================================= */}
 
 
       <div
@@ -661,9 +655,6 @@ export default function Presentation() {
 
 
 
-
-
-
         <div>
 
 
@@ -683,10 +674,7 @@ export default function Presentation() {
             Presentation Generator
 
 
-
           </h1>
-
-
 
 
 
@@ -707,15 +695,11 @@ export default function Presentation() {
             Create AI designed presentations with Nyxora AI
 
 
-
           </p>
 
 
 
-
         </div>
-
-
 
 
 
@@ -725,19 +709,17 @@ export default function Presentation() {
 
 
 
-
-
+      {/* =================================================
+          ERROR
+      ================================================= */}
 
 
       {
 
-
         error && (
 
 
-
           <div
-
 
 
             className="
@@ -754,31 +736,20 @@ export default function Presentation() {
             "
 
 
-
           >
 
 
 
-
-            <AlertCircle size={18}/>
-
-
-
+            <AlertCircle size={18} />
 
 
             {error}
 
 
-
-
-
           </div>
 
 
-
-
         )
-
 
       }
 
@@ -786,8 +757,9 @@ export default function Presentation() {
 
 
 
-
-
+      {/* =================================================
+          GENERATOR + PREVIEW
+      ================================================= */}
 
 
       <div
@@ -806,21 +778,14 @@ export default function Presentation() {
 
 
 
-
-
         {/* LEFT SIDE */}
-
-
 
 
         <div>
 
 
 
-
-
           <PresentationForm
-
 
 
             onGenerate={
@@ -830,7 +795,6 @@ export default function Presentation() {
             }
 
 
-
             loading={
 
               loading
@@ -838,11 +802,7 @@ export default function Presentation() {
             }
 
 
-
-
           />
-
-
 
 
 
@@ -852,17 +812,7 @@ export default function Presentation() {
 
 
 
-
-
-
-
-
-
-
         {/* RIGHT SIDE */}
-
-
-
 
 
         <div>
@@ -871,18 +821,12 @@ export default function Presentation() {
 
 
 
-
-
           {
-
 
             title && (
 
 
-
               <div
-
-
 
 
                 className="
@@ -898,18 +842,13 @@ export default function Presentation() {
                 "
 
 
-
-
               >
 
 
 
 
 
-
-
                 <div
-
 
 
                   className="
@@ -920,19 +859,14 @@ export default function Presentation() {
                   "
 
 
-
                 >
-
-
 
 
 
                   <Sparkles
 
 
-
                     size={18}
-
 
 
                     className="
@@ -940,10 +874,7 @@ export default function Presentation() {
                     "
 
 
-
                   />
-
-
 
 
 
@@ -951,11 +882,13 @@ export default function Presentation() {
 
 
 
-
-
                 </div>
-                                <NyxoraButton
 
+
+
+
+
+                <NyxoraButton
 
 
                   onClick={
@@ -965,45 +898,27 @@ export default function Presentation() {
                   }
 
 
-
-
                   className="
-
                     px-4
-
                     py-2
-
                     text-sm
-
                   "
-
 
 
                 >
 
 
-
-
                   Export PPTX
-
-
 
 
                 </NyxoraButton>
 
 
 
-
-
-
               </div>
 
 
-
-
             )
-
-
 
           }
 
@@ -1011,15 +926,7 @@ export default function Presentation() {
 
 
 
-
-
-
-
-
-
-
           <SlidePreview
-
 
 
             slides={
@@ -1029,11 +936,7 @@ export default function Presentation() {
             }
 
 
-
           />
-
-
-
 
 
 
@@ -1041,25 +944,13 @@ export default function Presentation() {
 
 
 
-
-
-
-
-
       </div>
-
-
-
-
 
 
 
     </div>
 
 
-
   );
-
-
 
 }

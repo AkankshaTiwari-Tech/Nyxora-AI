@@ -9,12 +9,9 @@ import {
 } from "react";
 
 
-import ThemeSelector
-  from "./ThemeSelector";
-
-
 import NyxoraButton
   from "../../../components/common/NyxoraButton";
+
 
 
 
@@ -27,11 +24,9 @@ const promptPresets = {
     "Create a detailed academic presentation. Include definitions, diagrams, examples, important concepts and a conclusion slide.",
 
 
-
   Professional:
 
     "Create a professional business-style presentation with clean structure, modern visuals, real-world examples and key insights.",
-
 
 
   Startup:
@@ -39,16 +34,12 @@ const promptPresets = {
     "Create a startup pitch style presentation with problem, solution, market impact, innovation and future scope.",
 
 
-
   Visual:
 
     "Create a highly visual presentation with minimal text, diagrams, infographics and modern AI-style designs.",
 
 
-
 };
-
-
 
 
 
@@ -73,7 +64,6 @@ export default function PresentationForm({
 
 
 
-
   const [
 
     subject,
@@ -81,7 +71,6 @@ export default function PresentationForm({
     setSubject,
 
   ] = useState("");
-
 
 
 
@@ -95,7 +84,6 @@ export default function PresentationForm({
 
 
 
-
   const [
 
     slideCount,
@@ -103,24 +91,6 @@ export default function PresentationForm({
     setSlideCount,
 
   ] = useState(10);
-
-
-
-
-
-  const [
-
-    theme,
-
-    setTheme,
-
-  ] = useState(
-
-    "nyxoraPremium"
-
-  );
-
-
 
 
 
@@ -136,15 +106,18 @@ export default function PresentationForm({
 
 
 
+  // ====================================================
+  // GENERATE
+  //
+  // Presentation theme selection has been removed.
+  // Nyxora Premium is handled internally by the
+  // Presentation page / PPT export engine.
+  // ====================================================
 
-
-
-  function handleSubmit(e){
+  function handleSubmit(e) {
 
 
     e.preventDefault();
-
-
 
 
     onGenerate({
@@ -158,8 +131,6 @@ export default function PresentationForm({
 
       slideCount,
 
-      theme,
-
       customPrompt,
 
 
@@ -167,7 +138,6 @@ export default function PresentationForm({
 
 
   }
-
 
 
 
@@ -191,7 +161,6 @@ export default function PresentationForm({
     >
 
 
-
       <h2
 
         className="
@@ -206,7 +175,10 @@ export default function PresentationForm({
         Presentation Details
 
       </h2>
-            <Input
+
+
+
+      <Input
 
         label="Topic"
 
@@ -216,10 +188,7 @@ export default function PresentationForm({
 
         placeholder="Example: Photosynthesis"
 
-
       />
-
-
 
 
 
@@ -233,10 +202,7 @@ export default function PresentationForm({
 
         placeholder="Example: Science"
 
-
       />
-
-
 
 
 
@@ -250,13 +216,15 @@ export default function PresentationForm({
 
         placeholder="Example: Class 8"
 
-
       />
 
 
 
 
 
+      {/* =================================================
+          NUMBER OF SLIDES
+      ================================================= */}
 
 
       <div className="mb-5">
@@ -275,10 +243,7 @@ export default function PresentationForm({
 
           Number of Slides
 
-
         </label>
-
-
 
 
 
@@ -287,7 +252,7 @@ export default function PresentationForm({
           value={slideCount}
 
 
-          onChange={(e)=>
+          onChange={(e) =>
 
             setSlideCount(
 
@@ -308,7 +273,6 @@ export default function PresentationForm({
             py-3
             text-white
           "
-
 
         >
 
@@ -336,34 +300,15 @@ export default function PresentationForm({
         </select>
 
 
-
       </div>
 
 
 
 
 
-
-
-      <ThemeSelector
-
-        value={theme}
-
-        onChange={setTheme}
-
-
-      />
-
-
-
-
-
-
-
-
-
-      {/* AI INSTRUCTIONS */}
-
+      {/* =================================================
+          AI DESIGN INSTRUCTIONS
+      ================================================= */}
 
 
       <div
@@ -382,7 +327,6 @@ export default function PresentationForm({
       >
 
 
-
         <div
 
           className="
@@ -393,7 +337,6 @@ export default function PresentationForm({
           "
 
         >
-
 
 
           <div
@@ -416,9 +359,7 @@ export default function PresentationForm({
 
             />
 
-
           </div>
-
 
 
 
@@ -439,7 +380,6 @@ export default function PresentationForm({
             </h3>
 
 
-
             <p
 
               className="
@@ -457,13 +397,15 @@ export default function PresentationForm({
           </div>
 
 
-
         </div>
 
 
 
 
 
+        {/* =================================================
+            PROMPT PRESETS
+        ================================================= */}
 
 
         <div
@@ -478,11 +420,11 @@ export default function PresentationForm({
         >
 
 
-
           {
+
             Object.keys(promptPresets).map(
 
-              (preset)=>(
+              (preset) => (
 
 
                 <button
@@ -491,15 +433,14 @@ export default function PresentationForm({
 
                   type="button"
 
-                  onClick={()=>
 
+                  onClick={() =>
 
                     setCustomPrompt(
 
                       promptPresets[preset]
 
                     )
-
 
                   }
 
@@ -517,11 +458,9 @@ export default function PresentationForm({
                     hover:bg-violet-500/20
                   "
 
-
                 >
 
                   {preset}
-
 
                 </button>
 
@@ -529,8 +468,8 @@ export default function PresentationForm({
               )
 
             )
-          }
 
+          }
 
 
         </div>
@@ -539,6 +478,9 @@ export default function PresentationForm({
 
 
 
+        {/* =================================================
+            CUSTOM AI PROMPT
+        ================================================= */}
 
 
         <textarea
@@ -546,7 +488,7 @@ export default function PresentationForm({
           value={customPrompt}
 
 
-          onChange={(e)=>
+          onChange={(e) =>
 
             setCustomPrompt(
 
@@ -586,12 +528,21 @@ Add diagrams, examples, modern visuals and conclusion.
             focus:ring-violet-500/20
           "
 
-
         />
 
 
       </div>
-            <NyxoraButton
+
+
+
+
+
+      {/* =================================================
+          GENERATE BUTTON
+      ================================================= */}
+
+
+      <NyxoraButton
 
         type="submit"
 
@@ -607,16 +558,18 @@ Add diagrams, examples, modern visuals and conclusion.
 
       >
 
+
         {
+
           loading
 
-          ?
+            ?
 
-          "Generating..."
+            "Generating..."
 
-          :
+            :
 
-          "Generate Presentation"
+            "Generate Presentation"
 
         }
 
@@ -624,10 +577,7 @@ Add diagrams, examples, modern visuals and conclusion.
       </NyxoraButton>
 
 
-
-
     </form>
-
 
   );
 
@@ -637,9 +587,9 @@ Add diagrams, examples, modern visuals and conclusion.
 
 
 
-
-
-
+// ======================================================
+// REUSABLE INPUT
+// ======================================================
 
 function Input({
 
@@ -652,7 +602,6 @@ function Input({
   placeholder,
 
 }) {
-
 
 
   return (
@@ -674,20 +623,16 @@ function Input({
 
         {label}
 
-
       </label>
-
-
 
 
 
       <input
 
-
         value={value}
 
 
-        onChange={(e)=>
+        onChange={(e) =>
 
           setValue(
 
@@ -716,14 +661,11 @@ function Input({
           focus:ring-violet-500/20
         "
 
-
       />
 
 
     </div>
 
-
   );
-
 
 }
