@@ -16,7 +16,8 @@ import {
   useNavigate,
 } from "react-router-dom";
 
-import NyxoraLogo from "../common/NyxoraLogo";
+import NyxoraOrbitLogo
+  from "../common/NyxoraOrbitLogo";
 
 
 const menuItems = [
@@ -88,7 +89,6 @@ export default function Sidebar() {
 
 
 
-
   const handleClick = (item) => {
 
 
@@ -127,57 +127,166 @@ export default function Sidebar() {
 
 
 
-
   return (
 
 
     <aside
 
       className="
-        w-72
-        min-h-screen
-        bg-[#0E1424]
-        border-r
-        border-[#20263B]
+        relative
         flex
+        min-h-screen
+        w-72
         flex-col
+        overflow-hidden
+        border-r
+        border-white/[0.07]
+        bg-[#060914]
       "
 
     >
 
 
+      {/* ==================================================
+          BACKGROUND AMBIENT LIGHTS
+      ================================================== */}
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          -left-28
+          top-[-70px]
+          h-72
+          w-72
+          rounded-full
+          bg-fuchsia-600/[0.07]
+          blur-[90px]
+        "
+      />
+
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          -right-32
+          top-[32%]
+          h-72
+          w-72
+          rounded-full
+          bg-violet-600/[0.055]
+          blur-[100px]
+        "
+      />
+
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          -bottom-24
+          left-12
+          h-64
+          w-64
+          rounded-full
+          bg-cyan-500/[0.045]
+          blur-[100px]
+        "
+      />
+
+
+
+      {/* ==================================================
+          BRAND HEADER
+      ================================================== */}
 
       <div
 
         className="
-          px-6
-          py-8
+          relative
+          z-10
           border-b
-          border-[#20263B]
+          border-white/[0.07]
+          px-6
+          py-7
         "
 
       >
 
 
-        <div className="flex items-center gap-4">
+        <div
+          className="
+            flex
+            items-center
+            gap-4
+          "
+        >
 
 
-          <NyxoraLogo size={52}/>
+          {/* ROTATING WORKSPACE LOGO */}
+
+          <div
+            className="
+              relative
+              flex
+              h-[58px]
+              w-[58px]
+              shrink-0
+              items-center
+              justify-center
+            "
+          >
+
+            <NyxoraOrbitLogo
+              size={52}
+              animated={true}
+            />
+
+          </div>
 
 
 
-          <div>
+          {/* BRAND TEXT */}
+
+          <div
+            className="
+              min-w-0
+            "
+          >
 
 
-            <h1 className="text-2xl font-bold text-white">
+            <h1
+              className="
+                text-[22px]
+                font-bold
+                tracking-tight
+                text-white
+              "
+            >
 
-              Nyxora AI
+              Nyxora{" "}
+
+              <span
+                className="
+                  nyxora-gradient-text
+                "
+              >
+                AI
+              </span>
 
             </h1>
 
 
-
-            <p className="text-sm text-indigo-300">
+            <p
+              className="
+                mt-0.5
+                text-xs
+                font-medium
+                tracking-wide
+                text-slate-400
+              "
+            >
 
               Your AI Workspace
 
@@ -190,28 +299,67 @@ export default function Sidebar() {
         </div>
 
 
+
+        {/* BRAND ACCENT LINE */}
+
+        <div
+          className="
+            mt-5
+            h-px
+            w-full
+            bg-gradient-to-r
+            from-fuchsia-500/45
+            via-violet-500/30
+            to-cyan-400/25
+          "
+        />
+
+
       </div>
 
 
 
-
+      {/* ==================================================
+          NAVIGATION
+      ================================================== */}
 
       <nav
 
         className="
+          relative
+          z-10
           flex-1
+          overflow-y-auto
           px-4
-          py-6
+          py-5
         "
 
       >
 
 
-        <div className="space-y-2">
+        <div
+          className="
+            mb-3
+            px-3
+            text-[10px]
+            font-semibold
+            uppercase
+            tracking-[0.18em]
+            text-slate-600
+          "
+        >
+
+          Workspace
+
+        </div>
+
+
+
+        <div className="space-y-1.5">
 
 
           {
-            menuItems.map((item)=>{
+            menuItems.map((item) => {
 
 
               const Icon =
@@ -219,9 +367,13 @@ export default function Sidebar() {
 
 
 
-              if(
+              // ============================================
+              // SPECIAL TEST GENERATOR BUTTON
+              // ============================================
+
+              if (
                 item.mode === "test"
-              ){
+              ) {
 
 
                 return (
@@ -240,27 +392,60 @@ export default function Sidebar() {
 
 
                     className="
-                      w-full
+                      group
+                      relative
                       flex
+                      w-full
                       items-center
                       gap-4
-                      px-5
-                      py-4
+                      overflow-hidden
                       rounded-xl
-                      text-gray-400
-                      hover:bg-[#1A2237]
-                      hover:text-white
+                      border
+                      border-transparent
+                      px-4
+                      py-3.5
+                      text-slate-400
                       transition-all
                       duration-300
+                      hover:border-violet-400/[0.12]
+                      hover:bg-white/[0.035]
+                      hover:text-white
                     "
 
                   >
 
 
-                    <Icon size={22}/>
+                    <div
+                      className="
+                        flex
+                        h-9
+                        w-9
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-lg
+                        bg-white/[0.035]
+                        text-slate-400
+                        transition-all
+                        duration-300
+                        group-hover:bg-violet-500/[0.10]
+                        group-hover:text-violet-300
+                        group-hover:shadow-[0_0_18px_rgba(124,58,237,.10)]
+                      "
+                    >
+
+                      <Icon
+                        size={19}
+                      />
+
+                    </div>
 
 
-                    <span className="font-medium">
+                    <span
+                      className="
+                        font-medium
+                      "
+                    >
 
                       {item.name}
 
@@ -277,6 +462,9 @@ export default function Sidebar() {
 
 
 
+              // ============================================
+              // NORMAL NAVIGATION
+              // ============================================
 
               return (
 
@@ -293,29 +481,47 @@ export default function Sidebar() {
                   }
 
 
-                  className={({isActive}) =>
+                  className={({ isActive }) =>
 
                     `
-                    w-full
+                    group
+                    relative
                     flex
+                    w-full
                     items-center
                     gap-4
-                    px-5
-                    py-4
+                    overflow-hidden
                     rounded-xl
+                    border
+                    px-4
+                    py-3.5
                     transition-all
                     duration-300
 
                     ${
                       isActive
 
-                      ?
+                        ?
 
-                      "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                        `
+                        border-violet-400/[0.15]
+                        bg-gradient-to-r
+                        from-fuchsia-500/[0.09]
+                        via-violet-500/[0.11]
+                        to-cyan-400/[0.055]
+                        text-white
+                        shadow-[inset_0_0_25px_rgba(124,58,237,.035),0_8px_28px_rgba(0,0,0,.14)]
+                        `
 
-                      :
+                        :
 
-                      "text-gray-400 hover:bg-[#1A2237] hover:text-white"
+                        `
+                        border-transparent
+                        text-slate-400
+                        hover:border-violet-400/[0.10]
+                        hover:bg-white/[0.035]
+                        hover:text-white
+                        `
 
                     }
                     `
@@ -325,14 +531,126 @@ export default function Sidebar() {
                 >
 
 
-                  <Icon size={22}/>
+                  {
+                    ({ isActive }) => (
+
+                      <>
+
+                        {/* ACTIVE GRADIENT LINE */}
+
+                        {
+                          isActive && (
+
+                            <div
+                              className="
+                                absolute
+                                bottom-[20%]
+                                left-0
+                                top-[20%]
+                                w-[3px]
+                                rounded-r-full
+                                bg-gradient-to-b
+                                from-fuchsia-400
+                                via-violet-500
+                                to-cyan-400
+                                shadow-[0_0_12px_rgba(168,85,247,.6)]
+                              "
+                            />
+
+                          )
+                        }
 
 
-                  <span className="font-medium">
 
-                    {item.name}
+                        {/* ICON */}
 
-                  </span>
+                        <div
+
+                          className={`
+                            flex
+                            h-9
+                            w-9
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-lg
+                            transition-all
+                            duration-300
+
+                            ${
+                              isActive
+
+                                ?
+
+                                `
+                                bg-gradient-to-br
+                                from-fuchsia-500/[0.16]
+                                via-violet-500/[0.15]
+                                to-cyan-400/[0.10]
+                                text-violet-200
+                                shadow-[0_0_18px_rgba(124,58,237,.12)]
+                                `
+
+                                :
+
+                                `
+                                bg-white/[0.035]
+                                text-slate-400
+                                group-hover:bg-violet-500/[0.10]
+                                group-hover:text-violet-300
+                                `
+
+                            }
+                          `}
+
+                        >
+
+                          <Icon
+                            size={19}
+                          />
+
+                        </div>
+
+
+
+                        {/* LABEL */}
+
+                        <span
+                          className="
+                            font-medium
+                          "
+                        >
+
+                          {item.name}
+
+                        </span>
+
+
+
+                        {/* ACTIVE DOT */}
+
+                        {
+                          isActive && (
+
+                            <div
+                              className="
+                                ml-auto
+                                h-1.5
+                                w-1.5
+                                rounded-full
+                                bg-cyan-300
+                                shadow-[0_0_9px_rgba(34,211,238,.8)]
+                              "
+                            />
+
+                          )
+                        }
+
+
+                      </>
+
+                    )
+                  }
 
 
                 </NavLink>
@@ -352,14 +670,18 @@ export default function Sidebar() {
 
 
 
-
+      {/* ==================================================
+          BOTTOM / LOGOUT
+      ================================================== */}
 
       <div
 
         className="
-          p-4
+          relative
+          z-10
           border-t
-          border-[#20263B]
+          border-white/[0.07]
+          p-4
         "
 
       >
@@ -368,26 +690,56 @@ export default function Sidebar() {
         <button
 
           className="
-            w-full
+            group
             flex
+            w-full
             items-center
             gap-4
-            px-5
-            py-4
             rounded-xl
-            text-red-400
-            hover:bg-red-500
-            hover:text-white
+            border
+            border-transparent
+            px-4
+            py-3.5
+            text-slate-400
             transition-all
+            duration-300
+            hover:border-red-400/[0.12]
+            hover:bg-red-500/[0.07]
+            hover:text-red-300
           "
 
         >
 
 
-          <LogOut size={22}/>
+          <div
+            className="
+              flex
+              h-9
+              w-9
+              items-center
+              justify-center
+              rounded-lg
+              bg-red-500/[0.06]
+              text-red-400
+              transition-all
+              duration-300
+              group-hover:bg-red-500/[0.12]
+              group-hover:shadow-[0_0_18px_rgba(239,68,68,.10)]
+            "
+          >
+
+            <LogOut
+              size={19}
+            />
+
+          </div>
 
 
-          <span>
+          <span
+            className="
+              font-medium
+            "
+          >
 
             Logout
 
@@ -398,7 +750,6 @@ export default function Sidebar() {
 
 
       </div>
-
 
 
     </aside>

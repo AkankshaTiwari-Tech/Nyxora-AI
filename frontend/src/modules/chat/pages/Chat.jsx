@@ -925,55 +925,57 @@ export default function Chat() {
         >
 
           {activeChat
-            ?.messages
-            ?.map(
-              (msg) => (
+  ?.messages
+  ?.map(
+    (msg, index) => {
 
-                <ChatMessage
-                  key={
-                    msg.id
-                  }
+      const messages =
+        activeChat?.messages || [];
 
-                  message={
-                    msg
-                  }
+      const isLastMessage =
+        index ===
+        messages.length - 1;
 
-                  onRegenerate={
-                    handleRegenerate
-                  }
+      const isThinkingMessage =
+        isThinking &&
+        isLastMessage &&
+        msg.role === "assistant" &&
+        !String(
+          msg.message || ""
+        ).trim();
 
-                  onEdit={
-                    handleEdit
-                  }
+      return (
 
-                  onSaveToWorkspace={
-                    handleSaveToWorkspace
-                  }
-                />
+        <ChatMessage
+          key={
+            msg.id
+          }
 
-              )
-            )}
+          message={
+            msg
+          }
 
-{isThinking && (
+          isThinking={
+            isThinkingMessage
+          }
 
-  <ChatMessage
-    message={{
-      id:
-        "thinking",
+          onRegenerate={
+            handleRegenerate
+          }
 
-      role:
-        "assistant",
+          onEdit={
+            handleEdit
+          }
 
-      message:
-        "",
-    }}
+          onSaveToWorkspace={
+            handleSaveToWorkspace
+          }
+        />
 
-    isThinking={
-      true
+      );
+
     }
-  />
-
-)}
+  )}
 
 
           <div

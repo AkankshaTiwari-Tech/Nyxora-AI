@@ -627,8 +627,6 @@ export default function AIMemory() {
             };
 
 
-            // Support old top-level
-            // name field too.
             if (
               key === "name" &&
               Object.prototype
@@ -891,31 +889,113 @@ export default function AIMemory() {
 
       <div
         className="
-          min-h-full
+          nyxora-page
+          nyxora-grid-bg
+          relative
           flex
+          min-h-full
           items-center
           justify-center
-          text-gray-400
+          overflow-hidden
+          px-6
+          py-10
         "
       >
 
         <div
           className="
+            pointer-events-none
+            absolute
+            h-72
+            w-72
+            rounded-full
+            bg-violet-600/[0.08]
+            blur-[110px]
+          "
+        />
+
+
+        <div
+          className="
+            relative
+            z-10
             flex
+            flex-col
             items-center
-            gap-3
+            gap-4
           "
         >
 
-          <Brain
-            size={22}
+          <div
             className="
-              animate-pulse
-              text-violet-400
+              relative
+              flex
+              h-14
+              w-14
+              items-center
+              justify-center
             "
-          />
+          >
 
-          Loading Nyxora memory...
+            <div
+              className="
+                absolute
+                inset-0
+                animate-spin
+                rounded-full
+                border-2
+                border-transparent
+                border-r-cyan-400
+                border-t-violet-400
+              "
+            />
+
+
+            <div
+              className="
+                flex
+                h-10
+                w-10
+                items-center
+                justify-center
+                rounded-xl
+                border
+                border-violet-400/20
+                bg-violet-500/10
+                text-violet-300
+              "
+            >
+
+              <Brain size={20} />
+
+            </div>
+
+          </div>
+
+
+          <div className="text-center">
+
+            <p
+              className="
+                text-sm
+                font-medium
+                text-slate-300
+              "
+            >
+              Loading Nyxora memory...
+            </p>
+
+            <p
+              className="
+                mt-1
+                text-xs
+                text-slate-600
+              "
+            >
+              Preparing your personal context
+            </p>
+
+          </div>
 
         </div>
 
@@ -940,8 +1020,6 @@ export default function AIMemory() {
   };
 
 
-  // Compatibility with old
-  // top-level name structure.
   if (
     memory?.name &&
     !userInfo.name
@@ -996,75 +1074,332 @@ export default function AIMemory() {
       : [];
 
 
+  const totalMemories =
+    userInfoEntries.length +
+    interests.length +
+    skills.length +
+    preferences.length;
+
+
   // ====================================================
   // UI
   // ====================================================
 
   return (
 
-    <div
+    <main
       className="
+        nyxora-page
+        nyxora-grid-bg
+        relative
         min-h-full
-        bg-[#050816]
-        px-8
-        py-8
+        overflow-hidden
+        px-5
+        py-7
         text-white
+        sm:px-6
+        lg:px-8
+        lg:py-8
       "
     >
 
+      {/* AMBIENT GLOWS */}
+
       <div
         className="
-          max-w-6xl
+          pointer-events-none
+          absolute
+          -left-48
+          -top-48
+          h-[460px]
+          w-[460px]
+          rounded-full
+          bg-fuchsia-600/[0.05]
+          blur-[140px]
+        "
+      />
+
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          -right-52
+          top-[18%]
+          h-[480px]
+          w-[480px]
+          rounded-full
+          bg-violet-600/[0.05]
+          blur-[150px]
+        "
+      />
+
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          bottom-[-220px]
+          left-[28%]
+          h-[520px]
+          w-[520px]
+          rounded-full
+          bg-cyan-500/[0.035]
+          blur-[160px]
+        "
+      />
+
+
+      <div
+        className="
+          relative
+          z-10
           mx-auto
+          w-full
+          max-w-[1500px]
         "
       >
 
+        {/* ==================================================
+            HEADER
+        ================================================== */}
 
-        {/* HEADER */}
-
-        <div className="mb-8">
+        <section
+          className="
+            relative
+            overflow-hidden
+            rounded-3xl
+            border
+            border-white/[0.07]
+            bg-[#080C18]/90
+            px-6
+            py-6
+            shadow-[0_18px_60px_rgba(0,0,0,.22)]
+            sm:px-7
+            lg:px-8
+            lg:py-7
+          "
+        >
 
           <div
             className="
+              pointer-events-none
+              absolute
+              -left-20
+              -top-24
+              h-64
+              w-64
+              rounded-full
+              bg-fuchsia-600/[0.08]
+              blur-[95px]
+            "
+          />
+
+
+          <div
+            className="
+              pointer-events-none
+              absolute
+              -right-16
+              -top-24
+              h-64
+              w-64
+              rounded-full
+              bg-cyan-400/[0.07]
+              blur-[95px]
+            "
+          />
+
+
+          <div
+            className="
+              absolute
+              left-8
+              right-8
+              top-0
+              h-px
+              bg-gradient-to-r
+              from-transparent
+              via-violet-400/60
+              to-transparent
+            "
+          />
+
+
+          <div
+            className="
+              relative
+              z-10
               flex
-              items-center
-              gap-4
-              mb-3
+              flex-col
+              gap-6
+              lg:flex-row
+              lg:items-center
+              lg:justify-between
             "
           >
 
             <div
               className="
-                w-14
-                h-14
-                rounded-2xl
-                bg-gradient-to-br
-                from-violet-600
-                to-indigo-600
                 flex
-                items-center
-                justify-center
-                shadow-lg
-                shadow-violet-900/20
+                items-start
+                gap-4
               "
             >
 
-              <Brain size={28} />
+              <div
+                className="
+                  relative
+                  flex
+                  h-14
+                  w-14
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-2xl
+                  border
+                  border-violet-400/20
+                  bg-gradient-to-br
+                  from-fuchsia-500/15
+                  via-violet-500/20
+                  to-cyan-400/10
+                  text-violet-200
+                  shadow-[0_0_30px_rgba(124,58,237,.12)]
+                "
+              >
+
+                <Brain size={27} />
+
+                <span
+                  className="
+                    absolute
+                    -right-1
+                    -top-1
+                    h-2.5
+                    w-2.5
+                    rounded-full
+                    bg-fuchsia-400
+                    shadow-[0_0_10px_rgba(217,70,239,.9)]
+                  "
+                />
+
+              </div>
+
+
+              <div>
+
+                <div
+                  className="
+                    mb-1.5
+                    flex
+                    items-center
+                    gap-2
+                    text-xs
+                    font-semibold
+                    uppercase
+                    tracking-[0.18em]
+                    text-violet-300
+                  "
+                >
+<div
+  className="
+    flex
+    h-7
+    w-7
+    shrink-0
+    items-center
+    justify-center
+  "
+>
+  <NyxoraOrbitLogo
+    size={27}
+    animated={true}
+  />
+</div>
+
+                  Personal AI Memory
+
+                </div>
+
+
+                <h1
+                  className="
+                    text-2xl
+                    font-bold
+                    tracking-tight
+                    text-white
+                    sm:text-3xl
+                  "
+                >
+                  Nyxora Memory
+                </h1>
+
+
+                <p
+                  className="
+                    mt-2
+                    max-w-2xl
+                    text-sm
+                    leading-6
+                    text-slate-400
+                    sm:text-[15px]
+                  "
+                >
+                  Nyxora remembers useful details from your
+                  conversations to provide more personalized
+                  and relevant responses.
+                </p>
+
+              </div>
 
             </div>
 
 
-            <div>
+            <div
+              className="
+                flex
+                flex-wrap
+                items-center
+                gap-3
+                lg:justify-end
+              "
+            >
 
-              <h1
+              <div
                 className="
-                  text-3xl
-                  font-bold
-                  text-white
+                  rounded-xl
+                  border
+                  border-white/[0.07]
+                  bg-white/[0.025]
+                  px-4
+                  py-3
                 "
               >
-                Nyxora Memory
-              </h1>
+
+                <p
+                  className="
+                    text-[10px]
+                    font-semibold
+                    uppercase
+                    tracking-[0.16em]
+                    text-slate-600
+                  "
+                >
+                  Remembered
+                </p>
+
+                <p
+                  className="
+                    mt-1
+                    text-lg
+                    font-bold
+                    text-white
+                  "
+                >
+                  {totalMemories}
+                </p>
+
+              </div>
 
 
               <div
@@ -1072,15 +1407,29 @@ export default function AIMemory() {
                   flex
                   items-center
                   gap-2
-                  text-sm
-                  text-violet-300
-                  mt-1
+                  rounded-xl
+                  border
+                  border-emerald-400/10
+                  bg-emerald-400/[0.04]
+                  px-4
+                  py-3
+                  text-xs
+                  font-medium
+                  text-emerald-300
                 "
               >
 
-                <Sparkles size={14} />
+                <span
+                  className="
+                    h-2
+                    w-2
+                    rounded-full
+                    bg-emerald-400
+                    shadow-[0_0_8px_rgba(52,211,153,.65)]
+                  "
+                />
 
-                Personal AI Memory
+                Memory active
 
               </div>
 
@@ -1088,34 +1437,22 @@ export default function AIMemory() {
 
           </div>
 
-
-          <p
-            className="
-              max-w-2xl
-              text-gray-400
-              leading-7
-            "
-          >
-            Nyxora remembers useful details
-            from your conversations to provide
-            more personalized and relevant
-            responses.
-          </p>
-
-        </div>
+        </section>
 
 
-        {/* MEMORY GRID */}
+        {/* ==================================================
+            MEMORY GRID
+        ================================================== */}
 
         <div
           className="
+            mt-6
             grid
             grid-cols-1
-            xl:grid-cols-2
             gap-5
+            xl:grid-cols-2
           "
         >
-
 
           {/* ABOUT YOU */}
 
@@ -1123,12 +1460,12 @@ export default function AIMemory() {
             icon={User}
             title="About You"
             description="Basic information Nyxora remembers about you."
+            accent="fuchsia"
           >
 
             <div className="space-y-3">
 
-              {userInfoEntries.length >
-              0 ? (
+              {userInfoEntries.length > 0 ? (
 
                 userInfoEntries.map(
                   ([key, value]) => (
@@ -1228,17 +1565,11 @@ export default function AIMemory() {
                   }
                   onCancel={() => {
 
-                    setInfoKeyInput(
-                      ""
-                    );
+                    setInfoKeyInput("");
 
-                    setInfoValueInput(
-                      ""
-                    );
+                    setInfoValueInput("");
 
-                    setAddingInfo(
-                      false
-                    );
+                    setAddingInfo(false);
 
                   }}
                 />
@@ -1248,9 +1579,7 @@ export default function AIMemory() {
                 <AddButton
                   label="Add Info"
                   onClick={() =>
-                    setAddingInfo(
-                      true
-                    )
+                    setAddingInfo(true)
                   }
                 />
 
@@ -1267,6 +1596,7 @@ export default function AIMemory() {
             icon={Heart}
             title="Interests"
             description="Topics and areas you are interested in."
+            accent="violet"
           >
 
             {interests.length > 0 ? (
@@ -1315,13 +1645,9 @@ export default function AIMemory() {
                   }
                   onCancel={() => {
 
-                    setInterestInput(
-                      ""
-                    );
+                    setInterestInput("");
 
-                    setAddingInterest(
-                      false
-                    );
+                    setAddingInterest(false);
 
                   }}
                 />
@@ -1331,9 +1657,7 @@ export default function AIMemory() {
                 <AddButton
                   label="Add Interest"
                   onClick={() =>
-                    setAddingInterest(
-                      true
-                    )
+                    setAddingInterest(true)
                   }
                 />
 
@@ -1350,6 +1674,7 @@ export default function AIMemory() {
             icon={Target}
             title="Skills"
             description="Skills Nyxora has learned about you."
+            accent="cyan"
           >
 
             {skills.length > 0 ? (
@@ -1398,13 +1723,9 @@ export default function AIMemory() {
                   }
                   onCancel={() => {
 
-                    setSkillInput(
-                      ""
-                    );
+                    setSkillInput("");
 
-                    setAddingSkill(
-                      false
-                    );
+                    setAddingSkill(false);
 
                   }}
                 />
@@ -1414,9 +1735,7 @@ export default function AIMemory() {
                 <AddButton
                   label="Add Skill"
                   onClick={() =>
-                    setAddingSkill(
-                      true
-                    )
+                    setAddingSkill(true)
                   }
                 />
 
@@ -1433,12 +1752,12 @@ export default function AIMemory() {
             icon={Settings}
             title="Preferences"
             description="Preferences Nyxora uses to personalize responses."
+            accent="blue"
           >
 
             <div className="space-y-3">
 
-              {preferences.length >
-              0 ? (
+              {preferences.length > 0 ? (
 
                 preferences.map(
                   ([key, value]) => (
@@ -1501,17 +1820,11 @@ export default function AIMemory() {
                   }
                   onCancel={() => {
 
-                    setPreferenceKeyInput(
-                      ""
-                    );
+                    setPreferenceKeyInput("");
 
-                    setPreferenceValueInput(
-                      ""
-                    );
+                    setPreferenceValueInput("");
 
-                    setAddingPreference(
-                      false
-                    );
+                    setAddingPreference(false);
 
                   }}
                 />
@@ -1521,9 +1834,7 @@ export default function AIMemory() {
                 <AddButton
                   label="Add Preference"
                   onClick={() =>
-                    setAddingPreference(
-                      true
-                    )
+                    setAddingPreference(true)
                   }
                 />
 
@@ -1536,178 +1847,239 @@ export default function AIMemory() {
         </div>
 
 
-        {/* RECENT CONTEXT */}
+        {/* ==================================================
+            RECENT CONTEXT
+        ================================================== */}
 
         {recentMessages.length > 0 && (
 
-          <div
+          <section
             className="
+              group
+              relative
               mt-5
-              border
-              border-[#252D44]
-              bg-[#101625]
+              overflow-hidden
               rounded-2xl
+              border
+              border-white/[0.07]
+              bg-[#0B1020]/90
               p-6
+              shadow-[0_16px_50px_rgba(0,0,0,.16)]
             "
           >
 
             <div
               className="
-                flex
-                items-center
-                gap-3
-                mb-5
+                pointer-events-none
+                absolute
+                -right-20
+                -top-20
+                h-48
+                w-48
+                rounded-full
+                bg-violet-600/[0.06]
+                blur-[80px]
+              "
+            />
+
+
+            <div
+              className="
+                absolute
+                left-8
+                right-8
+                top-0
+                h-px
+                bg-gradient-to-r
+                from-transparent
+                via-violet-400/35
+                to-transparent
+              "
+            />
+
+
+            <div
+              className="
+                relative
+                z-10
               "
             >
 
               <div
                 className="
-                  w-10
-                  h-10
-                  rounded-xl
-                  bg-violet-600/10
+                  mb-5
                   flex
                   items-center
-                  justify-center
+                  gap-3
                 "
               >
 
-                <MessageSquare
-                  size={20}
+                <div
                   className="
-                    text-violet-400
+                    flex
+                    h-10
+                    w-10
+                    items-center
+                    justify-center
+                    rounded-xl
+                    border
+                    border-violet-400/15
+                    bg-violet-500/[0.08]
+                    text-violet-300
                   "
-                />
+                >
+
+                  <MessageSquare size={19} />
+
+                </div>
+
+
+                <div>
+
+                  <h2
+                    className="
+                      font-semibold
+                      text-white
+                    "
+                  >
+                    Recent Context
+                  </h2>
+
+                  <p
+                    className="
+                      mt-0.5
+                      text-sm
+                      text-slate-500
+                    "
+                  >
+                    Recent conversation context available to Nyxora.
+                  </p>
+
+                </div>
 
               </div>
 
 
-              <div>
+              <div
+                className="
+                  grid
+                  gap-3
+                  lg:grid-cols-3
+                "
+              >
 
-                <h2
-                  className="
-                    font-semibold
-                    text-lg
-                  "
-                >
-                  Recent Context
-                </h2>
+                {recentMessages
+                  .slice(-3)
+                  .map(
+                    (
+                      item,
+                      index
+                    ) => (
 
-                <p
-                  className="
-                    text-sm
-                    text-gray-500
-                  "
-                >
-                  Recent conversation context
-                  available to Nyxora.
-                </p>
+                      <div
+                        key={index}
+                        className="
+                          rounded-xl
+                          border
+                          border-white/[0.06]
+                          bg-white/[0.025]
+                          p-4
+                          transition-all
+                          duration-300
+                          hover:border-violet-400/15
+                          hover:bg-white/[0.035]
+                        "
+                      >
+
+                        {item.user && (
+
+                          <p
+                            className="
+                              mb-3
+                              text-sm
+                              leading-6
+                              text-slate-300
+                            "
+                          >
+
+                            <span
+                              className="
+                                mr-1
+                                font-medium
+                                text-fuchsia-300
+                              "
+                            >
+                              You:
+                            </span>
+
+                            {item.user}
+
+                          </p>
+
+                        )}
+
+
+                        {item.ai && (
+
+                          <p
+                            className="
+                              line-clamp-3
+                              text-sm
+                              leading-6
+                              text-slate-500
+                            "
+                          >
+
+                            <span
+                              className="
+                                mr-1
+                                font-medium
+                                text-cyan-300
+                              "
+                            >
+                              Nyxora:
+                            </span>
+
+                            {item.ai}
+
+                          </p>
+
+                        )}
+
+                      </div>
+
+                    )
+                  )}
 
               </div>
 
             </div>
 
-
-            <div className="space-y-3">
-
-              {recentMessages
-                .slice(-3)
-                .map(
-                  (
-                    item,
-                    index
-                  ) => (
-
-                    <div
-                      key={index}
-                      className="
-                        rounded-xl
-                        bg-[#151C2D]
-                        border
-                        border-[#252D44]
-                        p-4
-                      "
-                    >
-
-                      {item.user && (
-
-                        <p
-                          className="
-                            text-sm
-                            text-gray-300
-                            mb-2
-                          "
-                        >
-
-                          <span
-                            className="
-                              text-violet-400
-                              font-medium
-                            "
-                          >
-                            You:
-                          </span>{" "}
-
-                          {item.user}
-
-                        </p>
-
-                      )}
-
-
-                      {item.ai && (
-
-                        <p
-                          className="
-                            text-sm
-                            text-gray-400
-                            line-clamp-3
-                          "
-                        >
-
-                          <span
-                            className="
-                              text-indigo-400
-                              font-medium
-                            "
-                          >
-                            Nyxora:
-                          </span>{" "}
-
-                          {item.ai}
-
-                        </p>
-
-                      )}
-
-                    </div>
-
-                  )
-                )}
-
-            </div>
-
-          </div>
+          </section>
 
         )}
 
 
-        {/* CLEAR MEMORY */}
+        {/* ==================================================
+            CLEAR MEMORY
+        ================================================== */}
 
         {memory && (
 
-          <div
+          <section
             className="
-              mt-6
+              mt-5
               flex
-              items-center
-              justify-between
+              flex-col
               gap-5
-              border
-              border-red-500/20
-              bg-red-500/5
               rounded-2xl
+              border
+              border-red-500/15
+              bg-red-500/[0.025]
               p-5
+              sm:flex-row
+              sm:items-center
+              sm:justify-between
             "
           >
 
@@ -1717,7 +2089,6 @@ export default function AIMemory() {
                 className="
                   font-semibold
                   text-white
-                  mb-1
                 "
               >
                 Clear AI Memory
@@ -1725,13 +2096,15 @@ export default function AIMemory() {
 
               <p
                 className="
+                  mt-1
+                  max-w-2xl
                   text-sm
-                  text-gray-400
+                  leading-6
+                  text-slate-500
                 "
               >
-                Remove all information
-                Nyxora currently remembers
-                about you.
+                Remove all information Nyxora currently remembers
+                about you. This action cannot be undone.
               </p>
 
             </div>
@@ -1746,27 +2119,28 @@ export default function AIMemory() {
                 clearing
               }
               className="
-                shrink-0
                 flex
+                shrink-0
                 items-center
+                justify-center
                 gap-2
                 rounded-xl
                 border
-                border-red-500/30
-                bg-red-500/10
+                border-red-500/25
+                bg-red-500/[0.08]
                 px-4
                 py-2.5
                 text-sm
                 font-medium
-                text-red-400
-                hover:bg-red-500/20
-                disabled:opacity-50
-                disabled:cursor-not-allowed
+                text-red-300
                 transition
+                hover:bg-red-500/[0.14]
+                disabled:cursor-not-allowed
+                disabled:opacity-50
               "
             >
 
-              <Trash2 size={17} />
+              <Trash2 size={16} />
 
               {clearing
                 ? "Clearing..."
@@ -1774,13 +2148,13 @@ export default function AIMemory() {
 
             </button>
 
-          </div>
+          </section>
 
         )}
 
       </div>
 
-    </div>
+    </main>
 
   );
 
@@ -1796,81 +2170,176 @@ function MemoryCard({
   title,
   description,
   children,
+  accent = "violet",
 }) {
+
+  const accentStyles = {
+
+    fuchsia: {
+      icon:
+        "border-fuchsia-400/15 bg-fuchsia-500/[0.08] text-fuchsia-300",
+      glow:
+        "bg-fuchsia-500/[0.06]",
+      line:
+        "via-fuchsia-400/45",
+    },
+
+    violet: {
+      icon:
+        "border-violet-400/15 bg-violet-500/[0.08] text-violet-300",
+      glow:
+        "bg-violet-500/[0.06]",
+      line:
+        "via-violet-400/45",
+    },
+
+    cyan: {
+      icon:
+        "border-cyan-400/15 bg-cyan-500/[0.07] text-cyan-300",
+      glow:
+        "bg-cyan-500/[0.05]",
+      line:
+        "via-cyan-400/40",
+    },
+
+    blue: {
+      icon:
+        "border-blue-400/15 bg-blue-500/[0.07] text-blue-300",
+      glow:
+        "bg-blue-500/[0.05]",
+      line:
+        "via-blue-400/40",
+    },
+
+  };
+
+
+  const style =
+    accentStyles[accent] ||
+    accentStyles.violet;
+
 
   return (
 
-    <div
+    <section
       className="
-        border
-        border-[#252D44]
-        bg-[#101625]
+        group
+        relative
+        overflow-hidden
         rounded-2xl
-        p-6
+        border
+        border-white/[0.07]
+        bg-[#0B1020]/90
+        p-5
+        shadow-[0_16px_50px_rgba(0,0,0,.14)]
+        transition-all
+        duration-300
+        hover:-translate-y-0.5
+        hover:border-white/[0.11]
+        hover:bg-[#0D1324]/95
+        sm:p-6
       "
     >
 
       <div
+        className={`
+          pointer-events-none
+          absolute
+          -right-16
+          -top-16
+          h-44
+          w-44
+          rounded-full
+          blur-[80px]
+          transition-opacity
+          duration-300
+          ${style.glow}
+        `}
+      />
+
+
+      <div
+        className={`
+          absolute
+          left-8
+          right-8
+          top-0
+          h-px
+          bg-gradient-to-r
+          from-transparent
+          to-transparent
+          ${style.line}
+        `}
+      />
+
+
+      <div
         className="
-          flex
-          items-start
-          gap-3
-          mb-5
+          relative
+          z-10
         "
       >
 
         <div
           className="
-            w-10
-            h-10
-            rounded-xl
-            bg-violet-600/10
+            mb-5
             flex
-            items-center
-            justify-center
-            shrink-0
+            items-start
+            gap-3
           "
         >
 
-          <Icon
-            size={20}
-            className="
-              text-violet-400
-            "
-          />
+          <div
+            className={`
+              flex
+              h-10
+              w-10
+              shrink-0
+              items-center
+              justify-center
+              rounded-xl
+              border
+              ${style.icon}
+            `}
+          >
+
+            <Icon size={19} />
+
+          </div>
+
+
+          <div>
+
+            <h2
+              className="
+                font-semibold
+                text-white
+              "
+            >
+              {title}
+            </h2>
+
+            <p
+              className="
+                mt-1
+                text-sm
+                leading-5
+                text-slate-500
+              "
+            >
+              {description}
+            </p>
+
+          </div>
 
         </div>
 
 
-        <div>
-
-          <h2
-            className="
-              font-semibold
-              text-lg
-            "
-          >
-            {title}
-          </h2>
-
-          <p
-            className="
-              text-sm
-              text-gray-500
-              mt-1
-            "
-          >
-            {description}
-          </p>
-
-        </div>
+        {children}
 
       </div>
 
-
-      {children}
-
-    </div>
+    </section>
 
   );
 
@@ -1892,26 +2361,36 @@ function AddButton({
       type="button"
       onClick={onClick}
       className="
+        group
         flex
         items-center
         gap-2
         rounded-lg
         border
         border-dashed
-        border-violet-500/30
-        bg-violet-500/5
+        border-violet-400/20
+        bg-violet-500/[0.035]
         px-3
         py-2
         text-sm
         font-medium
-        text-violet-400
-        hover:bg-violet-500/10
-        hover:border-violet-500/50
-        transition
+        text-violet-300
+        transition-all
+        duration-300
+        hover:border-violet-400/40
+        hover:bg-violet-500/[0.08]
+        hover:text-violet-200
       "
     >
 
-      <Plus size={16} />
+      <Plus
+        size={15}
+        className="
+          transition-transform
+          duration-300
+          group-hover:rotate-90
+        "
+      />
 
       {label}
 
@@ -1975,19 +2454,22 @@ function SingleAddForm({
           placeholder
         }
         className="
-          flex-1
           min-w-0
-          rounded-lg
+          flex-1
+          rounded-xl
           border
-          border-[#343E59]
-          bg-[#0D1321]
-          px-3
+          border-white/[0.08]
+          bg-[#070B17]/80
+          px-3.5
           py-2.5
           text-sm
           text-white
-          placeholder:text-gray-600
           outline-none
-          focus:border-violet-500
+          transition-all
+          placeholder:text-slate-600
+          focus:border-violet-400/40
+          focus:bg-[#090E1C]
+          focus:shadow-[0_0_0_3px_rgba(124,58,237,.06)]
         "
       />
 
@@ -2035,8 +2517,8 @@ function KeyValueAddForm({
       className="
         rounded-xl
         border
-        border-violet-500/30
-        bg-[#151C2D]
+        border-violet-400/20
+        bg-violet-500/[0.035]
         p-3
       "
     >
@@ -2045,8 +2527,8 @@ function KeyValueAddForm({
         className="
           grid
           grid-cols-1
-          sm:grid-cols-2
           gap-2
+          sm:grid-cols-2
         "
       >
 
@@ -2064,17 +2546,19 @@ function KeyValueAddForm({
           }
           className="
             min-w-0
-            rounded-lg
+            rounded-xl
             border
-            border-[#343E59]
-            bg-[#0D1321]
-            px-3
+            border-white/[0.08]
+            bg-[#070B17]/90
+            px-3.5
             py-2.5
             text-sm
             text-white
-            placeholder:text-gray-600
             outline-none
-            focus:border-violet-500
+            transition-all
+            placeholder:text-slate-600
+            focus:border-violet-400/40
+            focus:shadow-[0_0_0_3px_rgba(124,58,237,.06)]
           "
         />
 
@@ -2109,17 +2593,19 @@ function KeyValueAddForm({
           }
           className="
             min-w-0
-            rounded-lg
+            rounded-xl
             border
-            border-[#343E59]
-            bg-[#0D1321]
-            px-3
+            border-white/[0.08]
+            bg-[#070B17]/90
+            px-3.5
             py-2.5
             text-sm
             text-white
-            placeholder:text-gray-600
             outline-none
-            focus:border-violet-500
+            transition-all
+            placeholder:text-slate-600
+            focus:border-violet-400/40
+            focus:shadow-[0_0_0_3px_rgba(124,58,237,.06)]
           "
         />
 
@@ -2128,11 +2614,11 @@ function KeyValueAddForm({
 
       <div
         className="
+          mt-3
           flex
           items-center
           justify-end
           gap-2
-          mt-3
         "
       >
 
@@ -2177,19 +2663,20 @@ function EditValueForm({
     <div
       className="
         rounded-xl
-        bg-[#151C2D]
         border
-        border-violet-500/40
+        border-violet-400/25
+        bg-violet-500/[0.035]
         p-4
       "
     >
 
       <label
         className="
+          mb-2
           block
           text-xs
-          text-gray-500
-          mb-2
+          font-medium
+          text-slate-500
         "
       >
         {label}
@@ -2231,18 +2718,20 @@ function EditValueForm({
           }}
           autoFocus
           className="
-            flex-1
             min-w-0
-            rounded-lg
+            flex-1
+            rounded-xl
             border
-            border-[#343E59]
-            bg-[#0D1321]
-            px-3
+            border-white/[0.08]
+            bg-[#070B17]/90
+            px-3.5
             py-2.5
             text-sm
             text-white
             outline-none
-            focus:border-violet-500
+            transition-all
+            focus:border-violet-400/40
+            focus:shadow-[0_0_0_3px_rgba(124,58,237,.06)]
           "
         />
 
@@ -2291,19 +2780,22 @@ function SaveButton({
       }
       title="Save"
       className="
-        w-10
-        h-10
-        shrink-0
-        rounded-lg
         flex
+        h-10
+        w-10
+        shrink-0
         items-center
         justify-center
-        bg-violet-600
-        text-white
-        hover:bg-violet-500
-        disabled:opacity-40
+        rounded-xl
+        border
+        border-violet-400/20
+        bg-violet-500/15
+        text-violet-200
+        transition-all
+        hover:border-violet-400/35
+        hover:bg-violet-500/25
         disabled:cursor-not-allowed
-        transition
+        disabled:opacity-40
       "
     >
 
@@ -2333,19 +2825,21 @@ function CancelButton({
       disabled={disabled}
       title="Cancel"
       className="
-        w-10
-        h-10
-        shrink-0
-        rounded-lg
         flex
+        h-10
+        w-10
+        shrink-0
         items-center
         justify-center
-        bg-[#20283A]
-        text-gray-400
+        rounded-xl
+        border
+        border-white/[0.07]
+        bg-white/[0.035]
+        text-slate-500
+        transition-all
+        hover:bg-white/[0.07]
         hover:text-white
-        hover:bg-[#293247]
         disabled:opacity-40
-        transition
       "
     >
 
@@ -2374,23 +2868,28 @@ function EditableMemoryValue({
 
     <div
       className="
+        group
         flex
         items-center
         justify-between
         gap-4
         rounded-xl
-        bg-[#151C2D]
         border
-        border-[#252D44]
+        border-white/[0.06]
+        bg-white/[0.025]
         px-4
         py-3
+        transition-all
+        duration-300
+        hover:border-violet-400/15
+        hover:bg-white/[0.04]
       "
     >
 
       <span
         className="
           text-sm
-          text-gray-500
+          text-slate-500
         "
       >
         {label}
@@ -2400,18 +2899,20 @@ function EditableMemoryValue({
       <div
         className="
           flex
+          min-w-0
           items-center
-          gap-2
+          gap-1
         "
       >
 
         <span
           className="
+            mr-2
+            truncate
+            text-right
             text-sm
             font-medium
-            text-gray-200
-            text-right
-            mr-1
+            text-slate-200
           "
         >
           {String(value)}
@@ -2424,21 +2925,22 @@ function EditableMemoryValue({
           disabled={deleting}
           title={`Edit ${label}`}
           className="
-            w-7
-            h-7
-            rounded-lg
             flex
+            h-7
+            w-7
+            shrink-0
             items-center
             justify-center
-            text-gray-500
-            hover:text-violet-400
+            rounded-lg
+            text-slate-600
+            transition-all
             hover:bg-violet-500/10
+            hover:text-violet-300
             disabled:opacity-40
-            transition
           "
         >
 
-          <Pencil size={14} />
+          <Pencil size={13} />
 
         </button>
 
@@ -2449,21 +2951,22 @@ function EditableMemoryValue({
           disabled={deleting}
           title={`Forget ${label}`}
           className="
-            w-7
-            h-7
-            rounded-lg
             flex
+            h-7
+            w-7
+            shrink-0
             items-center
             justify-center
-            text-gray-500
-            hover:text-red-400
+            rounded-lg
+            text-slate-600
+            transition-all
             hover:bg-red-500/10
+            hover:text-red-400
             disabled:opacity-40
-            transition
           "
         >
 
-          <X size={15} />
+          <X size={14} />
 
         </button>
 
@@ -2496,18 +2999,22 @@ function MemoryValue({
         justify-between
         gap-4
         rounded-xl
-        bg-[#151C2D]
         border
-        border-[#252D44]
+        border-white/[0.06]
+        bg-white/[0.025]
         px-4
         py-3
+        transition-all
+        duration-300
+        hover:border-violet-400/15
+        hover:bg-white/[0.04]
       "
     >
 
       <span
         className="
           text-sm
-          text-gray-500
+          text-slate-500
         "
       >
         {label}
@@ -2517,17 +3024,19 @@ function MemoryValue({
       <div
         className="
           flex
+          min-w-0
           items-center
-          gap-3
+          gap-2
         "
       >
 
         <span
           className="
+            truncate
+            text-right
             text-sm
             font-medium
-            text-gray-200
-            text-right
+            text-slate-200
           "
         >
           {String(value)}
@@ -2543,20 +3052,21 @@ function MemoryValue({
             title={`Remove ${label}`}
             className="
               flex
+              h-7
+              w-7
+              shrink-0
               items-center
               justify-center
-              w-7
-              h-7
               rounded-lg
-              text-gray-500
-              hover:text-red-400
+              text-slate-600
+              transition-all
               hover:bg-red-500/10
+              hover:text-red-400
               disabled:opacity-40
-              transition
             "
           >
 
-            <X size={15} />
+            <X size={14} />
 
           </button>
 
@@ -2608,18 +3118,26 @@ function TagList({
             <div
               key={`${item}-${index}`}
               className="
+                group
                 flex
                 items-center
                 gap-1
                 rounded-lg
                 border
-                border-violet-500/20
-                bg-violet-500/10
+                border-violet-400/15
+                bg-gradient-to-r
+                from-fuchsia-500/[0.055]
+                via-violet-500/[0.08]
+                to-cyan-500/[0.045]
+                py-1.5
                 pl-3
                 pr-1.5
-                py-1.5
                 text-sm
-                text-violet-300
+                text-violet-200
+                transition-all
+                duration-300
+                hover:border-violet-400/30
+                hover:bg-violet-500/[0.11]
               "
             >
 
@@ -2639,21 +3157,21 @@ function TagList({
                 disabled={deleting}
                 title={`Forget ${item}`}
                 className="
-                  w-6
-                  h-6
-                  rounded-md
                   flex
+                  h-6
+                  w-6
                   items-center
                   justify-center
-                  text-violet-400
-                  hover:text-red-400
+                  rounded-md
+                  text-violet-400/70
+                  transition-all
                   hover:bg-red-500/10
+                  hover:text-red-400
                   disabled:opacity-40
-                  transition
                 "
               >
 
-                <X size={14} />
+                <X size={13} />
 
               </button>
 
@@ -2679,15 +3197,28 @@ function EmptyValue() {
 
   return (
 
-    <p
+    <div
       className="
-        text-sm
-        text-gray-500
-        italic
+        rounded-xl
+        border
+        border-dashed
+        border-white/[0.07]
+        bg-white/[0.015]
+        px-4
+        py-4
       "
     >
-      Nothing remembered yet.
-    </p>
+
+      <p
+        className="
+          text-sm
+          text-slate-600
+        "
+      >
+        Nothing remembered yet.
+      </p>
+
+    </div>
 
   );
 

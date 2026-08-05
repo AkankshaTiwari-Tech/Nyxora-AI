@@ -23,6 +23,9 @@ import {
   Star,
 } from "lucide-react";
 
+import NyxoraOrbitLogo
+  from "../../../../components/common/NyxoraOrbitLogo";
+
 import MessageContent
   from "./MessageContent";
 
@@ -836,28 +839,28 @@ export default function ChatMessage({
   return (
 
     <div
-      className={`
-        group
-        flex
-        w-full
-        ${
-          isUser
-            ? "justify-end"
-            : "justify-start"
-        }
-      `}
-    >
+  className={`
+    group
+    flex
+    w-full
+    ${
+      isUser
+        ? "justify-end"
+        : "justify-center"
+    }
+  `}
+>
 
-      <div
-        className={`
-          min-w-0
-          ${
-            isUser
-              ? "max-w-[88%] sm:max-w-[80%]"
-              : "w-full max-w-4xl"
-          }
-        `}
-      >
+  <div
+    className={`
+      min-w-0
+      ${
+        isUser
+          ? "max-w-[88%] sm:max-w-[80%]"
+          : "w-[82%] max-w-5xl"
+      }
+    `}
+  >
 
         {/* =============================================
             USER MESSAGE
@@ -1306,39 +1309,96 @@ export default function ChatMessage({
           >
 
             <div
-              className="
-                mt-1
-                flex
-                h-9
-                w-9
-                shrink-0
-                items-center
-                justify-center
-                rounded-full
-                bg-violet-600
-                text-white
-                shadow-lg
-                shadow-violet-900/40
-              "
-            >
-              <Bot size={18} />
-            </div>
+  className="
+    mt-1
+    flex
+    h-10
+    w-10
+    shrink-0
+    items-center
+    justify-center
+  "
+>
+  <NyxoraOrbitLogo
+    size={38}
+    animated={true}
+  />
+</div>
 
             <div
-              className="
-                min-w-0
-                rounded-2xl
-                border
-                border-white/10
-                bg-white/[0.03]
-                px-5
-                py-4
-                shadow-sm
-                flex-1
-              "
-            >
+  className="
+    relative
+    min-w-0
+    flex-1
+    overflow-hidden
+    rounded-2xl
+    border
+    border-violet-400/20
+    bg-gradient-to-br
+    from-violet-950/20
+    via-[#0B1020]/95
+    to-cyan-950/20
+    px-5
+    py-4
+    shadow-[0_10px_40px_rgba(0,0,0,0.18)]
+    transition-all
+    duration-300
+    hover:border-violet-400/30
+  "
+>
+  {/* NYXORA MESSAGE AMBIENT GLOW */}
 
-            {isThinking ? (
+<div
+  className="
+    pointer-events-none
+    absolute
+    -left-20
+    -top-20
+    h-40
+    w-40
+    rounded-full
+    bg-fuchsia-500/[0.07]
+    blur-3xl
+  "
+/>
+
+<div
+  className="
+    pointer-events-none
+    absolute
+    -bottom-20
+    right-0
+    h-40
+    w-40
+    rounded-full
+    bg-cyan-400/[0.06]
+    blur-3xl
+  "
+/>
+
+{/* NYXORA AI RESPONSE ACCENT */}
+
+<div
+  className="
+    pointer-events-none
+    absolute
+    bottom-4
+    left-0
+    top-4
+    w-[2px]
+    rounded-full
+    bg-gradient-to-b
+    from-fuchsia-400
+    via-violet-400
+    to-cyan-400
+    shadow-[0_0_10px_rgba(139,92,246,0.65)]
+  "
+/>
+
+
+<div className="relative z-10">
+
+  {isThinking ? (
 
               <div
                 className="
@@ -1350,17 +1410,57 @@ export default function ChatMessage({
               >
 
                 <div
-                  className="
-                    flex
-                    gap-1
-                  "
-                >
+  className="
+    flex
+    items-center
+    gap-1.5
+  "
+>
 
-                  <span className="h-2 w-2 rounded-full bg-violet-400 animate-bounce" />
-                  <span className="h-2 w-2 rounded-full bg-violet-400 animate-bounce [animation-delay:150ms]" />
-                  <span className="h-2 w-2 rounded-full bg-violet-400 animate-bounce [animation-delay:300ms]" />
+  {/* FUCHSIA */}
 
-                </div>
+  <span
+    className="
+      h-2
+      w-2
+      rounded-full
+      bg-fuchsia-400
+      shadow-[0_0_8px_rgba(232,121,249,.65)]
+      animate-bounce
+    "
+  />
+
+
+  {/* VIOLET */}
+
+  <span
+    className="
+      h-2
+      w-2
+      rounded-full
+      bg-violet-400
+      shadow-[0_0_8px_rgba(167,139,250,.65)]
+      animate-bounce
+      [animation-delay:150ms]
+    "
+  />
+
+
+  {/* CYAN */}
+
+  <span
+    className="
+      h-2
+      w-2
+      rounded-full
+      bg-cyan-400
+      shadow-[0_0_8px_rgba(34,211,238,.65)]
+      animate-bounce
+      [animation-delay:300ms]
+    "
+  />
+
+</div>
 
                 <span>
                   Nyxora AI is thinking...
@@ -1380,232 +1480,396 @@ export default function ChatMessage({
 
 
             {/* =========================================
-                PDF READY CARD
-            ========================================== */}
+    PDF READY CARD — NYXORA THEME
+========================================== */}
 
-            {pdfRequested &&
-              String(
-                text || ""
-              ).trim() && (
+{pdfRequested &&
+  String(
+    text || ""
+  ).trim() && (
 
-              <div
-                className="
-                  mt-5
-                  overflow-hidden
-                  rounded-2xl
-                  border
-                  border-indigo-500/25
-                  bg-gradient-to-br
-                  from-indigo-500/[0.10]
-                  via-violet-500/[0.05]
-                  to-cyan-500/[0.08]
-                  shadow-lg
-                  shadow-indigo-950/10
-                "
-              >
+  <div
+    className="
+      relative
+      mt-5
+      overflow-hidden
+      rounded-2xl
+      border
+      border-violet-400/25
+      bg-gradient-to-br
+      from-fuchsia-950/25
+      via-[#0B1020]/95
+      to-cyan-950/25
+      shadow-[0_14px_45px_rgba(0,0,0,0.28)]
+    "
+  >
 
-                {/* PDF HEADER */}
+    {/* AMBIENT GLOW */}
 
-                <div
-                  className="
-                    flex
-                    items-center
-                    gap-3
-                    border-b
-                    border-indigo-500/15
-                    px-4
-                    py-4
-                  "
-                >
+    <div
+      className="
+        pointer-events-none
+        absolute
+        -left-16
+        -top-16
+        h-32
+        w-32
+        rounded-full
+        bg-fuchsia-500/10
+        blur-3xl
+      "
+    />
 
-                  <div
-                    className="
-                      flex
-                      h-11
-                      w-11
-                      shrink-0
-                      items-center
-                      justify-center
-                      rounded-xl
-                      border
-                      border-indigo-400/20
-                      bg-indigo-500/15
-                      text-indigo-300
-                    "
-                  >
-
-                    <FileText
-                      size={21}
-                    />
-
-                  </div>
+    <div
+      className="
+        pointer-events-none
+        absolute
+        -bottom-16
+        right-0
+        h-32
+        w-32
+        rounded-full
+        bg-cyan-400/10
+        blur-3xl
+      "
+    />
 
 
-                  <div
-                    className="
-                      min-w-0
-                      flex-1
-                    "
-                  >
+    {/* TOP ACCENT */}
 
-                    <p
-                      className="
-                        text-sm
-                        font-semibold
-                        text-white
-                      "
-                    >
-                      Professional PDF Ready
-                    </p>
-
-
-                    <p
-                      className="
-                        mt-0.5
-                        text-xs
-                        leading-5
-                        text-gray-400
-                      "
-                    >
-                      Generated with Nyxora&apos;s professional PDF engine.
-                    </p>
-
-                  </div>
-
-                </div>
+    <div
+      className="
+        absolute
+        left-0
+        right-0
+        top-0
+        h-[2px]
+        bg-gradient-to-r
+        from-fuchsia-500
+        via-violet-500
+        to-cyan-400
+      "
+    />
 
 
-                {/* PDF ACTIONS */}
+    {/* PDF HEADER */}
 
-                <div
-                  className="
-                    flex
-                    flex-wrap
-                    gap-3
-                    p-4
-                  "
-                >
+    <div
+      className="
+        relative
+        z-10
+        flex
+        items-center
+        gap-3
+        border-b
+        border-white/[0.07]
+        px-4
+        py-4
+      "
+    >
 
-                  <button
-                    type="button"
-                    onClick={
-                      handlePreviewPdf
-                    }
-                    disabled={
-                      Boolean(
-                        pdfLoadingAction
-                      )
-                    }
-                    className="
-                      inline-flex
-                      items-center
-                      justify-center
-                      gap-2
-                      rounded-xl
-                      border
-                      border-indigo-400/25
-                      bg-indigo-500/10
-                      px-4
-                      py-2.5
-                      text-sm
-                      font-medium
-                      text-indigo-200
-                      transition
-                      hover:border-indigo-400/40
-                      hover:bg-indigo-500/20
-                      disabled:cursor-not-allowed
-                      disabled:opacity-50
-                    "
-                  >
+      {/* ICON */}
 
-                    {pdfLoadingAction ===
-                    "preview" ? (
+      <div
+        className="
+          relative
+          flex
+          h-12
+          w-12
+          shrink-0
+          items-center
+          justify-center
+          rounded-xl
+          border
+          border-violet-400/30
+          bg-gradient-to-br
+          from-fuchsia-500/20
+          via-violet-500/20
+          to-cyan-400/15
+          text-violet-200
+          shadow-[0_0_24px_rgba(139,92,246,0.18)]
+        "
+      >
 
-                      <Loader2
-                        size={16}
-                        className="animate-spin"
-                      />
-
-                    ) : (
-
-                      <Eye
-                        size={16}
-                      />
-
-                    )}
-
-                    Preview PDF
-
-                  </button>
+        <FileText
+          size={21}
+        />
 
 
-                  <button
-                    type="button"
-                    onClick={
-                      handleDownloadPdf
-                    }
-                    disabled={
-                      Boolean(
-                        pdfLoadingAction
-                      )
-                    }
-                    className="
-                      inline-flex
-                      items-center
-                      justify-center
-                      gap-2
-                      rounded-xl
-                      bg-indigo-600
-                      px-4
-                      py-2.5
-                      text-sm
-                      font-medium
-                      text-white
-                      shadow-sm
-                      transition
-                      hover:bg-indigo-500
-                      disabled:cursor-not-allowed
-                      disabled:opacity-50
-                    "
-                  >
+        {/* CYAN STATUS DOT */}
 
-                    {pdfLoadingAction ===
-                    "download" ? (
+        <span
+          className="
+            absolute
+            -right-1
+            -top-1
+            h-2.5
+            w-2.5
+            rounded-full
+            bg-cyan-400
+            shadow-[0_0_10px_rgba(34,211,238,0.9)]
+          "
+        />
 
-                      <Loader2
-                        size={16}
-                        className="animate-spin"
-                      />
+      </div>
 
-                    ) : (
 
-                      <Download
-                        size={16}
-                      />
+      {/* TEXT */}
 
-                    )}
+      <div
+        className="
+          min-w-0
+          flex-1
+        "
+      >
 
-                    Download PDF
+        <div
+          className="
+            mb-1
+            flex
+            items-center
+            gap-2
+          "
+        >
 
-                  </button>
+          <span
+            className="
+              text-[10px]
+              font-semibold
+              uppercase
+              tracking-[0.22em]
+              text-fuchsia-300
+            "
+          >
+            ✨ NYXORA PDF ENGINE
+          </span>
 
-                </div>
+        </div>
 
-              </div>
 
-            )}
+        <p
+          className="
+            text-sm
+            font-semibold
+            text-white
+          "
+        >
+          Your PDF is ready
+        </p>
 
-            </div>
 
-          </div>
+        <p
+          className="
+            mt-0.5
+            text-xs
+            leading-5
+            text-slate-400
+          "
+        >
+          Preview your document or download the final PDF.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    {/* PDF ACTIONS */}
+
+    <div
+      className="
+        relative
+        z-10
+        flex
+        flex-wrap
+        items-center
+        gap-3
+        p-4
+      "
+    >
+
+      {/* PREVIEW */}
+
+      <button
+        type="button"
+        onClick={
+          handlePreviewPdf
+        }
+        disabled={
+          Boolean(
+            pdfLoadingAction
+          )
+        }
+        className="
+          group/pdfpreview
+          inline-flex
+          items-center
+          justify-center
+          gap-2
+          rounded-xl
+          border
+          border-violet-400/25
+          bg-white/[0.035]
+          px-4
+          py-2.5
+          text-sm
+          font-medium
+          text-violet-200
+          transition-all
+          duration-200
+          hover:border-violet-400/50
+          hover:bg-violet-500/10
+          hover:text-white
+          hover:shadow-[0_0_22px_rgba(139,92,246,0.14)]
+          disabled:cursor-not-allowed
+          disabled:opacity-50
+        "
+      >
+
+        {pdfLoadingAction ===
+        "preview" ? (
+
+          <Loader2
+            size={16}
+            className="
+              animate-spin
+              text-cyan-300
+            "
+          />
+
+        ) : (
+
+          <Eye
+            size={16}
+            className="
+              text-violet-300
+              transition
+              group-hover/pdfpreview:text-cyan-300
+            "
+          />
+
+        )}
+
+        Preview PDF
+
+      </button>
+
+
+      {/* DOWNLOAD */}
+
+      <button
+        type="button"
+        onClick={
+          handleDownloadPdf
+        }
+        disabled={
+          Boolean(
+            pdfLoadingAction
+          )
+        }
+        className="
+          group/pdfdownload
+          relative
+          inline-flex
+          items-center
+          justify-center
+          gap-2
+          overflow-hidden
+          rounded-xl
+         
+border-white/10
+bg-gradient-to-r
+from-fuchsia-600
+via-violet-600
+to-cyan-500
+          px-5
+          py-2.5
+          text-sm
+          font-semibold
+          text-white
+          shadow-[0_0_25px_rgba(139,92,246,0.22)]
+          transition-all
+          duration-200
+          hover:-translate-y-[1px]
+          hover:shadow-[0_0_32px_rgba(34,211,238,0.24)]
+          disabled:cursor-not-allowed
+          disabled:opacity-50
+          disabled:hover:translate-y-0
+        "
+      >
+
+        {/* BUTTON SHINE */}
+
+        <span
+          className="
+            pointer-events-none
+            absolute
+            inset-0
+            bg-gradient-to-r
+            from-white/0
+            via-white/10
+            to-white/0
+            opacity-0
+            transition-opacity
+            duration-200
+            group-hover/pdfdownload:opacity-100
+          "
+        />
+
+
+        {pdfLoadingAction ===
+        "download" ? (
+
+          <Loader2
+            size={16}
+            className="
+              relative
+              z-10
+              animate-spin
+            "
+          />
+
+        ) : (
+
+          <Download
+            size={16}
+            className="
+              relative
+              z-10
+            "
+          />
 
         )}
 
 
+        <span
+          className="
+            relative
+            z-10
+          "
+        >
+          Download PDF
+        </span>
+
+             </button>
+
+    </div>
+
+  </div>
+
+)}
+
+</div>
+
+</div>
+
+</div>
+
+)}
+
         {/* =============================================
             MESSAGE TOOLBAR
         ============================================== */}
-
         {!isEditing &&
           String(
             text || ""

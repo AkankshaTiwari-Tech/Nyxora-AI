@@ -3,7 +3,6 @@ import {
 } from "lucide-react";
 
 
-
 export default function NyxoraButton({
 
   children,
@@ -32,15 +31,17 @@ export default function NyxoraButton({
       onClick={onClick}
 
       disabled={
-
         disabled ||
-
         loading
-
       }
 
-
       className={`
+
+        nyxora-button
+
+        group
+
+        relative
 
         flex
 
@@ -50,19 +51,21 @@ export default function NyxoraButton({
 
         gap-2
 
+        overflow-hidden
+
         rounded-xl
 
         border
 
-        border-violet-400/40
+        border-white/10
 
-        bg-gradient-to-br
+        bg-gradient-to-r
 
-        from-violet-900/60
+        from-fuchsia-600
 
-        via-purple-900/40
+        via-violet-600
 
-        to-slate-900/80
+        to-cyan-500
 
         px-5
 
@@ -74,7 +77,7 @@ export default function NyxoraButton({
 
         shadow-lg
 
-        shadow-violet-700/30
+        shadow-violet-700/20
 
         transition-all
 
@@ -82,9 +85,11 @@ export default function NyxoraButton({
 
         hover:scale-[1.02]
 
-        hover:border-violet-300/60
+        hover:border-violet-300/30
 
-        hover:shadow-violet-500/40
+        hover:shadow-xl
+
+        hover:shadow-violet-500/20
 
         disabled:cursor-not-allowed
 
@@ -96,9 +101,59 @@ export default function NyxoraButton({
 
       `}
 
-
     >
 
+
+      {/* ==================================================
+          SUBTLE BUTTON LIGHT
+      ================================================== */}
+
+      <div
+
+        className="
+          pointer-events-none
+          absolute
+          inset-0
+          bg-gradient-to-b
+          from-white/[0.10]
+          via-transparent
+          to-black/[0.08]
+        "
+
+      />
+
+
+      {/* ==================================================
+          HOVER SHINE
+      ================================================== */}
+
+      <div
+
+        className="
+          pointer-events-none
+          absolute
+          -left-1/2
+          top-0
+          h-full
+          w-1/3
+          -skew-x-12
+          bg-gradient-to-r
+          from-transparent
+          via-white/20
+          to-transparent
+          opacity-0
+          transition-all
+          duration-700
+          group-hover:left-[120%]
+          group-hover:opacity-100
+        "
+
+      />
+
+
+      {/* ==================================================
+          LOADING
+      ================================================== */}
 
       {loading && (
 
@@ -106,13 +161,20 @@ export default function NyxoraButton({
 
           size={18}
 
-          className="animate-spin"
+          className="
+            relative
+            z-10
+            animate-spin
+          "
 
         />
 
       )}
 
 
+      {/* ==================================================
+          ICON
+      ================================================== */}
 
       {!loading && Icon && (
 
@@ -120,13 +182,30 @@ export default function NyxoraButton({
 
           size={18}
 
+          className="
+            relative
+            z-10
+          "
+
         />
 
       )}
 
 
+      {/* ==================================================
+          CONTENT
+      ================================================== */}
 
-      {children}
+      <span
+        className="
+          relative
+          z-10
+        "
+      >
+
+        {children}
+
+      </span>
 
 
     </button>

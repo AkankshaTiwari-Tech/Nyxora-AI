@@ -6,11 +6,19 @@ import {
 } from "react";
 
 import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  BookOpen,
   Download,
   Eye,
   FileDown,
   FileText,
+  Layers3,
   RefreshCw,
+  Sparkles,
+  Type,
 } from "lucide-react";
 
 import useWorkspace
@@ -41,6 +49,7 @@ function createEmptyForm() {
     chapter: "",
     content: "",
   };
+
 }
 
 
@@ -52,29 +61,24 @@ const inputClass = `
   w-full
   rounded-xl
   border
-  border-[#303A55]
-  bg-[#111827]
+  border-white/[0.08]
+  bg-[#070B17]/80
   px-4
-  py-3
+  py-3.5
+  text-sm
   text-white
   outline-none
-  placeholder:text-gray-600
-  focus:border-indigo-500
+  transition-all
+  duration-300
+  placeholder:text-slate-600
+  focus:border-violet-400/40
+  focus:bg-[#090E1C]
+  focus:shadow-[0_0_0_3px_rgba(124,58,237,.06),0_0_25px_rgba(124,58,237,.05)]
 `;
 
 
 // ======================================================
 // EDITOR FRIENDLY CONTENT
-//
-// IMPORTANT:
-//
-// Workspace keeps the original AI document unchanged.
-//
-// This function is ONLY used when loading content into
-// the PDF Generator editor.
-//
-// It removes Markdown formatting and converts LaTeX into
-// readable/editable notation.
 // ======================================================
 
 function createEditorFriendlyContent(
@@ -103,6 +107,7 @@ function createEditorFriendlyContent(
         ) {
 
           return token.content;
+
         }
 
 
@@ -112,18 +117,12 @@ function createEditorFriendlyContent(
           );
 
 
-        // Editor cannot visually draw stacked fractions.
-        // Convert internal fraction markers to readable
-        // fractions such as (1/4).
-
         math =
           math.replace(
             /\[\[FRAC:([^|\]]+)\|([^\]]+)\]\]/g,
             "($1/$2)"
           );
 
-
-        // Friendly symbols for editor display.
 
         math =
           math
@@ -151,6 +150,7 @@ function createEditorFriendlyContent(
       "\n\n"
     )
     .trim();
+
 }
 
 
@@ -159,6 +159,29 @@ function createEditorFriendlyContent(
 // ======================================================
 
 export default function PDFGenerator() {
+
+    const navigate =
+    useNavigate();
+
+
+  // ====================================================
+  // GENERATE PDF WITH AI
+  // ====================================================
+
+  function handleGenerateWithAI() {
+
+    navigate(
+      "/chat",
+      {
+        state: {
+          createNewChat: true,
+          assistantMode: "pdf",
+          pdfGenerationMode: true,
+        },
+      }
+    );
+
+  }
 
   const {
     documents,
@@ -330,6 +353,7 @@ export default function PDFGenerator() {
         document.title ||
         "Untitled Document"
       );
+
     }
 
 
@@ -337,6 +361,7 @@ export default function PDFGenerator() {
       document.title ||
       "Untitled Document"
     } — ${details}`;
+
   }
 
 
@@ -357,12 +382,14 @@ export default function PDFGenerator() {
 
       previewUrlRef.current =
         "";
+
     }
 
 
     setPreviewUrl(
       ""
     );
+
   }
 
 
@@ -382,6 +409,7 @@ export default function PDFGenerator() {
           URL.revokeObjectURL(
             previewUrlRef.current
           );
+
         }
 
       };
@@ -393,10 +421,6 @@ export default function PDFGenerator() {
 
   // ====================================================
   // LOAD WORKSPACE DOCUMENT
-  //
-  // Workspace/Firestore content is NOT modified.
-  //
-  // Only the PDF editor receives the readable version.
   // ====================================================
 
   useEffect(
@@ -408,6 +432,7 @@ export default function PDFGenerator() {
       ) {
 
         return;
+
       }
 
 
@@ -424,6 +449,7 @@ export default function PDFGenerator() {
 
 
         return;
+
       }
 
 
@@ -486,6 +512,7 @@ export default function PDFGenerator() {
 
       })
     );
+
   }
 
 
@@ -503,6 +530,7 @@ export default function PDFGenerator() {
     ) {
 
       return;
+
     }
 
 
@@ -522,6 +550,7 @@ export default function PDFGenerator() {
     setForm(
       createEmptyForm()
     );
+
   }
 
 
@@ -539,6 +568,7 @@ export default function PDFGenerator() {
     setSelectedDocumentId(
       event.target.value
     );
+
   }
 
 
@@ -558,6 +588,7 @@ export default function PDFGenerator() {
 
 
       return false;
+
     }
 
 
@@ -571,21 +602,17 @@ export default function PDFGenerator() {
 
 
       return false;
+
     }
 
 
     return true;
+
   }
 
 
   // ====================================================
   // PDF DATA
-  //
-  // IMPORTANT:
-  // Pass editor content directly to generatePdf.js.
-  //
-  // Do not run preparePdfContent here because the PDF
-  // generator handles the final rendering itself.
   // ====================================================
 
   function getPdfData() {
@@ -608,6 +635,7 @@ export default function PDFGenerator() {
         form.content,
 
     };
+
   }
 
 
@@ -622,6 +650,7 @@ export default function PDFGenerator() {
     ) {
 
       return;
+
     }
 
 
@@ -686,6 +715,7 @@ export default function PDFGenerator() {
     ) {
 
       return;
+
     }
 
 
@@ -727,14 +757,73 @@ export default function PDFGenerator() {
 
       <div
         className="
+          nyxora-page
+          nyxora-grid-bg
           flex
-          min-h-[70vh]
+          min-h-screen
           items-center
           justify-center
-          text-gray-400
+          bg-[#050816]
         "
       >
-        Loading PDF Generator.
+
+        <div
+          className="
+            flex
+            flex-col
+            items-center
+            text-center
+          "
+        >
+
+          <div
+            className="
+              relative
+              flex
+              h-12
+              w-12
+              items-center
+              justify-center
+            "
+          >
+
+            <div
+              className="
+                absolute
+                inset-0
+                animate-spin
+                rounded-full
+                border-2
+                border-transparent
+                border-r-cyan-400
+                border-t-violet-500
+              "
+            />
+
+
+            <FileDown
+              size={19}
+              className="
+                text-violet-300
+              "
+            />
+
+          </div>
+
+
+          <p
+            className="
+              mt-4
+              text-sm
+              font-medium
+              text-slate-300
+            "
+          >
+            Loading PDF Generator...
+          </p>
+
+        </div>
+
       </div>
 
     );
@@ -748,681 +837,277 @@ export default function PDFGenerator() {
 
   return (
 
-    <div
+    <main
       className="
-        mx-auto
-        w-full
-        max-w-[1500px]
+        nyxora-page
+        nyxora-grid-bg
+        relative
+        min-h-screen
+        overflow-hidden
+        px-5
+        py-7
+        text-white
+        sm:px-6
+        lg:px-8
+        lg:py-8
       "
     >
 
-      {/* =============================================== */}
-      {/* HEADER */}
-      {/* =============================================== */}
+      {/* ==================================================
+          AMBIENT BACKGROUND
+      ================================================== */}
 
       <div
         className="
-          mb-7
-          flex
-          flex-wrap
-          items-end
-          justify-between
-          gap-4
+          pointer-events-none
+          absolute
+          -left-44
+          -top-44
+          h-[430px]
+          w-[430px]
+          rounded-full
+          bg-fuchsia-600/[0.045]
+          blur-[140px]
         "
-      >
+      />
 
-        <div>
-
-          <div
-            className="
-              mb-2
-              flex
-              items-center
-              gap-3
-            "
-          >
-
-            <div
-              className="
-                flex
-                h-11
-                w-11
-                items-center
-                justify-center
-                rounded-xl
-                bg-indigo-500/10
-                text-indigo-400
-              "
-            >
-
-              <FileDown
-                size={22}
-              />
-
-            </div>
-
-
-            <h1
-              className="
-                text-2xl
-                font-bold
-                text-white
-              "
-            >
-              PDF Generator
-            </h1>
-
-          </div>
-
-
-          <p
-            className="
-              text-sm
-              text-gray-500
-            "
-          >
-            Turn Workspace documents or custom content into downloadable PDFs.
-          </p>
-
-        </div>
-
-
-        <div
-          className="
-            flex
-            flex-wrap
-            gap-3
-          "
-        >
-
-          <button
-            type="button"
-            onClick={
-              handlePreview
-            }
-            disabled={
-              previewing
-            }
-            className="
-              flex
-              items-center
-              gap-2
-              rounded-xl
-              border
-              border-[#303A55]
-              bg-[#111827]
-              px-4
-              py-2.5
-              text-sm
-              font-medium
-              text-gray-200
-              transition
-              hover:border-indigo-500/60
-              hover:text-white
-              disabled:cursor-not-allowed
-              disabled:opacity-60
-            "
-          >
-
-            {previewing ? (
-
-              <RefreshCw
-                size={17}
-                className="animate-spin"
-              />
-
-            ) : (
-
-              <Eye
-                size={17}
-              />
-
-            )}
-
-
-            {previewing
-              ? "Generating..."
-              : "Preview"}
-
-          </button>
-
-
-          <button
-            type="button"
-            onClick={
-              handleDownload
-            }
-            className="
-              flex
-              items-center
-              gap-2
-              rounded-xl
-              bg-indigo-600
-              px-4
-              py-2.5
-              text-sm
-              font-medium
-              text-white
-              transition
-              hover:bg-indigo-500
-            "
-          >
-
-            <Download
-              size={17}
-            />
-
-            Download PDF
-
-          </button>
-
-        </div>
-
-      </div>
-
-
-      {/* =============================================== */}
-      {/* SOURCE SELECTOR */}
-      {/* =============================================== */}
 
       <div
         className="
-          mb-6
-          inline-flex
-          rounded-xl
-          border
-          border-[#293149]
-          bg-[#0D1322]
-          p-1
+          pointer-events-none
+          absolute
+          -right-48
+          top-[20%]
+          h-[460px]
+          w-[460px]
+          rounded-full
+          bg-violet-600/[0.045]
+          blur-[145px]
         "
-      >
+      />
 
-        <button
-          type="button"
-          onClick={() =>
-            changeSourceMode(
-              "workspace"
-            )
-          }
-          className={`
-            rounded-lg
-            px-4
-            py-2
-            text-sm
-            font-medium
-            transition
-            ${
-              sourceMode ===
-              "workspace"
-
-                ? "bg-indigo-600 text-white"
-
-                : "text-gray-400 hover:text-white"
-            }
-          `}
-        >
-          Workspace Document
-        </button>
-
-
-        <button
-          type="button"
-          onClick={() =>
-            changeSourceMode(
-              "custom"
-            )
-          }
-          className={`
-            rounded-lg
-            px-4
-            py-2
-            text-sm
-            font-medium
-            transition
-            ${
-              sourceMode ===
-              "custom"
-
-                ? "bg-indigo-600 text-white"
-
-                : "text-gray-400 hover:text-white"
-            }
-          `}
-        >
-          Custom Content
-        </button>
-
-      </div>
-
-
-      {/* =============================================== */}
-      {/* MAIN GRID */}
-      {/* =============================================== */}
 
       <div
         className="
-          grid
-          gap-6
-          xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]
+          pointer-events-none
+          absolute
+          bottom-[-230px]
+          left-[35%]
+          h-[480px]
+          w-[480px]
+          rounded-full
+          bg-cyan-500/[0.035]
+          blur-[155px]
+        "
+      />
+
+
+      <div
+        className="
+          relative
+          z-10
+          mx-auto
+          w-full
+          max-w-[1600px]
         "
       >
 
-        {/* ============================================= */}
-        {/* CONTENT EDITOR */}
-        {/* ============================================= */}
+        {/* ==================================================
+            HEADER
+        ================================================== */}
 
         <section
           className="
-            rounded-2xl
-            border
-            border-[#242D43]
-            bg-[#0D1322]
-            p-5
-          "
-        >
-
-          <div
-            className="
-              mb-5
-              flex
-              items-center
-              gap-2
-            "
-          >
-
-            <FileText
-              size={18}
-              className="text-indigo-400"
-            />
-
-
-            <h2
-              className="
-                font-semibold
-                text-white
-              "
-            >
-              PDF Content
-            </h2>
-
-          </div>
-
-
-          {/* =========================================== */}
-          {/* WORKSPACE DOCUMENT SELECTOR */}
-          {/* =========================================== */}
-
-          {sourceMode ===
-            "workspace" && (
-
-            <label
-              className="
-                mb-5
-                block
-                space-y-2
-              "
-            >
-
-              <span
-                className="
-                  text-sm
-                  text-gray-400
-                "
-              >
-                Select Workspace Document
-              </span>
-
-
-              <select
-                value={
-                  selectedDocumentId
-                }
-                onChange={
-                  handleDocumentChange
-                }
-                className={
-                  inputClass
-                }
-              >
-
-                <option value="">
-                  Select a document
-                </option>
-
-
-                {documents.map(
-                  (
-                    document
-                  ) => (
-
-                    <option
-                      key={
-                        document.id
-                      }
-                      value={
-                        document.id
-                      }
-                    >
-                      {getDocumentLabel(
-                        document
-                      )}
-                    </option>
-
-                  )
-                )}
-
-              </select>
-
-
-              {documents.length ===
-                0 && (
-
-                <p
-                  className="
-                    text-xs
-                    text-gray-600
-                  "
-                >
-                  No Workspace documents yet. Save an AI response to Workspace or use Custom Content.
-                </p>
-
-              )}
-
-            </label>
-
-          )}
-
-
-          {/* =========================================== */}
-          {/* FORM */}
-          {/* =========================================== */}
-
-          <div
-            className="
-              space-y-4
-            "
-          >
-
-            <Field
-              label="PDF Title"
-              value={
-                form.title
-              }
-              onChange={(value) =>
-                updateForm(
-                  "title",
-                  value
-                )
-              }
-              placeholder="Example: Class 8 Mathematics Test"
-            />
-
-
-            <div
-              className="
-                grid
-                gap-4
-                md:grid-cols-2
-              "
-            >
-
-              <Field
-                label="Type"
-                value={
-                  form.type
-                }
-                onChange={(value) =>
-                  updateForm(
-                    "type",
-                    value
-                  )
-                }
-                placeholder="Test, Notes, Homework."
-              />
-
-
-              <Field
-                label="Subject"
-                value={
-                  form.subject
-                }
-                onChange={(value) =>
-                  updateForm(
-                    "subject",
-                    value
-                  )
-                }
-                placeholder="Mathematics"
-              />
-
-            </div>
-
-
-            <Field
-              label="Chapter / Topic"
-              value={
-                form.chapter
-              }
-              onChange={(value) =>
-                updateForm(
-                  "chapter",
-                  value
-                )
-              }
-              placeholder="Optional"
-            />
-
-
-            <label
-              className="
-                block
-                space-y-2
-              "
-            >
-
-              <span
-                className="
-                  text-sm
-                  text-gray-400
-                "
-              >
-                Content
-              </span>
-
-
-              <textarea
-                rows={18}
-                value={
-                  form.content
-                }
-                onChange={(event) =>
-                  updateForm(
-                    "content",
-                    event.target.value
-                  )
-                }
-                placeholder="Enter or edit the content that should appear in the PDF."
-                className={`
-                  ${inputClass}
-                  resize-y
-                  leading-7
-                `}
-              />
-
-            </label>
-
-          </div>
-
-        </section>
-
-
-        {/* ============================================= */}
-        {/* PDF PREVIEW */}
-        {/* ============================================= */}
-
-        <section
-          className="
-            flex
-            min-h-[700px]
-            flex-col
+            relative
             overflow-hidden
-            rounded-2xl
+            rounded-3xl
             border
-            border-[#242D43]
-            bg-[#0D1322]
+            border-white/[0.07]
+            bg-[#080C18]/90
+            px-6
+            py-6
+            shadow-[0_18px_60px_rgba(0,0,0,.22)]
+            lg:px-7
           "
         >
 
           <div
             className="
+              pointer-events-none
+              absolute
+              -left-20
+              -top-24
+              h-64
+              w-64
+              rounded-full
+              bg-fuchsia-600/[0.08]
+              blur-[95px]
+            "
+          />
+
+
+          <div
+            className="
+              pointer-events-none
+              absolute
+              -right-16
+              -top-20
+              h-64
+              w-64
+              rounded-full
+              bg-cyan-400/[0.07]
+              blur-[95px]
+            "
+          />
+
+
+          <div
+            className="
+              absolute
+              left-8
+              right-8
+              top-0
+              h-px
+              bg-gradient-to-r
+              from-transparent
+              via-violet-400/55
+              to-transparent
+            "
+          />
+
+
+          <div
+            className="
+              relative
+              z-10
               flex
-              items-center
-              justify-between
-              border-b
-              border-[#242D43]
-              px-5
-              py-4
+              flex-col
+              gap-5
+              lg:flex-row
+              lg:items-center
+              lg:justify-between
             "
           >
 
             <div
               className="
                 flex
-                items-center
-                gap-2
-              "
-            >
-
-              <Eye
-                size={18}
-                className="text-indigo-400"
-              />
-
-
-              <h2
-                className="
-                  font-semibold
-                  text-white
-                "
-              >
-                PDF Preview
-              </h2>
-
-            </div>
-
-
-            {previewUrl && (
-
-              <button
-                type="button"
-                onClick={
-                  handlePreview
-                }
-                disabled={
-                  previewing
-                }
-                className="
-                  flex
-                  items-center
-                  gap-2
-                  text-xs
-                  font-medium
-                  text-gray-400
-                  hover:text-white
-                  disabled:cursor-not-allowed
-                  disabled:opacity-60
-                "
-              >
-
-                <RefreshCw
-                  size={14}
-                  className={
-                    previewing
-                      ? "animate-spin"
-                      : ""
-                  }
-                />
-
-                Refresh
-
-              </button>
-
-            )}
-
-          </div>
-
-
-          {previewUrl ? (
-
-            <iframe
-              title="Nyxora PDF Preview"
-              src={
-                previewUrl
-              }
-              className="
-                min-h-[650px]
-                flex-1
-                bg-white
-              "
-            />
-
-          ) : (
-
-            <div
-              className="
-                flex
-                flex-1
-                flex-col
-                items-center
-                justify-center
-                px-8
-                text-center
+                items-start
+                gap-4
               "
             >
 
               <div
                 className="
+                  relative
                   flex
-                  h-16
-                  w-16
+                  h-14
+                  w-14
+                  shrink-0
                   items-center
                   justify-center
                   rounded-2xl
-                  bg-indigo-500/10
-                  text-indigo-400
+                  border
+                  border-violet-400/20
+                  bg-gradient-to-br
+                  from-fuchsia-500/15
+                  via-violet-500/20
+                  to-cyan-400/10
+                  text-violet-200
+                  shadow-[0_0_30px_rgba(124,58,237,.12)]
                 "
               >
 
                 <FileDown
-                  size={30}
+                  size={27}
+                />
+
+
+                <span
+                  className="
+                    absolute
+                    -right-1
+                    -top-1
+                    h-2.5
+                    w-2.5
+                    rounded-full
+                    bg-cyan-400
+                    shadow-[0_0_10px_rgba(34,211,238,.8)]
+                  "
                 />
 
               </div>
 
 
-              <h3
-                className="
-                  mt-5
-                  font-semibold
-                  text-white
-                "
-              >
-                Your PDF preview will appear here
-              </h3>
+              <div>
+
+                <div
+                  className="
+                    mb-1.5
+                    flex
+                    items-center
+                    gap-2
+                    text-xs
+                    font-semibold
+                    uppercase
+                    tracking-[0.18em]
+                    text-violet-300
+                  "
+                >
+
+                  <Sparkles
+                    size={13}
+                    className="
+                      text-fuchsia-400
+                    "
+                  />
+
+                  Nyxora Document Tools
+
+                </div>
 
 
-              <p
-                className="
-                  mt-2
-                  max-w-sm
-                  text-sm
-                  leading-6
-                  text-gray-500
-                "
-              >
-                Select a Workspace document or enter custom content, then click Preview.
-              </p>
+                <h1
+                  className="
+                    text-2xl
+                    font-bold
+                    tracking-tight
+                    text-white
+                    sm:text-3xl
+                  "
+                >
+                  PDF Generator
+                </h1>
 
+
+                <p
+                  className="
+                    mt-2
+                    max-w-2xl
+                    text-sm
+                    leading-6
+                    text-slate-400
+                  "
+                >
+                  Turn Workspace documents or your own content
+                  into clean, downloadable PDF files.
+                </p>
+
+              </div>
+
+            </div>
+
+
+            {/* HEADER ACTIONS */}
+
+            <div
+              className="
+                flex
+                flex-wrap
+                items-center
+                gap-3
+              "
+            >
 
               <button
                 type="button"
@@ -1433,55 +1118,838 @@ export default function PDFGenerator() {
                   previewing
                 }
                 className="
-                  mt-5
                   flex
                   items-center
                   gap-2
                   rounded-xl
-                  bg-indigo-600
+                  border
+                  border-white/[0.08]
+                  bg-[#0B1020]/90
                   px-4
                   py-2.5
                   text-sm
                   font-medium
-                  text-white
-                  hover:bg-indigo-500
+                  text-slate-300
+                  transition-all
+                  duration-300
+                  hover:border-violet-400/30
+                  hover:bg-violet-500/[0.06]
+                  hover:text-white
                   disabled:cursor-not-allowed
-                  disabled:opacity-60
+                  disabled:opacity-50
                 "
               >
 
                 {previewing ? (
 
                   <RefreshCw
-                    size={16}
-                    className="animate-spin"
+                    size={17}
+                    className="
+                      animate-spin
+                    "
                   />
 
                 ) : (
 
                   <Eye
-                    size={16}
+                    size={17}
                   />
 
                 )}
 
+
                 {previewing
                   ? "Generating..."
-                  : "Generate Preview"}
+                  : "Preview"}
 
               </button>
 
+
+              <GradientButton
+                onClick={
+                  handleDownload
+                }
+                icon={
+                  <Download
+                    size={17}
+                  />
+                }
+              >
+                Download PDF
+              </GradientButton>
+
             </div>
 
-          )}
+          </div>
 
         </section>
 
+
+               {/* ==================================================
+            SOURCE SELECTOR
+        ================================================== */}
+
+        <div
+          className="
+            mt-6
+            inline-flex
+            rounded-2xl
+            border
+            border-white/[0.07]
+            bg-[#090E1C]/90
+            p-1.5
+            shadow-[0_10px_35px_rgba(0,0,0,.15)]
+          "
+        >
+
+          <SourceButton
+            active={
+              sourceMode ===
+              "workspace"
+            }
+            onClick={() =>
+              changeSourceMode(
+                "workspace"
+              )
+            }
+          >
+            <FileText
+              size={15}
+            />
+
+            Workspace Document
+          </SourceButton>
+
+
+          <SourceButton
+            active={
+              sourceMode ===
+              "custom"
+            }
+            onClick={() =>
+              changeSourceMode(
+                "custom"
+              )
+            }
+          >
+            <Type
+              size={15}
+            />
+
+            Custom Content
+          </SourceButton>
+
+
+          <SourceButton
+            active={false}
+            onClick={
+              handleGenerateWithAI
+            }
+          >
+            <Sparkles
+              size={15}
+            />
+
+            Generate with AI
+          </SourceButton>
+
+        </div>
+
+        {/* ==================================================
+            MAIN GRID
+        ================================================== */}
+
+        <div
+          className="
+            mt-5
+            grid
+            gap-6
+            xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]
+          "
+        >
+
+          {/* ==================================================
+              CONTENT EDITOR
+          ================================================== */}
+
+          <section
+            className="
+              relative
+              overflow-hidden
+              rounded-3xl
+              border
+              border-white/[0.07]
+              bg-[#0B1020]/90
+              p-5
+              shadow-[0_16px_50px_rgba(0,0,0,.16)]
+              sm:p-6
+            "
+          >
+
+            <div
+              className="
+                pointer-events-none
+                absolute
+                -left-20
+                -top-20
+                h-52
+                w-52
+                rounded-full
+                bg-violet-600/[0.045]
+                blur-[90px]
+              "
+            />
+
+
+            <div
+              className="
+                absolute
+                left-8
+                right-8
+                top-0
+                h-px
+                bg-gradient-to-r
+                from-transparent
+                via-violet-400/35
+                to-transparent
+              "
+            />
+
+
+            <div
+              className="
+                relative
+                z-10
+              "
+            >
+
+              {/* CONTENT HEADER */}
+
+              <div
+                className="
+                  mb-6
+                  flex
+                  items-center
+                  gap-3
+                "
+              >
+
+                <div
+                  className="
+                    flex
+                    h-10
+                    w-10
+                    items-center
+                    justify-center
+                    rounded-xl
+                    border
+                    border-violet-400/15
+                    bg-violet-500/[0.08]
+                    text-violet-300
+                  "
+                >
+
+                  <FileText
+                    size={18}
+                  />
+
+                </div>
+
+
+                <div>
+
+                  <h2
+                    className="
+                      font-semibold
+                      text-white
+                    "
+                  >
+                    PDF Content
+                  </h2>
+
+
+                  <p
+                    className="
+                      mt-0.5
+                      text-xs
+                      text-slate-500
+                    "
+                  >
+                    Prepare the information that will appear in your document.
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              {/* WORKSPACE SELECTOR */}
+
+              {sourceMode ===
+                "workspace" && (
+
+                <label
+                  className="
+                    mb-5
+                    block
+                  "
+                >
+
+                  <span
+                    className="
+                      mb-2
+                      block
+                      text-xs
+                      font-medium
+                      text-slate-500
+                    "
+                  >
+                    Select Workspace Document
+                  </span>
+
+
+                  <select
+                    value={
+                      selectedDocumentId
+                    }
+                    onChange={
+                      handleDocumentChange
+                    }
+                    className={
+                      inputClass
+                    }
+                  >
+
+                    <option value="">
+                      Select a document
+                    </option>
+
+
+                    {documents.map(
+                      (
+                        document
+                      ) => (
+
+                        <option
+                          key={
+                            document.id
+                          }
+                          value={
+                            document.id
+                          }
+                        >
+                          {getDocumentLabel(
+                            document
+                          )}
+                        </option>
+
+                      )
+                    )}
+
+                  </select>
+
+
+                  {documents.length ===
+                    0 && (
+
+                    <p
+                      className="
+                        mt-2
+                        text-xs
+                        leading-5
+                        text-slate-600
+                      "
+                    >
+                      No Workspace documents yet. Save an AI response
+                      to Workspace or use Custom Content.
+                    </p>
+
+                  )}
+
+                </label>
+
+              )}
+
+
+              {/* FORM */}
+
+              <div
+                className="
+                  space-y-4
+                "
+              >
+
+                <Field
+                  label="PDF Title"
+                  icon={
+                    FileText
+                  }
+                  value={
+                    form.title
+                  }
+                  onChange={(value) =>
+                    updateForm(
+                      "title",
+                      value
+                    )
+                  }
+                  placeholder="Example: Class 8 Mathematics Test"
+                />
+
+
+                <div
+                  className="
+                    grid
+                    gap-4
+                    md:grid-cols-2
+                  "
+                >
+
+                  <Field
+                    label="Type"
+                    icon={
+                      Layers3
+                    }
+                    value={
+                      form.type
+                    }
+                    onChange={(value) =>
+                      updateForm(
+                        "type",
+                        value
+                      )
+                    }
+                    placeholder="Test, Notes, Homework"
+                  />
+
+
+                  <Field
+                    label="Subject"
+                    icon={
+                      BookOpen
+                    }
+                    value={
+                      form.subject
+                    }
+                    onChange={(value) =>
+                      updateForm(
+                        "subject",
+                        value
+                      )
+                    }
+                    placeholder="Mathematics"
+                  />
+
+                </div>
+
+
+                <Field
+                  label="Chapter / Topic"
+                  icon={
+                    Sparkles
+                  }
+                  value={
+                    form.chapter
+                  }
+                  onChange={(value) =>
+                    updateForm(
+                      "chapter",
+                      value
+                    )
+                  }
+                  placeholder="Optional"
+                />
+
+
+                <label
+                  className="
+                    block
+                  "
+                >
+
+                  <span
+                    className="
+                      mb-2
+                      block
+                      text-xs
+                      font-medium
+                      text-slate-500
+                    "
+                  >
+                    Content
+                  </span>
+
+
+                  <textarea
+                    rows={18}
+                    value={
+                      form.content
+                    }
+                    onChange={(event) =>
+                      updateForm(
+                        "content",
+                        event.target.value
+                      )
+                    }
+                    placeholder="Enter or edit the content that should appear in the PDF."
+                    className={`
+                      ${inputClass}
+                      min-h-[420px]
+                      resize-y
+                      leading-7
+                    `}
+                  />
+
+                </label>
+
+              </div>
+
+            </div>
+
+          </section>
+
+
+          {/* ==================================================
+              PDF PREVIEW
+          ================================================== */}
+
+          <section
+            className="
+              relative
+              flex
+              min-h-[700px]
+              flex-col
+              overflow-hidden
+              rounded-3xl
+              border
+              border-white/[0.07]
+              bg-[#0B1020]/90
+              shadow-[0_16px_50px_rgba(0,0,0,.16)]
+            "
+          >
+
+            <div
+              className="
+                pointer-events-none
+                absolute
+                -right-24
+                -top-24
+                h-56
+                w-56
+                rounded-full
+                bg-cyan-500/[0.035]
+                blur-[95px]
+              "
+            />
+
+
+            <div
+              className="
+                absolute
+                left-8
+                right-8
+                top-0
+                h-px
+                bg-gradient-to-r
+                from-transparent
+                via-violet-400/35
+                to-transparent
+              "
+            />
+
+
+            {/* PREVIEW HEADER */}
+
+            <div
+              className="
+                relative
+                z-10
+                flex
+                min-h-[72px]
+                items-center
+                justify-between
+                gap-4
+                border-b
+                border-white/[0.06]
+                px-5
+                py-4
+                sm:px-6
+              "
+            >
+
+              <div
+                className="
+                  flex
+                  items-center
+                  gap-3
+                "
+              >
+
+                <div
+                  className="
+                    flex
+                    h-9
+                    w-9
+                    items-center
+                    justify-center
+                    rounded-xl
+                    border
+                    border-violet-400/15
+                    bg-violet-500/[0.08]
+                    text-violet-300
+                  "
+                >
+
+                  <Eye
+                    size={17}
+                  />
+
+                </div>
+
+
+                <div>
+
+                  <h2
+                    className="
+                      font-semibold
+                      text-white
+                    "
+                  >
+                    PDF Preview
+                  </h2>
+
+
+                  <p
+                    className="
+                      mt-0.5
+                      text-xs
+                      text-slate-600
+                    "
+                  >
+                    Review your document before downloading.
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              {previewUrl && (
+
+                <button
+                  type="button"
+                  onClick={
+                    handlePreview
+                  }
+                  disabled={
+                    previewing
+                  }
+                  className="
+                    flex
+                    items-center
+                    gap-2
+                    rounded-lg
+                    px-3
+                    py-2
+                    text-xs
+                    font-medium
+                    text-slate-400
+                    transition
+                    hover:bg-white/[0.04]
+                    hover:text-white
+                    disabled:cursor-not-allowed
+                    disabled:opacity-50
+                  "
+                >
+
+                  <RefreshCw
+                    size={14}
+                    className={
+                      previewing
+                        ? "animate-spin"
+                        : ""
+                    }
+                  />
+
+                  Refresh
+
+                </button>
+
+              )}
+
+            </div>
+
+
+            {/* PREVIEW BODY */}
+
+            {previewUrl ? (
+
+              <div
+                className="
+                  relative
+                  z-10
+                  flex
+                  flex-1
+                  bg-[#070B17]
+                  p-3
+                  sm:p-4
+                "
+              >
+
+                <iframe
+                  title="Nyxora PDF Preview"
+                  src={
+                    previewUrl
+                  }
+                  className="
+                    min-h-[650px]
+                    w-full
+                    flex-1
+                    rounded-xl
+                    bg-white
+                  "
+                />
+
+              </div>
+
+            ) : (
+
+              <div
+                className="
+                  relative
+                  z-10
+                  flex
+                  flex-1
+                  flex-col
+                  items-center
+                  justify-center
+                  px-8
+                  py-12
+                  text-center
+                "
+              >
+
+                <div
+                  className="
+                    relative
+                    flex
+                    h-20
+                    w-20
+                    items-center
+                    justify-center
+                    rounded-3xl
+                    border
+                    border-violet-400/15
+                    bg-gradient-to-br
+                    from-fuchsia-500/[0.07]
+                    via-violet-500/[0.12]
+                    to-cyan-500/[0.06]
+                    text-violet-300
+                    shadow-[0_0_35px_rgba(124,58,237,.08)]
+                  "
+                >
+
+                  <FileDown
+                    size={32}
+                  />
+
+
+                  <span
+                    className="
+                      absolute
+                      -right-1
+                      -top-1
+                      h-2.5
+                      w-2.5
+                      rounded-full
+                      bg-cyan-400
+                      shadow-[0_0_9px_rgba(34,211,238,.8)]
+                    "
+                  />
+
+                </div>
+
+
+                <h3
+                  className="
+                    mt-6
+                    text-lg
+                    font-semibold
+                    text-white
+                  "
+                >
+                  Your PDF preview will appear here
+                </h3>
+
+
+                <p
+                  className="
+                    mt-2
+                    max-w-md
+                    text-sm
+                    leading-6
+                    text-slate-500
+                  "
+                >
+                  Select a Workspace document or enter custom
+                  content, then generate a preview to see exactly
+                  how your PDF will look.
+                </p>
+
+
+                <div
+                  className="
+                    mt-6
+                  "
+                >
+
+                  <GradientButton
+                    onClick={
+                      handlePreview
+                    }
+                    disabled={
+                      previewing
+                    }
+                    icon={
+                      previewing ? (
+
+                        <RefreshCw
+                          size={16}
+                          className="
+                            animate-spin
+                          "
+                        />
+
+                      ) : (
+
+                        <Eye
+                          size={16}
+                        />
+
+                      )
+                    }
+                  >
+                    {previewing
+                      ? "Generating..."
+                      : "Generate Preview"}
+                  </GradientButton>
+
+                </div>
+
+              </div>
+
+            )}
+
+          </section>
+
+        </div>
+
       </div>
 
-    </div>
+    </main>
 
   );
+
 }
 
 
@@ -1491,6 +1959,7 @@ export default function PDFGenerator() {
 
 function Field({
   label,
+  icon: Icon,
   value,
   onChange,
   placeholder = "",
@@ -1500,40 +1969,245 @@ function Field({
 
     <label
       className="
+        group
         block
-        space-y-2
       "
     >
 
       <span
         className="
-          text-sm
-          text-gray-400
+          mb-2
+          block
+          text-xs
+          font-medium
+          text-slate-500
         "
       >
         {label}
       </span>
 
 
-      <input
-        type="text"
-        value={
-          value
-        }
-        onChange={(event) =>
-          onChange(
-            event.target.value
-          )
-        }
-        placeholder={
-          placeholder
-        }
-        className={
-          inputClass
-        }
-      />
+      <div
+        className="
+          flex
+          items-center
+          rounded-xl
+          border
+          border-white/[0.08]
+          bg-[#070B17]/80
+          px-4
+          transition-all
+          duration-300
+          focus-within:border-violet-400/40
+          focus-within:bg-[#090E1C]
+          focus-within:shadow-[0_0_0_3px_rgba(124,58,237,.06),0_0_25px_rgba(124,58,237,.05)]
+        "
+      >
+
+        {Icon && (
+
+          <Icon
+            size={16}
+            className="
+              shrink-0
+              text-slate-600
+              transition-colors
+              duration-300
+              group-focus-within:text-violet-300
+            "
+          />
+
+        )}
+
+
+        <input
+          type="text"
+          value={
+            value
+          }
+          onChange={(event) =>
+            onChange(
+              event.target.value
+            )
+          }
+          placeholder={
+            placeholder
+          }
+          className="
+            min-w-0
+            flex-1
+            bg-transparent
+            px-3
+            py-3.5
+            text-sm
+            text-white
+            outline-none
+            placeholder:text-slate-600
+          "
+        />
+
+      </div>
 
     </label>
 
   );
+
+}
+
+
+// ======================================================
+// SOURCE BUTTON
+// ======================================================
+
+function SourceButton({
+  active,
+  onClick,
+  children,
+}) {
+
+  return (
+
+    <button
+      type="button"
+      onClick={
+        onClick
+      }
+      className={`
+        flex
+        items-center
+        gap-2
+        rounded-xl
+        px-4
+        py-2.5
+        text-sm
+        font-medium
+        transition-all
+        duration-300
+
+        ${
+          active
+            ? `
+              bg-violet-500/15
+              text-violet-200
+              shadow-[0_4px_18px_rgba(124,58,237,.08)]
+            `
+            : `
+              text-slate-500
+              hover:bg-white/[0.035]
+              hover:text-slate-200
+            `
+        }
+      `}
+    >
+      {children}
+    </button>
+
+  );
+
+}
+
+
+// ======================================================
+// GRADIENT BUTTON
+// ======================================================
+
+function GradientButton({
+  children,
+  icon,
+  onClick,
+  disabled = false,
+}) {
+
+  return (
+
+    <button
+      type="button"
+      onClick={
+        onClick
+      }
+      disabled={
+        disabled
+      }
+      className="
+        group
+        relative
+        flex
+        items-center
+        justify-center
+        gap-2
+        overflow-hidden
+        rounded-xl
+        bg-gradient-to-r
+        from-fuchsia-600
+        via-violet-600
+        to-cyan-500
+        px-4
+        py-2.5
+        text-sm
+        font-semibold
+        text-white
+        shadow-[0_8px_28px_rgba(124,58,237,.20)]
+        transition-all
+        duration-300
+        hover:scale-[1.02]
+        hover:shadow-[0_10px_36px_rgba(124,58,237,.30)]
+        active:scale-[0.98]
+        disabled:cursor-not-allowed
+        disabled:opacity-50
+        disabled:hover:scale-100
+      "
+    >
+
+      {/* ANIMATED SHINE */}
+
+      {!disabled && (
+
+        <span
+          className="
+            pointer-events-none
+            absolute
+            -left-[55%]
+            top-[-120%]
+            h-[340%]
+            w-[35%]
+            rotate-[24deg]
+            bg-gradient-to-r
+            from-transparent
+            via-white/25
+            to-transparent
+            transition-all
+            duration-700
+            group-hover:left-[120%]
+          "
+        />
+
+      )}
+
+
+      <span
+        className="
+          relative
+          z-10
+          flex
+          items-center
+          justify-center
+        "
+      >
+        {icon}
+      </span>
+
+
+      <span
+        className="
+          relative
+          z-10
+        "
+      >
+        {children}
+      </span>
+
+    </button>
+
+  );
+
 }

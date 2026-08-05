@@ -34,6 +34,7 @@ import {
 
 import {
   buildPdfInstruction,
+  hasGeneratePdfCommand,
   isPdfRequest,
 } from "../utils/pdfIntent";
 
@@ -56,6 +57,29 @@ const MAX_WORKSPACE_RESULTS =
 
 
 // ======================================================
+// PDF GENERATOR MODE
+// ======================================================
+
+const PDF_GENERATOR_MODE =
+  "pdf";
+
+
+const PDF_GENERATOR_WARNING = `
+## PDF Generator Mode
+
+This mode is dedicated to creating PDF documents.
+
+To generate a PDF, include **generate pdf** in your request.
+
+Example:
+
+**generate pdf notes on photosynthesis for Class 8**
+
+You can also include details such as subject, chapter, class, marks, difficulty, language, or document type.
+`.trim();
+
+
+// ======================================================
 // ASSISTANT MODES
 // ======================================================
 
@@ -69,6 +93,30 @@ Be clear, accurate, and useful.
 Do not force an educational format unless the user asks for it.
 `,
 
+      pdf: `
+You are Nyxora AI operating in dedicated PDF Generator mode.
+
+Your only purpose in this mode is to create PDF-ready documents.
+
+The user should describe the PDF they want.
+
+If the user's message is a valid PDF generation request:
+- generate the requested document
+- produce complete, structured content
+- follow the Nyxora PDF document formatting rules
+- use Workspace context when relevant
+
+If the user sends a normal conversational message that is not asking you to create or modify a PDF, do not answer it normally.
+
+Instead respond exactly:
+
+⚠️ PDF Generator mode only creates PDF documents. Include the words "generate PDF" in your request.
+
+Example:
+"Generate PDF notes for Class 8 Science on Photosynthesis."
+
+Do not behave like the Normal Assistant in this mode.
+`,
 
   teacher: `
 You are Nyxora AI operating as a Teacher Assistant.
@@ -177,6 +225,25 @@ When solving a doubt:
 Use Workspace class/student context when relevant.
 
 If the question is ambiguous, ask a concise clarification.
+`,
+
+
+  pdf: `
+You are Nyxora AI operating in dedicated PDF Generator Mode.
+
+Your only purpose in this mode is to create professional,
+structured, PDF-ready documents.
+
+Do not behave like a general conversational assistant.
+
+When a valid PDF generation command is received:
+- follow the user's document requirements carefully
+- use available Workspace context when relevant
+- create complete PDF-ready content
+- preserve correct academic and mathematical notation
+- follow the professional PDF document instructions supplied below
+
+Return only useful document content.
 `,
 
 };
@@ -551,6 +618,15 @@ export default function useChat({
 
 
   // ====================================================
+  // PDF GENERATOR MODE CHECK
+  // ====================================================
+
+  const isPdfGeneratorMode =
+    selectedMode ===
+    PDF_GENERATOR_MODE;
+
+
+  // ====================================================
   // FILE EXTRACTION
   // ====================================================
 
@@ -772,6 +848,177 @@ ${userPrompt}
 
 
   // ====================================================
+  // PDF MODE WARNING
+  // ====================================================
+
+  const addPdfModeWarning =
+    async ({
+      currentChat,
+      cleanUserMessage,
+      file,
+    }) => {
+
+      const history =
+        currentChat.messages ||
+        [];
+
+
+      const fileMetadata =
+        buildFileMetadata(
+          file
+        );
+
+
+      const userMessage = {
+
+        id:
+          Date.now(),
+
+        role:
+          "user",
+
+        message:
+          cleanUserMessage,
+
+        ...(fileMetadata
+
+          ? {
+              file:
+                fileMetadata,
+            }
+
+          : {}),
+
+      };
+
+
+      const warningMessage = {
+
+        id:
+          Date.now() + 1,
+
+        role:
+          "assistant",
+
+        message:
+          PDF_GENERATOR_WARNING,
+
+        pdfRequested:
+          false,
+
+        pdfModeWarning:
+          true,
+
+      };
+
+
+      const hasUserMessage =
+        history.some(
+          (msg) =>
+            msg.role ===
+            "user"
+        );
+
+
+      const shouldCreateTitle =
+        currentChat.title ===
+          "New Chat" &&
+        !hasUserMessage;
+
+
+      const generatedTitle =
+        shouldCreateTitle
+
+          ? buildChatTitle(
+              cleanUserMessage,
+              file
+            )
+
+          : currentChat.title;
+
+
+      const newMessages = [
+
+        ...history,
+
+        userMessage,
+
+        warningMessage,
+
+      ];
+
+
+      setChats(
+        (prev) =>
+          prev.map(
+            (chat) => {
+
+              if (
+                chat.id !==
+                activeChatId
+              ) {
+
+                return chat;
+
+              }
+
+
+              return {
+
+                ...chat,
+
+                title:
+                  shouldCreateTitle
+                    ? generatedTitle
+                    : chat.title,
+
+                messages:
+                  newMessages,
+
+              };
+
+            }
+          )
+      );
+
+
+      await saveMessages(
+        activeChatId,
+        newMessages
+      );
+
+
+      if (
+        shouldCreateTitle &&
+        generatedTitle !==
+          "New Chat"
+      ) {
+
+        try {
+
+          await updateChatTitle(
+            activeChatId,
+            generatedTitle
+          );
+
+        } catch (error) {
+
+          console.error(
+            "Failed to save chat title:",
+            error
+          );
+
+        }
+
+      }
+
+
+      return true;
+
+    };
+
+
+  // ====================================================
   // SEND
   // ====================================================
 
@@ -853,15 +1100,63 @@ ${userPrompt}
           text
         );
 
+         
+      // ================================================
+      // DEDICATED PDF GENERATOR MODE VALIDATION
+      // ================================================
+
+      if (
+        isPdfGeneratorMode &&
+        !hasGeneratePdfCommand(
+          cleanUserMessage
+        )
+      ) {
+
+        try {
+
+          return await addPdfModeWarning({
+
+            currentChat,
+
+            cleanUserMessage,
+
+            file,
+
+          });
+
+        } catch (error) {
+
+          console.error(
+            "PDF mode warning error:",
+            error
+          );
+
+
+          return false;
+
+        }
+
+      }
+
 
       // ================================================
-      // DIRECT PDF REQUEST DETECTION
+      // PDF REQUEST DETECTION
+      //
+      // Dedicated PDF mode is always a PDF request once
+      // the required command has been accepted.
+      //
+      // Other assistant modes keep the existing direct
+      // PDF request detection.
       // ================================================
 
       const pdfRequested =
-        isPdfRequest(
-          cleanUserMessage
-        );
+        isPdfGeneratorMode
+
+          ? true
+
+          : isPdfRequest(
+              cleanUserMessage
+            );
 
 
       let userPrompt;
@@ -977,6 +1272,9 @@ ${userPrompt}
 
         pdfRequested:
           pdfRequested,
+
+        pdfGeneratorMode:
+          isPdfGeneratorMode,
 
       };
 
@@ -1213,6 +1511,81 @@ ${userPrompt}
         ];
 
 
+      const cleanUserMessage =
+        cleanValue(
+          lastUser.message
+        );
+
+
+      // ================================================
+      // PDF MODE REGENERATE PROTECTION
+      // ================================================
+
+      if (
+        isPdfGeneratorMode &&
+        !hasGeneratePdfCommand(
+          cleanUserMessage
+        )
+      ) {
+
+        const updatedMessages =
+          messages.map(
+            (msg) =>
+
+              msg.id ===
+              lastAssistant.id
+
+                ? {
+                    ...msg,
+
+                    message:
+                      PDF_GENERATOR_WARNING,
+
+                    pdfRequested:
+                      false,
+
+                    pdfModeWarning:
+                      true,
+
+                    pdfGeneratorMode:
+                      false,
+                  }
+
+                : msg
+          );
+
+
+        setChats(
+          (prev) =>
+            prev.map(
+              (chat) =>
+
+                chat.id ===
+                activeChatId
+
+                  ? {
+                      ...chat,
+
+                      messages:
+                        updatedMessages,
+                    }
+
+                  : chat
+            )
+        );
+
+
+        await saveMessages(
+          activeChatId,
+          updatedMessages
+        );
+
+
+        return true;
+
+      }
+
+
       let memory =
         null;
 
@@ -1232,20 +1605,18 @@ ${userPrompt}
       }
 
 
-      const cleanUserMessage =
-        cleanValue(
-          lastUser.message
-        );
-
-
       const pdfRequested =
-        Boolean(
-          lastAssistant
-            ?.pdfRequested
-        ) ||
-        isPdfRequest(
-          cleanUserMessage
-        );
+        isPdfGeneratorMode
+
+          ? true
+
+          : Boolean(
+              lastAssistant
+                ?.pdfRequested
+            ) ||
+            isPdfRequest(
+              cleanUserMessage
+            );
 
 
       const prompt =
@@ -1270,6 +1641,12 @@ ${userPrompt}
 
                   pdfRequested:
                     pdfRequested,
+
+                  pdfModeWarning:
+                    false,
+
+                  pdfGeneratorMode:
+                    isPdfGeneratorMode,
                 }
 
               : msg
@@ -1475,12 +1852,6 @@ ${userPrompt}
         );
 
 
-      const pdfRequested =
-        isPdfRequest(
-          cleanUserMessage
-        );
-
-
       let finalFileMetadata =
         originalMessage.file ||
         null;
@@ -1519,6 +1890,144 @@ ${userPrompt}
       ) {
 
         return false;
+
+      }
+
+
+      // ================================================
+      // PDF MODE EDIT VALIDATION
+      // ================================================
+
+      const validPdfGeneratorCommand =
+        !isPdfGeneratorMode ||
+        hasGeneratePdfCommand(
+          cleanUserMessage
+        );
+
+
+      const pdfRequested =
+        isPdfGeneratorMode
+
+          ? validPdfGeneratorCommand
+
+          : isPdfRequest(
+              cleanUserMessage
+            );
+
+
+      // ================================================
+      // INVALID PDF MODE EDIT
+      //
+      // Update the user's edited message and replace the
+      // assistant response with the local warning.
+      // No AI request is sent.
+      // ================================================
+
+      if (
+        isPdfGeneratorMode &&
+        !validPdfGeneratorCommand
+      ) {
+
+        const updatedMessages =
+          activeChat.messages.map(
+            (
+              msg,
+              index
+            ) => {
+
+              if (
+                index ===
+                messageIndex
+              ) {
+
+                const updatedUserMessage = {
+
+                  ...msg,
+
+                  message:
+                    cleanUserMessage,
+
+                };
+
+
+                if (
+                  finalFileMetadata
+                ) {
+
+                  updatedUserMessage.file =
+                    finalFileMetadata;
+
+                } else {
+
+                  delete updatedUserMessage.file;
+
+                }
+
+
+                return updatedUserMessage;
+
+              }
+
+
+              if (
+                index ===
+                assistantIndex
+              ) {
+
+                return {
+
+                  ...msg,
+
+                  message:
+                    PDF_GENERATOR_WARNING,
+
+                  pdfRequested:
+                    false,
+
+                  pdfModeWarning:
+                    true,
+
+                  pdfGeneratorMode:
+                    false,
+
+                };
+
+              }
+
+
+              return msg;
+
+            }
+          );
+
+
+        setChats(
+          (prev) =>
+            prev.map(
+              (chat) =>
+
+                chat.id ===
+                activeChatId
+
+                  ? {
+                      ...chat,
+
+                      messages:
+                        updatedMessages,
+                    }
+
+                  : chat
+            )
+        );
+
+
+        await saveMessages(
+          activeChatId,
+          updatedMessages
+        );
+
+
+        return true;
 
       }
 
@@ -1624,6 +2133,12 @@ ${userPrompt}
 
                 pdfRequested:
                   pdfRequested,
+
+                pdfModeWarning:
+                  false,
+
+                pdfGeneratorMode:
+                  isPdfGeneratorMode,
 
               };
 

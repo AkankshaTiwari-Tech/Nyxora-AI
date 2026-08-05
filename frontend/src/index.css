@@ -2,15 +2,1072 @@
 
 @plugin "@tailwindcss/typography";
 
+
+/* =========================================================
+   NYXORA AI — GLOBAL DESIGN SYSTEM
+
+   Brand Palette
+
+   Fuchsia
+      ↓
+   Violet
+      ↓
+   Indigo
+      ↓
+   Electric Blue
+      ↓
+   Cyan
+
+   IMPORTANT:
+   Existing Tailwind functionality remains untouched.
+========================================================= */
+
+
+/* =========================================================
+   DESIGN TOKENS
+========================================================= */
+
+:root {
+
+  /* BACKGROUNDS */
+
+  --nyxora-bg:
+    #02040d;
+
+  --nyxora-bg-secondary:
+    #050816;
+
+  --nyxora-bg-elevated:
+    #080c18;
+
+  --nyxora-surface:
+    #0a0e1c;
+
+  --nyxora-surface-soft:
+    #0d1322;
+
+  --nyxora-surface-hover:
+    #11182a;
+
+
+  /* BRAND */
+
+  --nyxora-fuchsia:
+    #d946ef;
+
+  --nyxora-fuchsia-bright:
+    #f43af5;
+
+  --nyxora-purple:
+    #a855f7;
+
+  --nyxora-violet:
+    #7c3aed;
+
+  --nyxora-indigo:
+    #4f46e5;
+
+  --nyxora-blue:
+    #3b82f6;
+
+  --nyxora-blue-deep:
+    #2563eb;
+
+  --nyxora-cyan:
+    #22d3ee;
+
+  --nyxora-cyan-deep:
+    #06b6d4;
+
+
+  /* TEXT */
+
+  --nyxora-text:
+    #f8fafc;
+
+  --nyxora-text-secondary:
+    #cbd5e1;
+
+  --nyxora-text-muted:
+    #94a3b8;
+
+  --nyxora-text-subtle:
+    #64748b;
+
+
+  /* BORDERS */
+
+  --nyxora-border:
+    rgba(255, 255, 255, 0.08);
+
+  --nyxora-border-hover:
+    rgba(168, 85, 247, 0.28);
+
+  --nyxora-border-cyan:
+    rgba(34, 211, 238, 0.22);
+
+
+  /* BRAND GRADIENT */
+
+  --nyxora-gradient:
+    linear-gradient(
+      100deg,
+      #d946ef 0%,
+      #a855f7 24%,
+      #7c3aed 43%,
+      #4f46e5 61%,
+      #3b82f6 78%,
+      #22d3ee 100%
+    );
+
+
+  /* SOFTER GRADIENT */
+
+  --nyxora-gradient-soft:
+    linear-gradient(
+      135deg,
+      rgba(217, 70, 239, 0.16),
+      rgba(124, 58, 237, 0.12),
+      rgba(59, 130, 246, 0.10),
+      rgba(34, 211, 238, 0.10)
+    );
+
+
+  /* SHADOWS */
+
+  --nyxora-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.35);
+
+  --nyxora-glow:
+    0 0 35px rgba(124, 58, 237, 0.18);
+
+  --nyxora-glow-strong:
+    0 0 45px rgba(124, 58, 237, 0.28);
+
+}
+
+
+/* =========================================================
+   ROOT
+========================================================= */
+
 html,
 body,
 #root {
+
   margin: 0;
+
   padding: 0;
+
   min-height: 100%;
-  background: #050816;
+
+  background:
+    var(--nyxora-bg-secondary);
+
+  color:
+    var(--nyxora-text);
+
 }
 
+
+html {
+
+  background:
+    var(--nyxora-bg);
+
+}
+
+
+body {
+
+  min-height:
+    100vh;
+
+  background:
+
+    radial-gradient(
+      circle at 15% 0%,
+      rgba(217, 70, 239, 0.06),
+      transparent 28%
+    ),
+
+    radial-gradient(
+      circle at 90% 10%,
+      rgba(34, 211, 238, 0.05),
+      transparent 30%
+    ),
+
+    var(--nyxora-bg-secondary);
+
+}
+
+
+/* =========================================================
+   GLOBAL BOX MODEL
+========================================================= */
+
 * {
-  box-sizing: border-box;
+
+  box-sizing:
+    border-box;
+
+}
+
+
+/* =========================================================
+   SELECTION
+========================================================= */
+
+::selection {
+
+  background:
+    rgba(168, 85, 247, 0.35);
+
+  color:
+    white;
+
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+* {
+
+  scrollbar-width:
+    thin;
+
+  scrollbar-color:
+    rgba(124, 58, 237, 0.55)
+    rgba(255, 255, 255, 0.025);
+
+}
+
+
+::-webkit-scrollbar {
+
+  width:
+    8px;
+
+  height:
+    8px;
+
+}
+
+
+::-webkit-scrollbar-track {
+
+  background:
+    rgba(255, 255, 255, 0.02);
+
+}
+
+
+::-webkit-scrollbar-thumb {
+
+  border-radius:
+    999px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #d946ef,
+      #7c3aed,
+      #3b82f6,
+      #22d3ee
+    );
+
+}
+
+
+::-webkit-scrollbar-thumb:hover {
+
+  background:
+    linear-gradient(
+      180deg,
+      #f43af5,
+      #a855f7,
+      #3b82f6,
+      #22d3ee
+    );
+
+}
+
+
+/* =========================================================
+   PAGE BACKGROUND
+
+   Use:
+
+   className="nyxora-page"
+========================================================= */
+
+.nyxora-page {
+
+  position:
+    relative;
+
+  min-height:
+    100%;
+
+  color:
+    var(--nyxora-text);
+
+  background:
+
+    radial-gradient(
+      circle at 5% 5%,
+      rgba(217, 70, 239, 0.07),
+      transparent 25%
+    ),
+
+    radial-gradient(
+      circle at 95% 10%,
+      rgba(34, 211, 238, 0.055),
+      transparent 28%
+    ),
+
+    var(--nyxora-bg-secondary);
+
+}
+
+
+/* =========================================================
+   STANDARD CARD
+
+   Use:
+
+   className="nyxora-card"
+========================================================= */
+
+.nyxora-card {
+
+  border:
+    1px solid var(--nyxora-border);
+
+  border-radius:
+    18px;
+
+  background:
+
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.035),
+      rgba(255, 255, 255, 0.012)
+    ),
+
+    var(--nyxora-surface);
+
+  box-shadow:
+    var(--nyxora-shadow);
+
+}
+
+
+/* =========================================================
+   INTERACTIVE CARD
+
+   Use:
+
+   className="nyxora-card nyxora-card-hover"
+========================================================= */
+
+.nyxora-card-hover {
+
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    background 220ms ease;
+
+}
+
+
+.nyxora-card-hover:hover {
+
+  transform:
+    translateY(-2px);
+
+  border-color:
+    var(--nyxora-border-hover);
+
+  background:
+
+    linear-gradient(
+      145deg,
+      rgba(168, 85, 247, 0.055),
+      rgba(59, 130, 246, 0.025),
+      rgba(34, 211, 238, 0.02)
+    ),
+
+    var(--nyxora-surface);
+
+  box-shadow:
+
+    0 24px 65px rgba(0, 0, 0, 0.38),
+
+    0 0 30px rgba(124, 58, 237, 0.09);
+
+}
+
+
+/* =========================================================
+   GLASS CARD
+========================================================= */
+
+.nyxora-glass {
+
+  border:
+    1px solid rgba(255, 255, 255, 0.08);
+
+  background:
+    rgba(10, 14, 28, 0.76);
+
+  backdrop-filter:
+    blur(20px);
+
+  -webkit-backdrop-filter:
+    blur(20px);
+
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.32);
+
+}
+
+
+/* =========================================================
+   BRAND GRADIENT
+========================================================= */
+
+.nyxora-gradient {
+
+  background:
+    var(--nyxora-gradient);
+
+}
+
+
+/* =========================================================
+   GRADIENT TEXT
+
+   Use:
+
+   <span className="nyxora-gradient-text">
+========================================================= */
+
+.nyxora-gradient-text {
+
+  background:
+    var(--nyxora-gradient);
+
+  background-clip:
+    text;
+
+  -webkit-background-clip:
+    text;
+
+  color:
+    transparent;
+
+  -webkit-text-fill-color:
+    transparent;
+
+}
+
+
+/* =========================================================
+   PRIMARY BUTTON
+========================================================= */
+
+.nyxora-button {
+
+  position:
+    relative;
+
+  overflow:
+    hidden;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.08);
+
+  border-radius:
+    12px;
+
+  color:
+    white;
+
+  font-weight:
+    600;
+
+  background:
+    var(--nyxora-gradient);
+
+  box-shadow:
+    0 10px 30px rgba(124, 58, 237, 0.24);
+
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease,
+    filter 200ms ease;
+
+}
+
+
+.nyxora-button:hover {
+
+  transform:
+    translateY(-1px);
+
+  filter:
+    brightness(1.08);
+
+  box-shadow:
+
+    0 14px 35px rgba(124, 58, 237, 0.30),
+
+    0 0 24px rgba(34, 211, 238, 0.10);
+
+}
+
+
+.nyxora-button:active {
+
+  transform:
+    scale(0.985);
+
+}
+
+
+.nyxora-button:disabled {
+
+  cursor:
+    not-allowed;
+
+  opacity:
+    0.55;
+
+  transform:
+    none;
+
+}
+
+
+/* BUTTON SHINE */
+
+.nyxora-button::before {
+
+  content:
+    "";
+
+  position:
+    absolute;
+
+  top:
+    0;
+
+  bottom:
+    0;
+
+  left:
+    -70%;
+
+  width:
+    45%;
+
+  transform:
+    skewX(-20deg);
+
+  background:
+
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.20),
+      transparent
+    );
+
+  transition:
+    left 550ms ease;
+
+}
+
+
+.nyxora-button:hover::before {
+
+  left:
+    125%;
+
+}
+
+
+/* =========================================================
+   SECONDARY BUTTON
+========================================================= */
+
+.nyxora-button-secondary {
+
+  border:
+    1px solid var(--nyxora-border);
+
+  border-radius:
+    12px;
+
+  color:
+    var(--nyxora-text-secondary);
+
+  background:
+    rgba(255, 255, 255, 0.035);
+
+  transition:
+    border-color 200ms ease,
+    background 200ms ease,
+    color 200ms ease,
+    transform 200ms ease;
+
+}
+
+
+.nyxora-button-secondary:hover {
+
+  color:
+    white;
+
+  border-color:
+    rgba(168, 85, 247, 0.30);
+
+  background:
+    rgba(124, 58, 237, 0.08);
+
+  transform:
+    translateY(-1px);
+
+}
+
+
+/* =========================================================
+   INPUT SYSTEM
+
+   Can be applied to input / textarea / select.
+========================================================= */
+
+.nyxora-input {
+
+  width:
+    100%;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.09);
+
+  border-radius:
+    12px;
+
+  outline:
+    none;
+
+  color:
+    white;
+
+  background:
+    rgba(5, 8, 22, 0.70);
+
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease,
+    background 200ms ease;
+
+}
+
+
+.nyxora-input::placeholder {
+
+  color:
+    #64748b;
+
+}
+
+
+.nyxora-input:hover {
+
+  border-color:
+    rgba(168, 85, 247, 0.20);
+
+}
+
+
+.nyxora-input:focus {
+
+  border-color:
+    rgba(168, 85, 247, 0.65);
+
+  background:
+    rgba(8, 12, 28, 0.88);
+
+  box-shadow:
+
+    0 0 0 3px rgba(124, 58, 237, 0.10),
+
+    0 0 24px rgba(59, 130, 246, 0.07);
+
+}
+
+
+/* =========================================================
+   BRAND BORDER
+========================================================= */
+
+.nyxora-border {
+
+  border:
+    1px solid rgba(168, 85, 247, 0.20);
+
+}
+
+
+/* =========================================================
+   GRADIENT BORDER
+========================================================= */
+
+.nyxora-gradient-border {
+
+  position:
+    relative;
+
+}
+
+
+.nyxora-gradient-border::before {
+
+  content:
+    "";
+
+  position:
+    absolute;
+
+  inset:
+    -1px;
+
+  z-index:
+    -1;
+
+  border-radius:
+    inherit;
+
+  background:
+    var(--nyxora-gradient);
+
+  opacity:
+    0.38;
+
+}
+
+
+/* =========================================================
+   GLOW
+========================================================= */
+
+.nyxora-glow {
+
+  box-shadow:
+    var(--nyxora-glow);
+
+}
+
+
+.nyxora-glow-strong {
+
+  box-shadow:
+    var(--nyxora-glow-strong);
+
+}
+
+
+/* =========================================================
+   SMALL BRAND DOT
+========================================================= */
+
+.nyxora-dot {
+
+  width:
+    7px;
+
+  height:
+    7px;
+
+  border-radius:
+    999px;
+
+  background:
+    var(--nyxora-cyan);
+
+  box-shadow:
+    0 0 12px rgba(34, 211, 238, 0.75);
+
+}
+
+
+/* =========================================================
+   DECORATIVE GRID
+========================================================= */
+
+.nyxora-grid-bg {
+
+  background-image:
+
+    linear-gradient(
+      rgba(139, 92, 246, 0.055) 1px,
+      transparent 1px
+    ),
+
+    linear-gradient(
+      90deg,
+      rgba(34, 211, 238, 0.04) 1px,
+      transparent 1px
+    );
+
+  background-size:
+    52px 52px;
+
+}
+
+
+/* =========================================================
+   BRAND DIVIDER
+========================================================= */
+
+.nyxora-divider {
+
+  height:
+    1px;
+
+  border:
+    0;
+
+  background:
+
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(217, 70, 239, 0.35),
+      rgba(124, 58, 237, 0.45),
+      rgba(34, 211, 238, 0.35),
+      transparent
+    );
+
+}
+
+
+/* =========================================================
+   ACTIVE NAVIGATION ITEM
+========================================================= */
+
+.nyxora-nav-active {
+
+  position:
+    relative;
+
+  color:
+    white;
+
+  border:
+    1px solid rgba(168, 85, 247, 0.18);
+
+  background:
+
+    linear-gradient(
+      90deg,
+      rgba(217, 70, 239, 0.10),
+      rgba(124, 58, 237, 0.12),
+      rgba(59, 130, 246, 0.08),
+      rgba(34, 211, 238, 0.055)
+    );
+
+  box-shadow:
+    inset 0 0 22px rgba(124, 58, 237, 0.04);
+
+}
+
+
+.nyxora-nav-active::before {
+
+  content:
+    "";
+
+  position:
+    absolute;
+
+  left:
+    0;
+
+  top:
+    20%;
+
+  bottom:
+    20%;
+
+  width:
+    3px;
+
+  border-radius:
+    999px;
+
+  background:
+    var(--nyxora-gradient);
+
+  box-shadow:
+    0 0 12px rgba(168, 85, 247, 0.5);
+
+}
+
+
+/* =========================================================
+   STATUS COLORS
+
+   These intentionally remain semantic.
+========================================================= */
+
+.nyxora-success {
+
+  color:
+    #4ade80;
+
+}
+
+
+.nyxora-warning {
+
+  color:
+    #fbbf24;
+
+}
+
+
+.nyxora-danger {
+
+  color:
+    #fb7185;
+
+}
+
+
+.nyxora-info {
+
+  color:
+    #22d3ee;
+
+}
+
+
+/* =========================================================
+   SOFT FADE-IN
+========================================================= */
+
+.nyxora-fade-in {
+
+  animation:
+    nyxora-fade-in
+    420ms
+    ease-out
+    both;
+
+}
+
+
+@keyframes nyxora-fade-in {
+
+  from {
+
+    opacity:
+      0;
+
+    transform:
+      translateY(8px);
+
+  }
+
+  to {
+
+    opacity:
+      1;
+
+    transform:
+      translateY(0);
+
+  }
+
+}
+
+
+/* =========================================================
+   SUBTLE BRAND PULSE
+========================================================= */
+
+.nyxora-pulse {
+
+  animation:
+    nyxora-brand-pulse
+    3.5s
+    ease-in-out
+    infinite;
+
+}
+
+
+@keyframes nyxora-brand-pulse {
+
+  0%,
+  100% {
+
+    opacity:
+      0.75;
+
+  }
+
+  50% {
+
+    opacity:
+      1;
+
+  }
+
+}
+
+
+/* =========================================================
+   ACCESSIBILITY — REDUCED MOTION
+========================================================= */
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+
+  *,
+  *::before,
+  *::after {
+
+    scroll-behavior:
+      auto !important;
+
+  }
+
+
+  .nyxora-fade-in,
+  .nyxora-pulse {
+
+    animation:
+      none !important;
+
+  }
+
+
+  .nyxora-card-hover,
+  .nyxora-button,
+  .nyxora-button-secondary {
+
+    transition:
+      none !important;
+
+  }
+
 }

@@ -33,6 +33,40 @@ export function isPdfRequest(value) {
   );
 }
 
+// ======================================================
+// PDF GENERATOR MODE COMMAND
+//
+// Used only by the dedicated PDF Generator assistant
+// mode. This is intentionally stricter than
+// isPdfRequest().
+//
+// The user must explicitly type:
+//
+// generate pdf
+// ======================================================
+
+export function hasGeneratePdfCommand(
+  value
+) {
+
+  const text =
+    String(
+      value || ""
+    ).trim();
+
+
+  if (!text) {
+
+    return false;
+
+  }
+
+
+  return /\bgenerate\s+pdf\b/i.test(
+    text
+  );
+
+}
 
 // ======================================================
 // CLEAN PDF TITLE

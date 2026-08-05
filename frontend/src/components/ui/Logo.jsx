@@ -1,34 +1,180 @@
 import { motion } from "framer-motion";
 
+import NyxoraLogo
+  from "../common/NyxoraLogo";
+
+
 export default function Logo() {
+
   return (
+
     <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-      className="flex items-center gap-4"
+
+      initial={{
+        opacity: 0,
+        y: -20,
+        scale: 0.96,
+      }}
+
+      animate={{
+        opacity: 1,
+        y: 0,
+        scale: 1,
+      }}
+
+      transition={{
+        duration: 0.65,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+
+      className="
+        flex
+        items-center
+        gap-4
+      "
+
     >
-      {/* Logo */}
-      <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-500 to-cyan-500 shadow-[0_0_40px_rgba(99,102,241,.45)]">
 
-        <div className="absolute inset-0 rounded-2xl bg-white/10 backdrop-blur-md"></div>
 
-        <span className="relative text-3xl font-black text-white">
-          N
-        </span>
+      {/* ==================================================
+          PRODUCTION NYXORA N MARK
 
-      </div>
+          Uses the main Nyxora brand component.
 
-      {/* Text */}
+          ✓ Folded N
+          ✓ Magenta
+          ✓ Violet
+          ✓ Indigo
+          ✓ Blue
+          ✓ Cyan
+          ✓ Internal pattern
+          ✓ Controlled glow
+      ================================================== */}
+
+      <motion.div
+
+        initial={{
+          opacity: 0,
+          scale: 0.72,
+          rotateY: -20,
+        }}
+
+        animate={{
+          opacity: 1,
+          scale: 1,
+          rotateY: 0,
+        }}
+
+        transition={{
+          duration: 0.8,
+          delay: 0.08,
+          ease: [0.16, 1, 0.3, 1],
+        }}
+
+        className="
+          relative
+          flex
+          h-16
+          w-16
+          shrink-0
+          items-center
+          justify-center
+        "
+
+      >
+
+        <NyxoraLogo
+          size={64}
+          animated={true}
+        />
+
+      </motion.div>
+
+
+      {/* ==================================================
+          BRAND TEXT
+      ================================================== */}
+
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-white">
-          Nyxora AI
-        </h1>
 
-        <p className="text-sm text-slate-400">
+
+        <motion.h1
+
+          initial={{
+            opacity: 0,
+            x: -8,
+          }}
+
+          animate={{
+            opacity: 1,
+            x: 0,
+          }}
+
+          transition={{
+            duration: 0.55,
+            delay: 0.18,
+          }}
+
+          className="
+            text-3xl
+            font-bold
+            tracking-tight
+            text-white
+          "
+
+        >
+
+          Nyxora{" "}
+
+          <span
+            className="
+              bg-gradient-to-r
+              from-fuchsia-400
+              via-violet-400
+              to-cyan-400
+              bg-clip-text
+              text-transparent
+            "
+          >
+            AI
+          </span>
+
+        </motion.h1>
+
+
+        <motion.p
+
+          initial={{
+            opacity: 0,
+          }}
+
+          animate={{
+            opacity: 1,
+          }}
+
+          transition={{
+            duration: 0.55,
+            delay: 0.3,
+          }}
+
+          className="
+            mt-0.5
+            text-sm
+            text-slate-400
+          "
+
+        >
+
           AI Powered Student Workspace
-        </p>
+
+        </motion.p>
+
+
       </div>
+
+
     </motion.div>
+
   );
+
 }

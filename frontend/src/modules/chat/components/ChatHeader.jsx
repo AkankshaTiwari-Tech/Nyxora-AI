@@ -5,7 +5,6 @@ import {
 } from "react";
 
 import {
-  Bot,
   Sparkles,
   MoreVertical,
   ChevronDown,
@@ -30,6 +29,10 @@ import {
 import WorkspaceContextSelector
   from "./WorkspaceContextSelector";
 
+
+// ======================================================
+// ASSISTANT MODES
+// ======================================================
 
 // ======================================================
 // ASSISTANT MODES
@@ -66,8 +69,12 @@ const assistantModes = [
     label: "Doubt Solver",
     emoji: "❓",
   },
+  {
+    id: "pdf",
+    label: "PDF Generator",
+    emoji: "📄",
+  },
 ];
-
 
 // ======================================================
 // CHAT HEADER
@@ -85,10 +92,6 @@ export default function ChatHeader({
   onDeleteConversation,
 
   isThinking = false,
-
-  // ====================================================
-  // WORKSPACE CONTEXT
-  // ====================================================
 
   classes = [],
   students = [],
@@ -110,7 +113,6 @@ export default function ChatHeader({
     isModeOpen,
     setIsModeOpen,
   ] = useState(false);
-
 
   const [
     isMoreOpen,
@@ -137,18 +139,15 @@ export default function ChatHeader({
     setShowRename,
   ] = useState(false);
 
-
   const [
     renameTitle,
     setRenameTitle,
   ] = useState("");
 
-
   const [
     isRenaming,
     setIsRenaming,
   ] = useState(false);
-
 
   const [
     renameError,
@@ -165,12 +164,10 @@ export default function ChatHeader({
     setShowClear,
   ] = useState(false);
 
-
   const [
     isClearing,
     setIsClearing,
   ] = useState(false);
-
 
   const [
     clearError,
@@ -187,12 +184,10 @@ export default function ChatHeader({
     setShowDelete,
   ] = useState(false);
 
-
   const [
     isDeleting,
     setIsDeleting,
   ] = useState(false);
-
 
   const [
     deleteError,
@@ -206,7 +201,6 @@ export default function ChatHeader({
 
   const modeRef =
     useRef(null);
-
 
   const moreRef =
     useRef(null);
@@ -264,7 +258,6 @@ export default function ChatHeader({
           );
 
         }
-
 
         if (
           moreRef.current &&
@@ -391,7 +384,6 @@ export default function ChatHeader({
       mode.id
     );
 
-
     setIsModeOpen(
       false
     );
@@ -405,7 +397,6 @@ export default function ChatHeader({
       (current) =>
         !current
     );
-
 
     setIsMoreOpen(
       false
@@ -424,7 +415,6 @@ export default function ChatHeader({
       (current) =>
         !current
     );
-
 
     setIsModeOpen(
       false
@@ -903,53 +893,153 @@ export default function ChatHeader({
         className="
           relative
           z-40
-          h-20
-          border-b
-          border-[#20263B]
-          bg-[#050816]
           flex
+          h-20
           items-center
           justify-between
+          overflow-visible
+          border-b
+          border-white/[0.07]
+          bg-[#050816]/95
           px-8
+          backdrop-blur-xl
         "
       >
 
-        {/* LEFT */}
+        {/* BACKGROUND AESTHETIC */}
 
-        <div className="flex items-center gap-4">
+        <div
+          className="
+            pointer-events-none
+            absolute
+            left-0
+            top-0
+            h-full
+            w-[420px]
+            overflow-hidden
+          "
+        >
 
           <div
             className="
-              flex
-              h-12
-              w-12
-              items-center
-              justify-center
-              rounded-xl
-              bg-indigo-600
+              absolute
+              -left-24
+              -top-24
+              h-52
+              w-52
+              rounded-full
+              bg-violet-600/10
+              blur-[70px]
             "
-          >
+          />
 
-            <Bot
-              className="text-white"
-              size={24}
-            />
+          <div
+            className="
+              absolute
+              left-32
+              -top-24
+              h-48
+              w-48
+              rounded-full
+              bg-cyan-500/[0.07]
+              blur-[75px]
+            "
+          />
 
-          </div>
+        </div>
+
+
+        {/* LEFT */}
+
+        <div className="relative flex items-center gap-4">
+
+          <NyxoraChatLogo />
 
 
           <div>
 
-            <h2 className="text-xl font-semibold text-white">
+            <div className="flex items-center gap-2">
 
-              Nyxora AI Assistant
+              <h2
+                className="
+                  text-xl
+                  font-bold
+                  tracking-tight
+                  text-white
+                "
+              >
 
-            </h2>
+                Nyxora AI
+
+              </h2>
 
 
-            <p className="flex items-center gap-2 text-sm text-green-400">
+              <span
+                className="
+                  hidden
+                  rounded-full
+                  border
+                  border-violet-400/20
+                  bg-violet-500/10
+                  px-2
+                  py-0.5
+                  text-[10px]
+                  font-semibold
+                  uppercase
+                  tracking-[0.15em]
+                  text-violet-300
+                  xl:inline-flex
+                "
+              >
 
-              <Sparkles size={14} />
+                Assistant
+
+              </span>
+
+            </div>
+
+
+            <p
+              className="
+                mt-0.5
+                flex
+                items-center
+                gap-2
+                text-sm
+                text-emerald-400
+              "
+            >
+
+              <span className="relative flex h-2 w-2">
+
+                <span
+                  className="
+                    absolute
+                    inline-flex
+                    h-full
+                    w-full
+                    animate-ping
+                    rounded-full
+                    bg-emerald-400
+                    opacity-50
+                  "
+                />
+
+                <span
+                  className="
+                    relative
+                    inline-flex
+                    h-2
+                    w-2
+                    rounded-full
+                    bg-emerald-400
+                  "
+                />
+
+              </span>
+
+
+              <Sparkles size={13} />
 
               Online
 
@@ -962,7 +1052,7 @@ export default function ChatHeader({
 
         {/* RIGHT */}
 
-        <div className="flex items-center gap-3">
+        <div className="relative flex items-center gap-3">
 
 
           {/* =========================================== */}
@@ -971,31 +1061,42 @@ export default function ChatHeader({
 
           {!workspaceLoading && (
 
-            <WorkspaceContextSelector
-              classes={
-                classes
-              }
+            <div
+              className="
+                rounded-xl
+                transition
+                duration-300
+                hover:shadow-[0_0_25px_rgba(99,102,241,0.08)]
+              "
+            >
 
-              students={
-                students
-              }
+              <WorkspaceContextSelector
+                classes={
+                  classes
+                }
 
-              selectedClassId={
-                selectedClassId
-              }
+                students={
+                  students
+                }
 
-              selectedStudentId={
-                selectedStudentId
-              }
+                selectedClassId={
+                  selectedClassId
+                }
 
-              onClassChange={
-                onClassChange
-              }
+                selectedStudentId={
+                  selectedStudentId
+                }
 
-              onStudentChange={
-                onStudentChange
-              }
-            />
+                onClassChange={
+                  onClassChange
+                }
+
+                onStudentChange={
+                  onStudentChange
+                }
+              />
+
+            </div>
 
           )}
 
@@ -1020,27 +1121,63 @@ export default function ChatHeader({
               }
 
               className="
+                group
+                relative
                 flex
                 h-12
                 min-w-[225px]
                 items-center
                 justify-between
                 gap-4
+                overflow-hidden
                 rounded-xl
                 border
-                border-slate-600
-                bg-[#111827]
+                border-white/10
+                bg-[#0D1322]/90
                 px-4
                 text-white
-                transition
-                hover:border-violet-500
-                hover:bg-[#151D30]
+                shadow-[0_10px_30px_rgba(0,0,0,0.18)]
+                transition-all
+                duration-300
+                hover:border-violet-400/30
+                hover:bg-[#11182A]
+                hover:shadow-[0_0_28px_rgba(124,58,237,0.12)]
               "
             >
 
-              <div className="flex items-center gap-3">
+              <div
+                className="
+                  pointer-events-none
+                  absolute
+                  inset-0
+                  bg-gradient-to-r
+                  from-violet-500/[0.06]
+                  via-indigo-500/[0.03]
+                  to-cyan-400/[0.05]
+                  opacity-0
+                  transition
+                  duration-300
+                  group-hover:opacity-100
+                "
+              />
 
-                <span className="text-xl">
+
+              <div className="relative flex items-center gap-3">
+
+                <span
+                  className="
+                    flex
+                    h-8
+                    w-8
+                    items-center
+                    justify-center
+                    rounded-lg
+                    border
+                    border-white/[0.07]
+                    bg-white/[0.04]
+                    text-lg
+                  "
+                >
 
                   {currentMode.emoji}
 
@@ -1060,11 +1197,13 @@ export default function ChatHeader({
                 size={18}
 
                 className={`
-                  text-gray-400
+                  relative
+                  text-slate-400
                   transition-transform
+                  duration-300
                   ${
                     isModeOpen
-                      ? "rotate-180"
+                      ? "rotate-180 text-violet-300"
                       : ""
                   }
                 `}
@@ -1081,15 +1220,61 @@ export default function ChatHeader({
                   right-0
                   top-[58px]
                   z-50
-                  w-[300px]
+                  w-[310px]
+                  overflow-hidden
                   rounded-2xl
                   border
-                  border-[#293149]
-                  bg-[#111827]
+                  border-white/10
+                  bg-[#0B1020]/95
                   p-2
-                  shadow-2xl
+                  shadow-[0_24px_80px_rgba(0,0,0,0.55)]
+                  backdrop-blur-2xl
                 "
               >
+
+                <div
+                  className="
+                    pointer-events-none
+                    absolute
+                    -right-20
+                    -top-20
+                    h-40
+                    w-40
+                    rounded-full
+                    bg-violet-500/10
+                    blur-[60px]
+                  "
+                />
+
+
+                <div
+                  className="
+                    relative
+                    mb-2
+                    border-b
+                    border-white/[0.06]
+                    px-3
+                    pb-3
+                    pt-2
+                  "
+                >
+
+                  <p
+                    className="
+                      text-[10px]
+                      font-semibold
+                      uppercase
+                      tracking-[0.18em]
+                      text-slate-500
+                    "
+                  >
+
+                    Assistant Mode
+
+                  </p>
+
+                </div>
+
 
                 {assistantModes.map(
                   (mode) => {
@@ -1115,35 +1300,64 @@ export default function ChatHeader({
                         }
 
                         className={`
+                          relative
                           flex
                           w-full
                           items-center
                           gap-4
                           rounded-xl
-                          px-4
+                          px-3
                           py-3
                           text-left
-                          transition
+                          transition-all
+                          duration-200
                           ${
                             selected
-                              ? "bg-violet-600/15 text-violet-300"
-                              : "text-gray-200 hover:bg-[#1A2236] hover:text-white"
+                              ? "bg-gradient-to-r from-violet-500/15 via-indigo-500/10 to-cyan-500/[0.07] text-white"
+                              : "text-slate-300 hover:bg-white/[0.05] hover:text-white"
                           }
                         `}
                       >
 
-                        <span className="w-7 text-center text-xl">
+                        <span
+                          className={`
+                            flex
+                            h-9
+                            w-9
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-lg
+                            border
+                            text-lg
+                            ${
+                              selected
+                                ? "border-violet-400/20 bg-violet-500/10"
+                                : "border-white/[0.06] bg-white/[0.03]"
+                            }
+                          `}
+                        >
 
                           {mode.emoji}
 
                         </span>
 
 
-                        <span className="font-medium">
+                        <span className="flex-1 font-medium">
 
                           {mode.label}
 
                         </span>
+
+
+                        {selected && (
+
+                          <Check
+                            size={16}
+                            className="text-cyan-300"
+                          />
+
+                        )}
 
                       </button>
 
@@ -1178,22 +1392,31 @@ export default function ChatHeader({
                 toggleMore
               }
 
-              className="
+              className={`
                 flex
-                h-11
-                w-11
+                h-12
+                w-12
                 items-center
                 justify-center
                 rounded-xl
-                bg-[#151B2F]
-                transition
-                hover:bg-[#1B2340]
-              "
+                border
+                transition-all
+                duration-300
+                ${
+                  isMoreOpen
+                    ? "border-violet-400/30 bg-violet-500/10 shadow-[0_0_24px_rgba(124,58,237,0.12)]"
+                    : "border-white/[0.08] bg-[#0D1322] hover:border-violet-400/25 hover:bg-[#12192B]"
+                }
+              `}
             >
 
               <MoreVertical
                 size={20}
-                className="text-gray-300"
+                className={
+                  isMoreOpen
+                    ? "text-violet-300"
+                    : "text-slate-300"
+                }
               />
 
             </button>
@@ -1205,156 +1428,196 @@ export default function ChatHeader({
                 className="
                   absolute
                   right-0
-                  top-[55px]
+                  top-[58px]
                   z-50
-                  w-[255px]
-                  rounded-xl
+                  w-[270px]
+                  overflow-hidden
+                  rounded-2xl
                   border
-                  border-[#293149]
-                  bg-[#111827]
+                  border-white/10
+                  bg-[#0B1020]/95
                   p-2
-                  shadow-2xl
+                  shadow-[0_24px_80px_rgba(0,0,0,0.55)]
+                  backdrop-blur-2xl
                 "
               >
 
-                {/* EXPORT */}
-
-                <MenuButton
-                  icon={
-                    <FileDown
-                      size={18}
-                      className="text-violet-400"
-                    />
-                  }
-
-                  title="Export chat"
-
-                  subtitle="Save as PDF"
-
-                  onClick={
-                    handleExport
-                  }
+                <div
+                  className="
+                    pointer-events-none
+                    absolute
+                    -right-20
+                    -top-20
+                    h-40
+                    w-40
+                    rounded-full
+                    bg-cyan-500/[0.07]
+                    blur-[60px]
+                  "
                 />
 
 
-                {/* COPY */}
+                <div
+                  className="
+                    relative
+                    mb-2
+                    border-b
+                    border-white/[0.06]
+                    px-3
+                    pb-3
+                    pt-2
+                  "
+                >
 
-                <MenuButton
-                  icon={
-                    copied
-                      ? (
-                          <Check
-                            size={18}
-                            className="text-green-400"
-                          />
-                        )
-                      : (
-                          <Copy
-                            size={18}
-                            className="text-blue-400"
-                          />
-                        )
-                  }
+                  <p
+                    className="
+                      text-[10px]
+                      font-semibold
+                      uppercase
+                      tracking-[0.18em]
+                      text-slate-500
+                    "
+                  >
 
-                  title={
-                    copied
-                      ? "Copied"
-                      : "Copy conversation"
-                  }
+                    Conversation
 
-                  subtitle="Copy as text"
+                  </p>
 
-                  onClick={
-                    handleCopy
-                  }
-                />
+                </div>
 
 
-                {/* RENAME */}
+                <div className="relative">
 
-                <MenuButton
-                  icon={
-                    <Pencil
-                      size={18}
-                      className="text-amber-400"
-                    />
-                  }
+                  <MenuButton
+                    icon={
+                      <FileDown
+                        size={18}
+                        className="text-violet-400"
+                      />
+                    }
 
-                  title="Rename conversation"
+                    title="Export chat"
 
-                  subtitle="Change chat name"
+                    subtitle="Save as PDF"
 
-                  onClick={
-                    openRename
-                  }
-
-                  disabled={
-                    isThinking
-                  }
-                />
+                    onClick={
+                      handleExport
+                    }
+                  />
 
 
-                <div className="my-1 border-t border-[#293149]" />
+                  <MenuButton
+                    icon={
+                      copied
+                        ? (
+                            <Check
+                              size={18}
+                              className="text-emerald-400"
+                            />
+                          )
+                        : (
+                            <Copy
+                              size={18}
+                              className="text-cyan-400"
+                            />
+                          )
+                    }
+
+                    title={
+                      copied
+                        ? "Copied"
+                        : "Copy conversation"
+                    }
+
+                    subtitle="Copy as text"
+
+                    onClick={
+                      handleCopy
+                    }
+                  />
 
 
-                {/* CLEAR */}
+                  <MenuButton
+                    icon={
+                      <Pencil
+                        size={18}
+                        className="text-amber-400"
+                      />
+                    }
 
-                <MenuButton
-                  icon={
-                    <Eraser
-                      size={18}
-                      className="text-orange-400"
-                    />
-                  }
+                    title="Rename conversation"
 
-                  title="Clear conversation"
+                    subtitle="Change chat name"
 
-                  subtitle={
-                    isThinking
-                      ? "Wait for Nyxora to finish"
-                      : "Remove all messages"
-                  }
+                    onClick={
+                      openRename
+                    }
 
-                  onClick={
-                    openClear
-                  }
-
-                  disabled={
-                    isThinking
-                  }
-
-                  danger
-                />
+                    disabled={
+                      isThinking
+                    }
+                  />
 
 
-                {/* DELETE */}
+                  <div className="my-2 border-t border-white/[0.06]" />
 
-                <MenuButton
-                  icon={
-                    <Trash2
-                      size={18}
-                      className="text-red-400"
-                    />
-                  }
 
-                  title="Delete conversation"
+                  <MenuButton
+                    icon={
+                      <Eraser
+                        size={18}
+                        className="text-orange-400"
+                      />
+                    }
 
-                  subtitle={
-                    chatCount <= 1
-                      ? "At least one chat is required"
-                      : "Delete chat permanently"
-                  }
+                    title="Clear conversation"
 
-                  onClick={
-                    openDelete
-                  }
+                    subtitle={
+                      isThinking
+                        ? "Wait for Nyxora to finish"
+                        : "Remove all messages"
+                    }
 
-                  disabled={
-                    isThinking
-                  }
+                    onClick={
+                      openClear
+                    }
 
-                  danger
-                />
+                    disabled={
+                      isThinking
+                    }
+
+                    danger
+                  />
+
+
+                  <MenuButton
+                    icon={
+                      <Trash2
+                        size={18}
+                        className="text-red-400"
+                      />
+                    }
+
+                    title="Delete conversation"
+
+                    subtitle={
+                      chatCount <= 1
+                        ? "At least one chat is required"
+                        : "Delete chat permanently"
+                    }
+
+                    onClick={
+                      openDelete
+                    }
+
+                    disabled={
+                      isThinking
+                    }
+
+                    danger
+                  />
+
+                </div>
 
               </div>
 
@@ -1378,8 +1641,8 @@ export default function ChatHeader({
           <ModalHeader
             icon={
               <Pencil
-                size={22}
-                className="text-violet-400"
+                size={21}
+                className="text-violet-300"
               />
             }
 
@@ -1400,6 +1663,23 @@ export default function ChatHeader({
 
 
           <div className="mt-5">
+
+            <label
+              className="
+                mb-2
+                block
+                text-xs
+                font-medium
+                uppercase
+                tracking-[0.12em]
+                text-slate-500
+              "
+            >
+
+              Conversation name
+
+            </label>
+
 
             <input
               type="text"
@@ -1435,14 +1715,17 @@ export default function ChatHeader({
                 w-full
                 rounded-xl
                 border
-                border-slate-600
-                bg-[#0B1020]
+                border-white/10
+                bg-[#070B16]
                 px-4
                 py-3
                 text-white
                 outline-none
-                transition
-                focus:border-violet-500
+                transition-all
+                duration-300
+                placeholder:text-slate-600
+                focus:border-violet-400/50
+                focus:shadow-[0_0_0_3px_rgba(139,92,246,0.08),0_0_28px_rgba(124,58,237,0.08)]
               "
 
               placeholder="Conversation name"
@@ -1500,7 +1783,7 @@ export default function ChatHeader({
           <ModalHeader
             icon={
               <AlertTriangle
-                size={22}
+                size={21}
                 className="text-orange-400"
               />
             }
@@ -1521,7 +1804,7 @@ export default function ChatHeader({
           />
 
 
-          <p className="mt-5 text-sm leading-6 text-gray-400">
+          <p className="mt-5 text-sm leading-6 text-slate-400">
 
             All messages in this conversation will be
             permanently removed. The conversation itself
@@ -1530,11 +1813,25 @@ export default function ChatHeader({
           </p>
 
 
-          <p className="mt-2 text-sm font-medium text-red-300">
+          <div
+            className="
+              mt-4
+              rounded-xl
+              border
+              border-orange-500/15
+              bg-orange-500/[0.06]
+              px-4
+              py-3
+            "
+          >
 
-            This action cannot be undone.
+            <p className="text-sm font-medium text-orange-300">
 
-          </p>
+              This action cannot be undone.
+
+            </p>
+
+          </div>
 
 
           {clearError && (
@@ -1588,7 +1885,7 @@ export default function ChatHeader({
           <ModalHeader
             icon={
               <Trash2
-                size={22}
+                size={21}
                 className="text-red-400"
               />
             }
@@ -1609,7 +1906,7 @@ export default function ChatHeader({
           />
 
 
-          <p className="mt-5 text-sm leading-6 text-gray-400">
+          <p className="mt-5 text-sm leading-6 text-slate-400">
 
             This will permanently delete this conversation
             and all of its messages from Nyxora.
@@ -1617,11 +1914,25 @@ export default function ChatHeader({
           </p>
 
 
-          <p className="mt-2 text-sm font-medium text-red-300">
+          <div
+            className="
+              mt-4
+              rounded-xl
+              border
+              border-red-500/15
+              bg-red-500/[0.06]
+              px-4
+              py-3
+            "
+          >
 
-            This action cannot be undone.
+            <p className="text-sm font-medium text-red-300">
 
-          </p>
+              This action cannot be undone.
+
+            </p>
+
+          </div>
 
 
           {deleteError && (
@@ -1671,6 +1982,229 @@ export default function ChatHeader({
 
 
 // ======================================================
+// NYXORA CHAT LOGO
+//
+// New N identity used specifically in AI Chat.
+// No image asset required.
+// ======================================================
+
+function NyxoraChatLogo() {
+
+  return (
+
+    <div
+      className="
+        group
+        relative
+        flex
+        h-12
+        w-12
+        shrink-0
+        items-center
+        justify-center
+      "
+    >
+
+      {/* SOFT GLOW */}
+
+      <div
+        className="
+          absolute
+          inset-[-8px]
+          rounded-2xl
+          bg-gradient-to-br
+          from-fuchsia-500/25
+          via-violet-500/20
+          to-cyan-400/20
+          opacity-70
+          blur-xl
+          transition
+          duration-500
+          group-hover:opacity-100
+        "
+      />
+
+
+      {/* LOGO CARD */}
+
+      <div
+        className="
+          relative
+          flex
+          h-12
+          w-12
+          items-center
+          justify-center
+          overflow-hidden
+          rounded-[14px]
+          border
+          border-white/15
+          bg-[#090D19]
+          shadow-[0_8px_30px_rgba(0,0,0,0.35)]
+        "
+      >
+
+        {/* COLOR LIGHT */}
+
+        <div
+          className="
+            absolute
+            -left-4
+            -top-4
+            h-10
+            w-10
+            rounded-full
+            bg-fuchsia-500/50
+            blur-xl
+          "
+        />
+
+        <div
+          className="
+            absolute
+            -bottom-4
+            -right-4
+            h-10
+            w-10
+            rounded-full
+            bg-cyan-400/50
+            blur-xl
+          "
+        />
+
+
+        {/* N */}
+
+        <svg
+          viewBox="0 0 100 100"
+          className="relative h-8 w-8"
+          aria-hidden="true"
+        >
+
+          <defs>
+
+            <linearGradient
+              id="nyxora-header-left"
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
+
+              <stop
+                offset="0%"
+                stopColor="#D946EF"
+              />
+
+              <stop
+                offset="100%"
+                stopColor="#7C3AED"
+              />
+
+            </linearGradient>
+
+
+            <linearGradient
+              id="nyxora-header-right"
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
+
+              <stop
+                offset="0%"
+                stopColor="#22D3EE"
+              />
+
+              <stop
+                offset="100%"
+                stopColor="#2563EB"
+              />
+
+            </linearGradient>
+
+
+            <linearGradient
+              id="nyxora-header-middle"
+              x1="0"
+              y1="0"
+              x2="1"
+              y2="1"
+            >
+
+              <stop
+                offset="0%"
+                stopColor="#A855F7"
+              />
+
+              <stop
+                offset="48%"
+                stopColor="#6366F1"
+              />
+
+              <stop
+                offset="100%"
+                stopColor="#06B6D4"
+              />
+
+            </linearGradient>
+
+          </defs>
+
+
+          {/* LEFT STROKE */}
+
+          <path
+            d="M18 82 L18 18 L38 18 L38 82 Z"
+            fill="url(#nyxora-header-left)"
+          />
+
+
+          {/* RIGHT STROKE */}
+
+          <path
+            d="M62 18 L82 18 L82 82 L62 82 Z"
+            fill="url(#nyxora-header-right)"
+          />
+
+
+          {/* DIAGONAL */}
+
+          <path
+            d="M18 18 L38 18 L82 82 L62 82 Z"
+            fill="url(#nyxora-header-middle)"
+          />
+
+
+          {/* LIGHT DETAILS */}
+
+          <path
+            d="M24 22 L34 22 L72 77"
+            stroke="rgba(255,255,255,0.22)"
+            strokeWidth="2"
+            fill="none"
+          />
+
+          <path
+            d="M68 22 L76 22 L76 73"
+            stroke="rgba(255,255,255,0.14)"
+            strokeWidth="2"
+            fill="none"
+          />
+
+        </svg>
+
+      </div>
+
+    </div>
+
+  );
+
+}
+
+
+// ======================================================
 // MENU BUTTON
 // ======================================================
 
@@ -1697,33 +2231,50 @@ function MenuButton({
       }
 
       className={`
+        group
         flex
         w-full
         items-center
         gap-3
-        rounded-lg
+        rounded-xl
         px-3
         py-3
         text-left
-        transition
+        transition-all
+        duration-200
         disabled:cursor-not-allowed
         disabled:opacity-40
         ${
           danger
-            ? "text-red-300 hover:bg-red-500/10"
-            : "text-gray-200 hover:bg-[#1A2236] hover:text-white"
+            ? "text-red-300 hover:bg-red-500/[0.07]"
+            : "text-slate-200 hover:bg-white/[0.05] hover:text-white"
         }
       `}
     >
 
-      <div className="shrink-0">
+      <div
+        className="
+          flex
+          h-9
+          w-9
+          shrink-0
+          items-center
+          justify-center
+          rounded-lg
+          border
+          border-white/[0.06]
+          bg-white/[0.03]
+          transition
+          group-hover:bg-white/[0.05]
+        "
+      >
 
         {icon}
 
       </div>
 
 
-      <div>
+      <div className="min-w-0">
 
         <p className="text-sm font-medium">
 
@@ -1732,7 +2283,7 @@ function MenuButton({
         </p>
 
 
-        <p className="mt-0.5 text-xs text-gray-500">
+        <p className="mt-0.5 truncate text-xs text-slate-500">
 
           {subtitle}
 
@@ -1765,26 +2316,84 @@ function ModalShell({
         flex
         items-center
         justify-center
-        bg-black/70
+        bg-[#02040B]/80
         px-4
-        backdrop-blur-sm
+        backdrop-blur-md
       "
     >
 
       <div
         className="
+          relative
           w-full
           max-w-md
-          rounded-2xl
+          overflow-hidden
+          rounded-[22px]
           border
-          border-[#293149]
-          bg-[#111827]
+          border-white/10
+          bg-[#0B1020]/95
           p-6
-          shadow-2xl
+          shadow-[0_30px_100px_rgba(0,0,0,0.65)]
+          backdrop-blur-2xl
         "
       >
 
-        {children}
+        {/* VIOLET GLOW */}
+
+        <div
+          className="
+            pointer-events-none
+            absolute
+            -right-20
+            -top-20
+            h-48
+            w-48
+            rounded-full
+            bg-violet-600/10
+            blur-[70px]
+          "
+        />
+
+
+        {/* CYAN GLOW */}
+
+        <div
+          className="
+            pointer-events-none
+            absolute
+            -bottom-24
+            -left-20
+            h-48
+            w-48
+            rounded-full
+            bg-cyan-500/[0.06]
+            blur-[70px]
+          "
+        />
+
+
+        {/* TOP NYXORA ACCENT */}
+
+        <div
+          className="
+            absolute
+            left-8
+            right-8
+            top-0
+            h-px
+            bg-gradient-to-r
+            from-transparent
+            via-violet-400/60
+            to-transparent
+          "
+        />
+
+
+        <div className="relative">
+
+          {children}
+
+        </div>
 
       </div>
 
@@ -1813,13 +2422,20 @@ function ModalHeader({
 
         <div
           className="
+            relative
             flex
             h-11
             w-11
             items-center
             justify-center
+            overflow-hidden
             rounded-xl
-            bg-white/5
+            border
+            border-white/[0.08]
+            bg-gradient-to-br
+            from-violet-500/10
+            via-indigo-500/[0.06]
+            to-cyan-500/[0.06]
           "
         >
 
@@ -1828,7 +2444,14 @@ function ModalHeader({
         </div>
 
 
-        <h3 className="text-xl font-semibold text-white">
+        <h3
+          className="
+            text-xl
+            font-semibold
+            tracking-tight
+            text-white
+          "
+        >
 
           {title}
 
@@ -1845,16 +2468,23 @@ function ModalHeader({
         }
 
         className="
+          flex
+          h-9
+          w-9
+          items-center
+          justify-center
           rounded-lg
-          p-2
-          text-gray-400
-          transition
-          hover:bg-white/5
+          border
+          border-transparent
+          text-slate-500
+          transition-all
+          hover:border-white/[0.07]
+          hover:bg-white/[0.05]
           hover:text-white
         "
       >
 
-        <X size={19} />
+        <X size={18} />
 
       </button>
 
@@ -1895,14 +2525,17 @@ function ModalActions({
         className="
           rounded-xl
           border
-          border-slate-600
+          border-white/10
+          bg-white/[0.02]
           px-4
           py-2.5
           text-sm
           font-medium
-          text-gray-200
-          transition
-          hover:bg-white/5
+          text-slate-300
+          transition-all
+          hover:border-white/15
+          hover:bg-white/[0.05]
+          hover:text-white
           disabled:opacity-40
         "
       >
@@ -1924,18 +2557,24 @@ function ModalActions({
         }
 
         className={`
+          relative
+          overflow-hidden
           rounded-xl
-          px-4
+          px-5
           py-2.5
           text-sm
           font-semibold
           text-white
-          transition
+          shadow-lg
+          transition-all
+          duration-300
+          hover:scale-[1.02]
           disabled:opacity-50
+          disabled:hover:scale-100
           ${
             danger
-              ? "bg-red-500 hover:bg-red-600"
-              : "bg-violet-600 hover:bg-violet-700"
+              ? "bg-gradient-to-r from-red-600 to-rose-500 shadow-red-900/20 hover:shadow-red-500/20"
+              : "bg-gradient-to-r from-violet-600 via-indigo-500 to-cyan-500 shadow-violet-900/30 hover:shadow-violet-500/20"
           }
         `}
       >
@@ -1964,10 +2603,13 @@ function ErrorMessage({
     <div
       className="
         mt-4
+        flex
+        items-start
+        gap-3
         rounded-xl
         border
-        border-red-500/30
-        bg-red-500/10
+        border-red-500/20
+        bg-red-500/[0.07]
         px-4
         py-3
         text-sm
@@ -1975,7 +2617,17 @@ function ErrorMessage({
       "
     >
 
-      {message}
+      <AlertTriangle
+        size={17}
+        className="mt-0.5 shrink-0"
+      />
+
+
+      <span>
+
+        {message}
+
+      </span>
 
     </div>
 
