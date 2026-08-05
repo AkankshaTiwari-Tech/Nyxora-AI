@@ -868,26 +868,57 @@ export default function ChatMessage({
 
         {isUser && (
 
-          <div
-            className="
-              rounded-2xl
-              rounded-br-md
-              border
-              border-violet-400/40
-              bg-gradient-to-br
-              from-violet-900/60
-              via-purple-900/40
-              to-slate-900/80
-              px-4
-              py-3
-              text-sm
-              leading-6
-              text-gray-100
-              shadow-lg
-              shadow-violet-700/30
-            "
-          >
+  <div
+    className="
+      relative
+      overflow-hidden
+      rounded-2xl
+      rounded-br-md
 
+      border
+      border-violet-400/35
+
+      bg-gradient-to-br
+      from-fuchsia-950/70
+      via-violet-950/75
+      to-[#071426]/95
+
+      px-5
+      py-3.5
+
+      text-sm
+      leading-6
+      text-slate-100
+
+      shadow-[0_8px_30px_rgba(109,40,217,0.18),0_0_18px_rgba(34,211,238,0.05)]
+
+      transition-all
+      duration-300
+
+      hover:border-violet-400/55
+      hover:shadow-[0_10px_34px_rgba(109,40,217,0.25),0_0_22px_rgba(34,211,238,0.08)]
+
+      before:pointer-events-none
+      before:absolute
+      before:inset-x-3
+      before:top-0
+      before:h-px
+      before:bg-gradient-to-r
+      before:from-transparent
+      before:via-fuchsia-400/70
+      before:to-cyan-400/60
+
+      after:pointer-events-none
+      after:absolute
+      after:-right-10
+      after:-top-10
+      after:h-24
+      after:w-24
+      after:rounded-full
+      after:bg-cyan-400/[0.06]
+      after:blur-2xl
+    "
+  >
             {isEditing ? (
 
               <div
@@ -1272,18 +1303,22 @@ export default function ChatMessage({
 
                 {/* USER TEXT */}
 
-                {text && (
+{text && (
 
-                  <div
-                    className="
-                      whitespace-pre-wrap
-                      break-words
-                    "
-                  >
-                    {text}
-                  </div>
+  <div
+    className="
+      relative
+      z-10
+      whitespace-pre-wrap
+      break-words
+      font-medium
+      tracking-[0.01em]
+    "
+  >
+    {text}
+  </div>
 
-                )}
+)}
 
               </>
 

@@ -3,6 +3,8 @@ import {
   useState,
 } from "react";
 
+import NyxoraOrbitLogo from "../../components/common/NyxoraOrbitLogo";
+
 import {
   Brain,
   User,

@@ -11,6 +11,8 @@ import {
   Zap,
 } from "lucide-react";
 
+import SplashScreen from "../components/splash/SplashScreen";
+
 import Logo from "../components/ui/Logo";
 import Input from "../components/ui/Input";
 import PasswordInput from "../components/ui/PasswordInput";
@@ -38,6 +40,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const [error, setError] = useState("");
+
+  const [showLoginExit, setShowLoginExit] = useState(false);
 
 
 
@@ -126,9 +130,7 @@ export default function Login() {
       );
 
 
-      navigate(
-        "/dashboard"
-      );
+      setShowLoginExit(true);
 
     }
 
@@ -193,10 +195,7 @@ export default function Login() {
       );
 
 
-      navigate(
-        "/dashboard"
-      );
-
+     setShowLoginExit(true);
     }
 
     catch (err) {
@@ -213,7 +212,16 @@ export default function Login() {
   };
 
 
-
+  if (showLoginExit) {
+    return (
+      <SplashScreen
+        mode="loginExit"
+        onComplete={() => {
+          navigate("/dashboard");
+        }}
+      />
+    );
+  }
 
 
   return (
@@ -227,7 +235,6 @@ export default function Login() {
         text-white
       "
     >
-
 
       {/* ==================================================
           DEEP BACKGROUND GRADIENT

@@ -7,6 +7,7 @@ import Logo from "../components/ui/Logo";
 import Card from "../components/ui/Card";
 import Input from "../components/ui/Input";
 import PasswordInput from "../components/ui/PasswordInput";
+import SplashScreen from "../components/splash/SplashScreen";
 
 import {
   registerUser,
@@ -25,6 +26,7 @@ export default function Register() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showLoginExit, setShowLoginExit] = useState(false);
 
   const handleChange = (e) => {
     setForm({
@@ -54,7 +56,7 @@ export default function Register() {
 
       await registerUser(form.email, form.password);
 
-      navigate("/dashboard");
+      setShowLoginExit(true);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -65,12 +67,21 @@ export default function Register() {
   const handleGoogle = async () => {
     try {
       await loginWithGoogle();
-      navigate("/dashboard");
+     setShowLoginExit(true);
     } catch (err) {
       setError(err.message);
     }
   };
-
+if (showLoginExit) {
+  return (
+    <SplashScreen
+      mode="loginExit"
+      onComplete={() => {
+        navigate("/dashboard");
+      }}
+    />
+  );
+}
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#030712]">
       <div className="absolute -left-40 top-20 h-96 w-96 rounded-full bg-indigo-600/30 blur-[140px]" />
