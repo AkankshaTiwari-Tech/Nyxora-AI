@@ -15,8 +15,9 @@ import {
 } from "react";
 
 import {
-  downloadWorkspacePdf,
-} from "../documents/pdfs/generatePdf";
+    downloadWorkspacePdf
+}
+from "../documents/pdfs/renderer/generatePdf";
 
 import {
   getDocumentTypeIcon,

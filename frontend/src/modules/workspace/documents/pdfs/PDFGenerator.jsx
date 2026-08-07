@@ -22,18 +22,12 @@ import {
 } from "lucide-react";
 
 import useWorkspace
-  from "../hooks/useWorkspace";
+  from "../../hooks/useWorkspace";
 
 import {
-  createWorkspacePdfUrl,
-  downloadWorkspacePdf,
-} from "../documents/pdfs/generatePdf";
-
-import {
-  cleanMarkdownPreserveMath,
-  latexToReadableText,
-  tokenizeMathContent,
-} from "../documents/pdfs/renderMath";
+    createWorkspacePdfUrl,
+    downloadWorkspacePdf,
+} from "./renderer/generatePdf";
 
 
 // ======================================================
@@ -82,77 +76,19 @@ const inputClass = `
 // ======================================================
 
 function createEditorFriendlyContent(
-  value
+    content = ""
 ) {
 
-  const cleaned =
-    cleanMarkdownPreserveMath(
-      value || ""
-    );
+    return String(content)
 
+        .replace(
+            /\r\n/g,
+            "\n"
+        )
 
-  const tokens =
-    tokenizeMathContent(
-      cleaned
-    );
-
-
-  return tokens
-    .map(
-      (token) => {
-
-        if (
-          token.type ===
-          "text"
-        ) {
-
-          return token.content;
-
-        }
-
-
-        let math =
-          latexToReadableText(
-            token.content
-          );
-
-
-        math =
-          math.replace(
-            /\[\[FRAC:([^|\]]+)\|([^\]]+)\]\]/g,
-            "($1/$2)"
-          );
-
-
-        math =
-          math
-            .replace(
-              /∠/g,
-              "∠"
-            )
-            .replace(
-              /×/g,
-              "×"
-            )
-            .replace(
-              /÷/g,
-              "÷"
-            );
-
-
-        return math;
-
-      }
-    )
-    .join("")
-    .replace(
-      /\n{3,}/g,
-      "\n\n"
-    )
-    .trim();
+        .trim();
 
 }
-
 
 // ======================================================
 // PDF GENERATOR
@@ -296,21 +232,39 @@ export default function PDFGenerator() {
   // ====================================================
 
   const selectedDocument =
-    useMemo(
-      () =>
-        documents.find(
-          (document) =>
-            document.id ===
-            selectedDocumentId
-        ) ||
-        null,
-      [
-        documents,
-        selectedDocumentId,
-      ]
+  useMemo(() => {
+
+    console.log(
+      "Documents:",
+      documents
     );
 
+    console.log(
+      "Selected ID:",
+      selectedDocumentId
+    );
 
+    const found =
+      documents.find(
+        (document) =>
+          document.id ===
+          selectedDocumentId
+      );
+
+    console.log(
+  JSON.stringify(
+    found,
+    null,
+    2
+  )
+);
+
+    return found || null;
+
+  }, [
+    documents,
+    selectedDocumentId,
+  ]);
   // ====================================================
   // DOCUMENT LABEL
   // ====================================================
@@ -440,6 +394,11 @@ export default function PDFGenerator() {
         !selectedDocument
       ) {
 
+        console.log(
+  "Selected Document:",
+  selectedDocument
+);
+
         setForm(
           createEmptyForm()
         );
@@ -558,18 +517,27 @@ export default function PDFGenerator() {
   // SELECT WORKSPACE DOCUMENT
   // ====================================================
 
-  function handleDocumentChange(
-    event
-  ) {
+ function handleDocumentChange(
+  event
+) {
 
-    clearPreview();
+  console.log(
+    "Selected ID:",
+    event.target.value
+  );
 
+  console.log(
+    "Documents:",
+    documents
+  );
 
-    setSelectedDocumentId(
-      event.target.value
-    );
+  clearPreview();
 
-  }
+  setSelectedDocumentId(
+    event.target.value
+  );
+
+}
 
 
   // ====================================================

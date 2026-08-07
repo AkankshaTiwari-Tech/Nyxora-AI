@@ -30,9 +30,9 @@ import MessageContent
   from "./MessageContent";
 
 import {
-  createWorkspacePdfUrl,
-  downloadWorkspacePdf,
-} from "../../../workspace/documents/pdfs/generatePdf";
+    downloadWorkspacePdf
+}
+from "../../../workspace/documents/pdfs/renderer/generatePdf";
 
 import {
   createChatPdfTitle,

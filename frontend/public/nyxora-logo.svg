@@ -1,0 +1,60 @@
+<svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="nyxora-logo-mark" style="overflow: visible;"><defs><linearGradient id="nyxora-main-logo-left" x1="15" y1="10" x2="48" y2="90" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#F43AF5"></stop><stop offset="38%" stop-color="#A855F7"></stop><stop offset="100%" stop-color="#5B21B6"></stop></linearGradient><linearGradient id="nyxora-main-logo-center" x1="28" y1="18" x2="76" y2="84" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#D946EF"></stop><stop offset="32%" stop-color="#8B5CF6"></stop><stop offset="67%" stop-color="#3B82F6"></stop><stop offset="100%" stop-color="#06B6D4"></stop></linearGradient><linearGradient id="nyxora-main-logo-right" x1="67" y1="14" x2="88" y2="88" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#22D3EE"></stop><stop offset="42%" stop-color="#0EA5E9"></stop><stop offset="100%" stop-color="#2563EB"></stop></linearGradient><linearGradient id="nyxora-main-logo-edge" x1="18" y1="14" x2="83" y2="84" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#F0ABFC"></stop><stop offset="45%" stop-color="#818CF8"></stop><stop offset="100%" stop-color="#67E8F9"></stop></linearGradient><pattern id="nyxora-main-logo-pattern" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(-12)"><line x1="0" y1="0" x2="0" y2="4" stroke="white" stroke-opacity="0.18" stroke-width="0.65"></line></pattern><filter id="nyxora-main-logo-shadow" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#7C3AED" flood-opacity="0.32"></feDropShadow><feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="#06B6D4" flood-opacity="0.18"></feDropShadow></filter></defs><g filter="url(#nyxora-main-logo-shadow)"><path d="
+              M18 14
+              L34 19
+              L34 82
+              L18 89
+              Z
+            " fill="url(#nyxora-main-logo-left)"></path><path d="
+              M34 19
+              L43 31
+              L43 72
+              L34 82
+              Z
+            " fill="#4C1D95" fill-opacity="0.62"></path><path d="
+              M68 23
+              L83 14
+              L83 89
+              L68 84
+              Z
+            " fill="url(#nyxora-main-logo-right)"></path><path d="
+              M61 69
+              L68 62
+              L68 84
+              L61 73
+              Z
+            " fill="#1D4ED8" fill-opacity="0.58"></path><path d="
+              M18 14
+              L34 19
+              L83 89
+              L67 84
+              Z
+            " fill="url(#nyxora-main-logo-center)"></path><path d="
+              M18 14
+              L34 19
+              L83 89
+              L67 84
+              Z
+            " fill="url(#nyxora-main-logo-pattern)" opacity="0.72"></path><path d="
+              M18 14
+              L34 19
+              L34 82
+              L18 89
+              Z
+            " fill="url(#nyxora-main-logo-pattern)" opacity="0.45"></path><path d="
+              M68 23
+              L83 14
+              L83 89
+              L68 84
+              Z
+            " fill="url(#nyxora-main-logo-pattern)" opacity="0.32"></path><path d="
+              M18.5 14.5
+              L33.5 19.5
+              L82.5 88.5
+            " stroke="url(#nyxora-main-logo-edge)" stroke-width="1.25" stroke-linecap="round" opacity="0.92"></path><path d="
+              M82.5 14.5
+              L68.5 23.5
+            " stroke="#67E8F9" stroke-width="1.2" stroke-linecap="round" opacity="0.95"></path><path d="
+              M21 18
+              L31 21
+              L73 80
+            " stroke="white" stroke-width="0.7" stroke-linecap="round" opacity="0.22"></path></g></svg>

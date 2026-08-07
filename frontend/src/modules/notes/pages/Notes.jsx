@@ -20,8 +20,8 @@ import {
 } from "../../chat/services/geminiService";
 
 import {
-  downloadWorkspacePdf,
-} from "../../workspace/documents/pdfs/generatePdf";
+    downloadWorkspacePdf
+} from "../../workspace/documents/pdfs/renderer/generatePdf";
 
 import useWorkspace
   from "../../workspace/hooks/useWorkspace";

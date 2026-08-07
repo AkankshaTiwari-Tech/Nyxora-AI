@@ -24,7 +24,7 @@ import Workspace from "../modules/workspace/pages/Workspace";
 
 
 import PDFGenerator
-  from "../modules/workspace/pages/PDFGenerator";
+  from "../modules/workspace/documents/pdfs/PDFGenerator";
 
 
 import AIMemory
@@ -42,7 +42,7 @@ import Notes
 import Presentation
   from "../modules/presentation/pages/Presentation";
 
-
+  
 import ProtectedRoute from "./ProtectedRoute";
 
 
@@ -377,11 +377,6 @@ export default function AppRoutes() {
           }
 
         />
-
-
-
-
-
 
 
 
