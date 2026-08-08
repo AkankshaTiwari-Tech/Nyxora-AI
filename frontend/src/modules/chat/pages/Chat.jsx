@@ -1395,7 +1395,10 @@ export default function Chat() {
     <div
       className="
         flex
-        h-screen
+        h-[100dvh]
+        w-full
+        min-w-0
+        overflow-hidden
         bg-[#050816]
       "
     >
@@ -1430,9 +1433,10 @@ export default function Chat() {
       <div
         className="
           flex
+          min-w-0
           flex-1
           flex-col
-          min-w-0
+          overflow-hidden
         "
       >
 

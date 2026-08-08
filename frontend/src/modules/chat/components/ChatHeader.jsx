@@ -894,14 +894,16 @@ export default function ChatHeader({
           relative
           z-40
           flex
-          h-20
+          h-16
+          sm:h-20
           items-center
           justify-between
           overflow-visible
           border-b
           border-white/[0.07]
           bg-[#050816]/95
-          px-8
+          px-3
+          sm:px-8
           backdrop-blur-xl
         "
       >
@@ -951,18 +953,19 @@ export default function ChatHeader({
 
         {/* LEFT */}
 
-        <div className="relative flex items-center gap-4">
+        <div className="relative flex min-w-0 items-center gap-2 sm:gap-4">
 
           <NyxoraChatLogo />
 
 
-          <div>
+          <div className="min-w-0">
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
 
               <h2
                 className="
-                  text-xl
+                  text-base
+                  sm:text-xl
                   font-bold
                   tracking-tight
                   text-white
@@ -1005,7 +1008,8 @@ export default function ChatHeader({
                 flex
                 items-center
                 gap-2
-                text-sm
+                text-xs
+                sm:text-sm
                 text-emerald-400
               "
             >
@@ -1052,7 +1056,7 @@ export default function ChatHeader({
 
         {/* RIGHT */}
 
-        <div className="relative flex items-center gap-3">
+        <div className="relative flex items-center gap-1 sm:gap-3">
 
 
           {/* =========================================== */}
@@ -1063,6 +1067,8 @@ export default function ChatHeader({
 
             <div
               className="
+                hidden
+                sm:block
                 rounded-xl
                 transition
                 duration-300
@@ -1124,8 +1130,12 @@ export default function ChatHeader({
                 group
                 relative
                 flex
-                h-12
-                min-w-[225px]
+                h-10
+                min-w-0
+                w-[150px]
+                sm:h-12
+                sm:min-w-[225px]
+                sm:w-auto
                 items-center
                 justify-between
                 gap-4
@@ -1184,7 +1194,7 @@ export default function ChatHeader({
                 </span>
 
 
-                <span className="font-medium whitespace-nowrap">
+                <span className="min-w-0 truncate text-xs font-medium sm:text-sm">
 
                   {currentMode.label}
 
@@ -1394,8 +1404,12 @@ export default function ChatHeader({
 
               className={`
                 flex
-                h-12
-                w-12
+                h-10
+                w-10
+                sm:h-12
+                sm:w-12
+                translate-y-1
+                sm:translate-y-0
                 items-center
                 justify-center
                 rounded-xl
@@ -1997,8 +2011,10 @@ function NyxoraChatLogo() {
         group
         relative
         flex
-        h-12
-        w-12
+        h-9
+        w-9
+        sm:h-12
+        sm:w-12
         shrink-0
         items-center
         justify-center
@@ -2077,7 +2093,7 @@ function NyxoraChatLogo() {
 
         <svg
           viewBox="0 0 100 100"
-          className="relative h-8 w-8"
+          className="relative h-6 w-6 sm:h-8 sm:w-8"
           aria-hidden="true"
         >
 

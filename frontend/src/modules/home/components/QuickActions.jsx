@@ -113,7 +113,6 @@ export default function QuickActions() {
 
     <div>
 
-
       {/* ==================================================
           SECTION HEADER
       ================================================== */}
@@ -128,9 +127,7 @@ export default function QuickActions() {
         "
       >
 
-
         <div>
-
 
           <div
             className="
@@ -148,7 +145,6 @@ export default function QuickActions() {
               "
             />
 
-
             <span
               className="
                 text-[11px]
@@ -158,9 +154,7 @@ export default function QuickActions() {
                 text-slate-500
               "
             >
-
               Get Started
-
             </span>
 
           </div>
@@ -172,11 +166,10 @@ export default function QuickActions() {
               font-bold
               tracking-tight
               text-white
+              max-[480px]:text-xl
             "
           >
-
             Quick Actions
-
           </h2>
 
 
@@ -185,13 +178,11 @@ export default function QuickActions() {
               mt-1
               text-sm
               text-slate-500
+              max-[480px]:text-xs
             "
           >
-
             Jump straight into your most-used Nyxora tools.
-
           </p>
-
 
         </div>
 
@@ -212,315 +203,356 @@ export default function QuickActions() {
           "
         />
 
-
       </div>
-
 
 
       {/* ==================================================
           ACTION GRID
+          
+          Desktop:
+          1 / 2 / 4 columns as before.
+
+          Mobile:
+          Compact 2x2 cards.
+          No horizontal overflow.
       ================================================== */}
 
       <div
         className="
           grid
-          grid-cols-1
-          gap-4
+          grid-cols-2
+          gap-3
           sm:grid-cols-2
+          sm:gap-4
           xl:grid-cols-4
         "
       >
 
+        {
+          actions.map(
+            (action, index) => {
 
-        {actions.map(
-          (action, index) => {
-
-            const Icon =
-              action.icon;
-
-
-            const styles =
-              getAccentStyles(
-                action.accent
-              );
+              const Icon =
+                action.icon;
 
 
-            return (
-
-              <button
-
-                key={
-                  action.title
-                }
-
-                type="button"
-
-                onClick={
-                  action.action
-                }
-
-                className="
-                  group
-                  nyxora-card
-                  nyxora-card-hover
-                  relative
-                  min-h-[205px]
-                  overflow-hidden
-                  p-5
-                  text-left
-                "
-
-              >
+              const styles =
+                getAccentStyles(
+                  action.accent
+                );
 
 
-                {/* ==========================================
-                    CARD AMBIENT GLOW
-                ========================================== */}
+              return (
 
-                <div
-                  className={`
-                    pointer-events-none
-                    absolute
-                    -right-16
-                    -top-16
-                    h-40
-                    w-40
-                    rounded-full
-                    blur-[70px]
-                    transition-all
-                    duration-500
-                    group-hover:scale-125
-                    ${styles.glow}
-                  `}
-                />
+                <button
 
+                  key={
+                    action.title
+                  }
 
-                {/* ==========================================
-                    TOP ACCENT
-                ========================================== */}
+                  type="button"
 
-                <div
-                  className={`
-                    absolute
-                    left-5
-                    right-5
-                    top-0
-                    h-px
-                    bg-gradient-to-r
-                    from-transparent
-                    via-current
-                    to-transparent
-                    opacity-50
-                    ${styles.text}
-                  `}
-                />
+                  onClick={
+                    action.action
+                  }
 
-
-                {/* ==========================================
-                    TOP ROW
-                ========================================== */}
-
-                <div
                   className="
+                    group
+                    nyxora-card
+                    nyxora-card-hover
                     relative
-                    z-10
-                    flex
-                    items-start
-                    justify-between
+                    min-w-0
+                    min-h-[145px]
+                    overflow-hidden
+                    p-3
+
+                    sm:min-h-[205px]
+                    sm:p-5
+
+                    text-left
                   "
+
                 >
 
-
-                  {/* ICON */}
+                  {/* ==========================================
+                      CARD AMBIENT GLOW
+                  ========================================== */}
 
                   <div
                     className={`
-                      flex
-                      h-12
-                      w-12
-                      items-center
-                      justify-center
-                      rounded-xl
-                      border
+                      pointer-events-none
+                      absolute
+                      -right-16
+                      -top-16
+                      h-32
+                      w-32
+
+                      sm:h-40
+                      sm:w-40
+
+                      rounded-full
+                      blur-[60px]
+                      sm:blur-[70px]
                       transition-all
-                      duration-300
-                      group-hover:scale-105
-                      ${styles.icon}
+                      duration-500
+                      group-hover:scale-125
+                      ${styles.glow}
                     `}
-                  >
-
-                    <Icon
-                      size={23}
-                    />
-
-                  </div>
+                  />
 
 
+                  {/* ==========================================
+                      TOP ACCENT
+                  ========================================== */}
 
-                  {/* NUMBER + ARROW */}
+                  <div
+                    className={`
+                      absolute
+                      left-3
+                      right-3
+                      top-0
+
+                      sm:left-5
+                      sm:right-5
+
+                      h-px
+                      bg-gradient-to-r
+                      from-transparent
+                      via-current
+                      to-transparent
+                      opacity-50
+                      ${styles.text}
+                    `}
+                  />
+
+
+                  {/* ==========================================
+                      TOP ROW
+                  ========================================== */}
 
                   <div
                     className="
+                      relative
+                      z-10
                       flex
-                      items-center
-                      gap-2
+                      items-start
+                      justify-between
+                      gap-1
                     "
                   >
 
-
-                    <span
-                      className="
-                        text-[10px]
-                        font-semibold
-                        tracking-[0.15em]
-                        text-slate-700
-                      "
-                    >
-
-                      0{index + 1}
-
-                    </span>
-
+                    {/* ICON */}
 
                     <div
-                      className="
+                      className={`
                         flex
-                        h-8
-                        w-8
+                        h-9
+                        w-9
+
+                        sm:h-12
+                        sm:w-12
+
+                        shrink-0
                         items-center
                         justify-center
                         rounded-lg
+
+                        sm:rounded-xl
+
                         border
-                        border-white/[0.06]
-                        bg-white/[0.025]
-                        text-slate-600
                         transition-all
                         duration-300
-                        group-hover:border-white/[0.10]
-                        group-hover:bg-white/[0.05]
-                        group-hover:text-white
-                      "
+                        group-hover:scale-105
+                        ${styles.icon}
+                      `}
                     >
 
-                      <ArrowUpRight
-                        size={15}
+                      <Icon
+                        size={18}
                         className="
-                          transition-transform
-                          duration-300
-                          group-hover:translate-x-[1px]
-                          group-hover:-translate-y-[1px]
+                          sm:h-[23px]
+                          sm:w-[23px]
                         "
                       />
 
                     </div>
 
 
+                    {/* NUMBER + ARROW */}
+
+                    <div
+                      className="
+                        flex
+                        items-center
+                        gap-1
+
+                        sm:gap-2
+                      "
+                    >
+
+                      <span
+                        className="
+                          hidden
+                          text-[10px]
+                          font-semibold
+                          tracking-[0.15em]
+                          text-slate-700
+                          sm:block
+                        "
+                      >
+                        0{index + 1}
+                      </span>
+
+
+                      <div
+                        className="
+                          flex
+                          h-6
+                          w-6
+
+                          sm:h-8
+                          sm:w-8
+
+                          items-center
+                          justify-center
+                          rounded-md
+
+                          sm:rounded-lg
+
+                          border
+                          border-white/[0.06]
+                          bg-white/[0.025]
+                          text-slate-600
+                          transition-all
+                          duration-300
+                          group-hover:border-white/[0.10]
+                          group-hover:bg-white/[0.05]
+                          group-hover:text-white
+                        "
+                      >
+
+                        <ArrowUpRight
+                          size={12}
+                          className="
+                            sm:h-[15px]
+                            sm:w-[15px]
+                            transition-transform
+                            duration-300
+                            group-hover:translate-x-[1px]
+                            group-hover:-translate-y-[1px]
+                          "
+                        />
+
+                      </div>
+
+                    </div>
+
                   </div>
 
 
-                </div>
-
-
-
-                {/* ==========================================
-                    CONTENT
-                ========================================== */}
-
-                <div
-                  className="
-                    relative
-                    z-10
-                    mt-6
-                  "
-                >
-
-
-                  <h3
-                    className="
-                      text-lg
-                      font-semibold
-                      tracking-tight
-                      text-white
-                      transition-colors
-                      duration-300
-                    "
-                  >
-
-                    {action.title}
-
-                  </h3>
-
-
-                  <p
-                    className="
-                      mt-2
-                      max-w-[220px]
-                      text-sm
-                      leading-6
-                      text-slate-500
-                      transition-colors
-                      duration-300
-                      group-hover:text-slate-400
-                    "
-                  >
-
-                    {action.description}
-
-                  </p>
-
-
-                </div>
-
-
-
-                {/* ==========================================
-                    BOTTOM BRAND INDICATOR
-                ========================================== */}
-
-                <div
-                  className="
-                    absolute
-                    bottom-0
-                    left-0
-                    right-0
-                    h-[2px]
-                    overflow-hidden
-                    opacity-0
-                    transition-opacity
-                    duration-300
-                    group-hover:opacity-100
-                  "
-                >
+                  {/* ==========================================
+                      CONTENT
+                  ========================================== */}
 
                   <div
-                    className={`
-                      h-full
-                      w-full
-                      bg-gradient-to-r
-                      ${styles.line}
-                    `}
-                  />
+                    className="
+                      relative
+                      z-10
+                      mt-3
 
-                </div>
+                      sm:mt-6
+                    "
+                  >
+
+                    <h3
+                      className="
+                        truncate
+                        text-sm
+                        font-semibold
+                        tracking-tight
+                        text-white
+
+                        sm:text-lg
+
+                        transition-colors
+                        duration-300
+                      "
+                    >
+                      {action.title}
+                    </h3>
 
 
-              </button>
+                    <p
+                      className="
+                        mt-1
+                        hidden
+                        text-xs
+                        leading-5
+                        text-slate-500
 
-            );
+                        sm:mt-2
+                        sm:block
+                        sm:max-w-[220px]
+                        sm:text-sm
+                        sm:leading-6
 
-          }
-        )}
+                        sm:group-hover:text-slate-400
+                        transition-colors
+                        duration-300
+                      "
+                    >
+                      {action.description}
+                    </p>
 
+                  </div>
+
+
+                  {/* ==========================================
+                      BOTTOM BRAND INDICATOR
+                  ========================================== */}
+
+                  <div
+                    className="
+                      absolute
+                      bottom-0
+                      left-0
+                      right-0
+                      h-[2px]
+                      overflow-hidden
+                      opacity-0
+                      transition-opacity
+                      duration-300
+                      group-hover:opacity-100
+                    "
+                  >
+
+                    <div
+                      className={`
+                        h-full
+                        w-full
+                        bg-gradient-to-r
+                        ${styles.line}
+                      `}
+                    />
+
+                  </div>
+
+
+                </button>
+
+              );
+
+            }
+          )
+        }
 
       </div>
-
 
     </div>
 
   );
 
 }
-
 
 
 /* =========================================================
@@ -531,9 +563,7 @@ function getAccentStyles(
   accent
 ) {
 
-
   switch (accent) {
-
 
     case "fuchsia":
 
@@ -629,8 +659,6 @@ function getAccentStyles(
 
       };
 
-
   }
-
 
 }

@@ -1,5 +1,27 @@
 let controller = null;
 
+// ======================================================
+// API BASE URL
+//
+// Desktop:
+//   localhost -> localhost:5000
+//
+// Phone/tablet on same Wi-Fi:
+//   automatically uses the laptop's IP address
+//
+// Production:
+//   VITE_API_URL can be provided in .env
+// ======================================================
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+      ? "http://localhost:5000"
+      : `http://${window.location.hostname}:5000`
+  );
+
 
 // ======================================================
 // FILE TO BASE64
@@ -112,14 +134,14 @@ function getMimeType(
   if (!file) {
 
     return "";
-  }
 
+  }
 
   if (file.type) {
 
     return file.type;
-  }
 
+  }
 
   const name =
     String(
@@ -132,6 +154,7 @@ function getMimeType(
   ) {
 
     return "application/pdf";
+
   }
 
 
@@ -140,6 +163,7 @@ function getMimeType(
   ) {
 
     return "image/png";
+
   }
 
 
@@ -149,6 +173,7 @@ function getMimeType(
   ) {
 
     return "image/jpeg";
+
   }
 
 
@@ -157,6 +182,7 @@ function getMimeType(
   ) {
 
     return "image/webp";
+
   }
 
 
@@ -202,8 +228,8 @@ async function buildAttachment(
   if (!file) {
 
     return null;
-  }
 
+  }
 
   const mimeType =
     getMimeType(file);
@@ -216,6 +242,7 @@ async function buildAttachment(
   ) {
 
     return null;
+
   }
 
 
@@ -339,7 +366,7 @@ export async function generateResponse(
     const response =
       await fetch(
 
-        "http://localhost:5000/api/chat",
+        `${API_BASE_URL}/api/chat`,
 
         {
 
@@ -583,6 +610,7 @@ export async function generateResponse(
 
 
       return "";
+
     }
 
 
