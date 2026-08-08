@@ -426,7 +426,7 @@ String(text || "")
 
 function isAnswerKeyLine(text = ""){
 
-return /^(?:#{1,6}\s*)?(?:उत्तर कुंजी|answer key)\b/i.test(
+return /^(?:#{1,6}\s*)?(?:उत्तर कुंजी|answer key)(?:\s*\([^)]*\))?(?:\s+(?:खंड|section)\s*['"“”]?[कखगघa-d]['"“”]?)?\s*(?:[:：-]\s*)?$/iu.test(
 
 String(text || "").trim()
 
@@ -437,7 +437,7 @@ String(text || "").trim()
 
 function isSectionLine(text = ""){
 
-return /^(?:#{1,6}\s*)?खंड\s*['"“”]?[कखगघa-d]['"“”]?\s*[:：]/iu.test(
+return /^(?:#{1,6}\s*)?खंड\s*['"“”]?[कखगघa-d]['"“”]?\s*(?:[:：-].*)?$/iu.test(
 
 String(text || "").trim()
 
@@ -445,7 +445,7 @@ String(text || "").trim()
 
 ||
 
-/^(?:#{1,6}\s*)?section\s+[a-d]\b/i.test(
+/^(?:#{1,6}\s*)?section\s+[a-d]\b.*$/i.test(
 
 String(text || "").trim()
 
@@ -595,6 +595,401 @@ options
 }
 
 
+
+function extractHindiAnswerKey(text = ""){
+
+const value = normalizeHindiLine(text);
+
+const parsePayload = (payload = "") => {
+
+const cleanedPayload =
+cleanText(payload);
+
+const optionPayload =
+cleanedPayload.match(
+/^\(?([कखगघ])\)?(?:\s*[.:-]\s*(.*))?$/u
+);
+
+if(optionPayload){
+
+return {
+answer:optionPayload[1],
+solution:
+cleanText(
+optionPayload[2] || ""
+)
+};
+
+}
+
+return {
+answer:cleanedPayload,
+solution:""
+};
+
+};
+
+
+const inlineMarker =
+value.match(
+/^(.*?)(?:उत्तर\s*कुंजी|सही\s*उत्तर|उत्तर|answer\s*key|correct\s*answer)\s*[:：-]\s*(.+)$/iu
+);
+
+if(inlineMarker){
+
+const parsedPayload =
+parsePayload(
+inlineMarker[2]
+);
+
+return {
+text:cleanText(inlineMarker[1]),
+answer:parsedPayload.answer,
+solution:parsedPayload.solution
+};
+
+}
+
+const answerMatch = value.match(
+/^(?:उत्तर\s*कुंजी|सही\s*उत्तर|उत्तर|answer\s*key|correct\s*answer)\s*[:：-]\s*(.+)$/iu
+);
+
+if(answerMatch){
+
+const parsedPayload =
+parsePayload(
+answerMatch[1]
+);
+
+return {
+text:"",
+answer:parsedPayload.answer,
+solution:parsedPayload.solution
+};
+
+}
+
+const optionOnly = value.match(
+/^\(?([कखगघ])\)?\.?$/u
+);
+
+if(optionOnly){
+
+return {
+text:"",
+answer:optionOnly[1],
+solution:""
+};
+
+}
+
+return {
+text:value,
+answer:"",
+solution:""
+};
+
+}
+
+
+function splitHindiSolutionSteps(text = ""){
+
+const value = String(text || "")
+.replace(/\r/g,"")
+.split("\n")
+.filter(line => !isSectionLine(line))
+.join("\n")
+.trim();
+
+if(!value){
+
+return [];
+
+}
+
+const lines = value
+.split(/\n+/)
+.map(line=>cleanText(line))
+.filter(Boolean);
+
+if(lines.length > 1){
+
+return lines;
+
+}
+
+const sentenceParts = value
+.split(/(?<=[।!?])\s+/u)
+.map(line=>cleanText(line))
+.filter(Boolean);
+
+return sentenceParts.length > 1
+? sentenceParts
+: lines;
+}
+
+
+function normalizeHindiAnswerValue(answer = ""){
+
+const value = cleanText(answer);
+
+if(!value){
+
+return "";
+
+}
+
+const optionOnly = value.match(
+/^\(?([कखगघ])\)?\.?$/u
+);
+
+if(optionOnly){
+
+return "(" + optionOnly[1] + ")";
+
+}
+
+const labelledOption = value.match(
+/^(?:सही\s*उत्तर|उत्तर\s*कुंजी|उत्तर|answer\s*key|correct\s*answer)\s*[:：-]?\s*\(?([कखगघ])\)?\.?$/iu
+);
+
+if(labelledOption){
+
+return "(" + labelledOption[1] + ")";
+
+}
+
+return value;
+
+}
+
+
+function normalizeHindiMetadataText(value = "", field = ""){
+
+let result = cleanText(value);
+
+if(!result){
+
+return "";
+
+}
+
+const replacements = [
+
+[/\bclass\s*(\d{1,2})\b/gi,"कक्षा $1"],
+[/\bgrade\s*(\d{1,2})\b/gi,"कक्षा $1"],
+[/\bmathematics\b/gi,"गणित"],
+[/\bmaths?\b/gi,"गणित"],
+[/\bhindi\b/gi,"हिंदी"],
+[/\benglish\b/gi,"अंग्रेज़ी"],
+[/\bscience\b/gi,"विज्ञान"],
+[/\bphysics\b/gi,"भौतिक विज्ञान"],
+[/\bchemistry\b/gi,"रसायन विज्ञान"],
+[/\bbiology\b/gi,"जीव विज्ञान"],
+[/\bsocial\s+science\b/gi,"सामाजिक विज्ञान"],
+[/\bsocial\s+studies\b/gi,"सामाजिक विज्ञान"],
+[/\bsst\b/gi,"सामाजिक विज्ञान"],
+[/\bevs\b/gi,"पर्यावरण अध्ययन"],
+[/\benvironmental\s+studies\b/gi,"पर्यावरण अध्ययन"],
+[/\bcomputer\s+science\b/gi,"कंप्यूटर विज्ञान"],
+[/\bcomputer\b/gi,"कंप्यूटर"],
+[/\bunit\s+assessment\b/gi,"इकाई मूल्यांकन"],
+[/\bunit\s+test\b/gi,"इकाई परीक्षा"],
+[/\bunit\s+exam\b/gi,"इकाई परीक्षा"],
+[/\bpractice\s+test\b/gi,"अभ्यास परीक्षा"],
+[/\bquestion\s+paper\b/gi,"प्रश्न-पत्र"],
+[/\bquestion\s+test\b/gi,"प्रश्न-पत्र"],
+[/\btest\s+paper\b/gi,"परीक्षा-पत्र"],
+[/\btest\b/gi,"परीक्षा"],
+[/\bexam\b/gi,"परीक्षा"],
+[/\bworksheet\b/gi,"कार्यपत्रक"],
+[/\bchapter\b/gi,"अध्याय"],
+[/\btopic\b/gi,"विषय"],
+[/\bsubject\b/gi,"विषय"],
+[/\btitle\b/gi,"शीर्षक"],
+[/\bchapter\s+(\d+)\b/gi,"अध्याय $1"],
+[/\bclass\b/gi,"कक्षा"],
+[/\bgrade\b/gi,"कक्षा"]
+];
+
+replacements.forEach(([pattern,replacement])=>{
+result=result.replace(pattern,replacement);
+});
+
+const commonHindiChapterNames = [
+
+[/\bdo bailon ki katha\b/gi,"दो बैलों की कथा"],
+[/\blakh ki churiyan\b/gi,"लाख की चूड़ियाँ"],
+[/\bbus ki yatra\b/gi,"बस की यात्रा"],
+[/\bdiwanon ki hasti\b/gi,"दीवानों की हस्ती"],
+[/\bchitthiyon ki anuthi duniya\b/gi,"चिट्ठियों की अनूठी दुनिया"],
+[/\bbhagwan ke dakiye\b/gi,"भगवान के डाकिए"],
+[/\bkya nirash hua jaye\b/gi,"क्या निराश हुआ जाए"],
+[/\bye sabse kathin samay nahi\b/gi,"यह सबसे कठिन समय नहीं"],
+[/\bkabir ki sakhiyan\b/gi,"कबीर की साखियाँ"],
+[/\bkamchor\b/gi,"कामचोर"],
+[/\bdhwani\b/gi,"ध्वनि"],
+[/\bvasant\b/gi,"वसंत"],
+[/\bbharat ki khoj\b/gi,"भारत की खोज"]
+
+];
+
+commonHindiChapterNames.forEach(([pattern,replacement])=>{
+result=result.replace(pattern,replacement);
+});
+
+
+const commonHinglish = [
+[/\bprakash\b/gi,"प्रकाश"],
+[/\bparyayvachi\b/gi,"पर्यायवाची"],
+[/\bvilom\b/gi,"विलोम"],
+[/\bsamas\b/gi,"समास"],
+[/\bsandhi\b/gi,"संधि"],
+[/\bupasarg\b/gi,"उपसर्ग"],
+[/\bpratyay\b/gi,"प्रत्यय"],
+[/\bmuhavare?\b/gi,"मुहावरे"],
+[/\bpath\b/gi,"पाठ"],
+[/\bkavita\b/gi,"कविता"],
+[/\bkahani\b/gi,"कहानी"],
+[/\blekhan\b/gi,"लेखन"],
+[/\bvyakaran\b/gi,"व्याकरण"]
+];
+
+commonHinglish.forEach(([pattern,replacement])=>{
+result=result.replace(pattern,replacement);
+});
+
+if(field === "class"){
+
+const classMatch=result.match(/(?:कक्षा|class)\s*[:\-]?\s*(\d{1,2})/iu);
+
+if(classMatch){
+
+return "कक्षा " + classMatch[1];
+
+}
+
+}
+
+return cleanText(result);
+}
+
+
+function getHindiMetadata(data = "", content = ""){
+
+const source = String(content || "");
+
+const classFromContent =
+source.match(
+/(?:कक्षा|class|grade)\s*[:\-]?\s*(\d{1,2})/iu
+);
+
+const subjectFromContent =
+source.match(
+/(?:विषय|subject)\s*[:：-]\s*([^\n|]+)/iu
+);
+
+const chapterFromContent =
+source.match(
+/(?:अध्याय|पाठ|chapter|topic)\s*[:：-]\s*([^\n|]+)/iu
+);
+
+const titleFromContent =
+source
+.split(/\r?\n/)
+.map(line=>cleanText(line))
+.find(line=>{
+return Boolean(
+line &&
+!isAnswerKeyLine(line) &&
+!isInstructionLine(line) &&
+!isSectionLine(line) &&
+!/^(?:प्र(?:श्न)?\s*\d+|Q\s*\d+|\d+)\s*[.)]/iu.test(line)
+);
+});
+
+const suppliedTitle =
+cleanText(
+data.title || ""
+);
+
+const unusableTitle =
+/^(?:hello\s+nyxora|sure(?:!|,)?\s+here|here(?:'|’)s\s+your|nyxora\s+document)$/iu.test(
+suppliedTitle
+);
+
+const explicitAiTitle =
+source.match(
+/^(?:शीर्षक|title)\s*[:：-]\s*(.+)$/imu
+);
+
+const rawTitle =
+cleanText(
+explicitAiTitle
+? explicitAiTitle[1]
+: titleFromContent ||
+"न्योरा दस्तावेज़"
+);
+
+const rawSubject =
+cleanText(
+subjectFromContent
+? subjectFromContent[1]
+: /[\u0900-\u097F]/u.test(source)
+? "हिंदी"
+: ""
+);
+
+const rawClass =
+cleanText(
+classFromContent ? classFromContent[1] : ""
+);
+
+const inferredHindiChapter =
+[
+"दो बैलों की कथा",
+"लाख की चूड़ियाँ",
+"बस की यात्रा",
+"दीवानों की हस्ती",
+"चिट्ठियों की अनूठी दुनिया",
+"भगवान के डाकिए",
+"क्या निराश हुआ जाए",
+"यह सबसे कठिन समय नहीं",
+"कबीर की साखियाँ",
+"कामचोर",
+"ध्वनि",
+"वसंत",
+"भारत की खोज"
+].find(
+name => source.toLocaleLowerCase().includes(name.toLocaleLowerCase())
+) || "";
+
+const rawChapter =
+cleanText(
+chapterFromContent
+? chapterFromContent[1]
+: inferredHindiChapter
+);
+
+const rawType =
+cleanText(
+(source.match(
+/(?:प्रकार|type|document\s*type)\s*[:：-]\s*([^\n|]+)/iu
+) || [,""])[1] ||
+"test"
+);
+
+return {
+title:normalizeHindiMetadataText(rawTitle,"title") || "न्योरा दस्तावेज़",
+subject:normalizeHindiMetadataText(rawSubject,"subject") || "उपलब्ध नहीं",
+className:normalizeHindiMetadataText(rawClass,"class") || "उपलब्ध नहीं",
+chapter:normalizeHindiMetadataText(rawChapter,"chapter") || "उपलब्ध नहीं",
+type:normalizeHindiMetadataText(rawType,"type") || "परीक्षा"
+};
+
+}
+
+
 function parseHindiQuestionTest(content = ""){
 
 const rawLines = String(content || "")
@@ -614,7 +1009,11 @@ let currentQuestion = null;
 
 let readingAnswerKey = false;
 
+let readingInlineAnswerKey = false;
+
 let answerKeyQuestions = [];
+
+let currentAnswerKeySection = "";
 
 let instructions = [];
 
@@ -650,6 +1049,41 @@ currentQuestion = null;
 };
 
 
+const extractHindiAnswerSectionTitle = (text = "") => {
+
+const match = String(text || "").match(
+/(?:उत्तर कुंजी|answer key)(?:\s*\([^)]*\))?\s+(खंड|section)\s*['"“”]?([कखगघa-d])['"“”]?/iu
+);
+
+if(!match){
+
+return "";
+
+}
+
+return match[1].toLowerCase() === "section"
+? "Section " + String(match[2]).toUpperCase()
+: "खंड '" + match[2] + "'";
+
+};
+
+
+const stripInlineAnswerKeyHeader = (text = "") => {
+
+return cleanText(
+
+String(text || "")
+
+.replace(
+
+/\s*(?:उत्तर कुंजी|answer key)(?:\s*\([^)]*\))?(?:\s+(?:खंड|section)\s*['"“”]?[कखगघa-d]['"“”]?)?\s*$/iu,
+""
+)
+
+);
+
+};
+
 const createQuestion = (line) => {
 
 const value = normalizeHindiLine(line);
@@ -675,12 +1109,22 @@ const number = numberMatch
 
 const body = removeQuestionNumber(value);
 
+const answerExtraction =
+
+extractHindiAnswerKey(
+body
+);
+
+const questionBody =
+stripInlineAnswerKeyHeader(
+answerExtraction.text || body
+);
 
 const parsed =
 
 parseInlineHindiOptions(
 
-body
+questionBody
 
 );
 
@@ -691,13 +1135,35 @@ number,
 
 text:
 
+cleanText(
+(
 parsed.question ||
 
-body,
+questionBody ||
+
+body
+)
+.replace(
+/^\s*(?:खंड\s*['"“”]?[कखगघa-d]['"“”]?\s*[:：].*)$/iu,
+""
+)
+),
 
 options:
 
 parsed.options || [],
+
+answerKey:
+
+answerExtraction.answer || "",
+
+answerSectionTitle:
+
+extractHindiAnswerSectionTitle(body),
+
+solution:
+
+answerExtraction.solution || "",
 
 isMCQ:
 
@@ -743,7 +1209,10 @@ normalizeHindiLine(raw);
 
 
 /*
- * ANSWER KEY
+ * A standalone Answer Key header belongs to the Answer Key flow.
+ * It must be detected BEFORE inline-answer handling so that the
+ * following answer entries are never added back into the normal
+ * question section.
  */
 
 if(
@@ -756,12 +1225,149 @@ pushCurrentQuestion();
 
 readingAnswerKey = true;
 
+readingInlineAnswerKey = false;
+
 currentSection = null;
+
+currentAnswerKeySection =
+extractHindiAnswerSectionTitle(
+normalized
+);
 
 return;
 
 }
 
+
+if(
+currentQuestion &&
+readingInlineAnswerKey
+){
+
+const inlineAnswer =
+extractHindiAnswerKey(
+normalized
+);
+
+if(inlineAnswer.answer){
+
+currentQuestion.answerKey =
+normalizeHindiAnswerValue(
+inlineAnswer.answer
+);
+
+if(inlineAnswer.solution){
+
+currentQuestion.solution =
+cleanText(
+(
+currentQuestion.solution
+? currentQuestion.solution + "\n"
+: ""
+) +
+inlineAnswer.solution
+);
+
+}
+
+readingInlineAnswerKey = false;
+
+return;
+
+}
+
+if(normalized){
+
+currentQuestion.answerKey =
+normalizeHindiAnswerValue(
+normalized
+);
+
+readingInlineAnswerKey = false;
+
+return;
+
+}
+
+}
+
+
+if(
+currentQuestion
+){
+
+const inlineAnswerLine =
+normalized.match(
+/^(?:उत्तर\s*कुंजी|सही\s*उत्तर|उत्तर|answer\s*key|correct\s*answer)(?:\s*\([^)]*\))?\s*[:：-]?\s*(.*)$/iu
+);
+
+if(inlineAnswerLine){
+
+const inlineValue =
+cleanText(
+inlineAnswerLine[1] || ""
+);
+
+if(
+!inlineValue &&
+/^(?:उत्तर\s*कुंजी|answer\s*key)/iu.test(normalized)
+){
+
+currentQuestion.text =
+stripInlineAnswerKeyHeader(
+currentQuestion.text
+);
+
+readingInlineAnswerKey = true;
+
+return;
+
+}
+
+
+if(inlineValue){
+
+const inlineAnswer =
+extractHindiAnswerKey(
+normalized
+);
+
+currentQuestion.answerKey =
+normalizeHindiAnswerValue(
+inlineAnswer.answer ||
+inlineValue
+);
+
+if(inlineAnswer.solution){
+
+currentQuestion.solution =
+cleanText(
+(
+currentQuestion.solution
+? currentQuestion.solution + "\n"
+: ""
+) +
+inlineAnswer.solution
+);
+
+}
+
+}else{
+
+readingInlineAnswerKey = true;
+
+}
+
+return;
+
+}
+
+}
+
+
+/*
+ * ANSWER KEY
+ */
 
 if(readingAnswerKey){
 
@@ -770,6 +1376,8 @@ if(
 isSectionLine(normalized)
 
 ){
+
+currentAnswerKeySection = getSectionTitle(normalized);
 
 return;
 
@@ -782,14 +1390,171 @@ isQuestionStart(normalized)
 
 ){
 
-const answerQuestion =
+const numberMatch =
 
-createQuestion(
+normalized.match(
 
-normalized
+/^(?:प्र(?:श्न)?\s*|Q\s*|Question\s*)(\d+)\s*[.)]/iu
 
 );
 
+const fallbackNumberMatch =
+
+normalized.match(
+
+/^(\d+)\s*[.)]/u
+
+);
+
+const answerNumber =
+
+numberMatch
+
+? Number(numberMatch[1])
+
+: fallbackNumberMatch
+
+? Number(fallbackNumberMatch[1])
+
+: answerKeyQuestions.length + 1;
+
+const answerBody =
+
+cleanText(
+
+normalized
+
+.replace(
+
+/^(?:प्र(?:श्न)?\s*|Q\s*|Question\s*)(\d+)\s*[.)]\s*/iu,
+
+""
+
+)
+
+.replace(
+
+/^(\d+)\s*[.)]\s*/u,
+
+""
+
+)
+
+);
+
+const answerQuestion = {
+
+number:answerNumber,
+
+text:"",
+
+options:[],
+
+isMCQ:false,
+
+answerKey:"",
+
+answerSectionTitle:"",
+
+sectionTitle:currentAnswerKeySection,
+
+solution:""
+
+};
+
+const answerWithLabel =
+
+extractHindiAnswerKey(
+
+answerBody
+
+);
+
+if(
+
+answerWithLabel.answer
+
+){
+
+answerQuestion.answerKey =
+
+normalizeHindiAnswerValue(
+
+answerWithLabel.answer
+
+);
+
+answerQuestion.solution =
+
+cleanText(
+
+answerWithLabel.solution || ""
+
+);
+
+}else{
+
+const optionWithText =
+
+answerBody.match(
+
+/^\(?([कखगघ])\)?\s+(.+)$/u
+
+);
+
+if(optionWithText){
+
+answerQuestion.answerKey =
+
+normalizeHindiAnswerValue(
+
+optionWithText[1]
+
+);
+
+answerQuestion.solution =
+
+cleanText(
+
+optionWithText[2]
+
+);
+
+}else{
+
+const optionOnly =
+
+answerBody.match(
+
+/^\(?([कखगघ])\)?\.?$/u
+
+);
+
+if(optionOnly){
+
+answerQuestion.answerKey =
+
+normalizeHindiAnswerValue(
+
+optionOnly[1]
+
+);
+
+}else{
+
+answerQuestion.solution =
+
+cleanText(
+
+answerBody
+
+);
+
+}
+
+}
+
+}
 
 answerKeyQuestions.push(
 
@@ -802,20 +1567,7 @@ return;
 }
 
 
-const inlineAnswer =
-
-parseInlineHindiOptions(
-
-normalized
-
-);
-
-
 if(
-
-inlineAnswer.options.length >= 2
-
-&&
 
 answerKeyQuestions.length
 
@@ -830,32 +1582,45 @@ answerKeyQuestions.length - 1
 ];
 
 
-last.options.push(
+const directAnswer =
 
-...inlineAnswer.options
+normalized.match(
+
+/^(?:उत्तर\s*कुंजी|सही\s*उत्तर|उत्तर|answer\s*key|correct\s*answer)\s*[:：-]?\s*\(?([कखगघ])\)?(?:\s*[-–—:：]\s*(.*))?$/iu
 
 );
 
-if(inlineAnswer.question){
+if(directAnswer){
 
-last.text = cleanText(
+last.answerKey =
+
+normalizeHindiAnswerValue(
+
+directAnswer[1]
+
+);
+
+if(directAnswer[2]){
+
+last.solution =
+
+cleanText(
 
 (
 
-last.text
+last.solution
 
-? last.text + " "
+? last.solution + "\n"
 
 : ""
 
 ) +
 
-inlineAnswer.question
+directAnswer[2]
 
 );
 
 }
-
 
 return;
 
@@ -866,7 +1631,7 @@ const answerOption =
 
 normalized.match(
 
-/^\(([कखगघ])\)\s*(.*)$/u
+/^\(?([कखगघ])\)?\s*(?:[.:-]\s*)?(.*)$/u
 
 );
 
@@ -877,65 +1642,98 @@ answerOption
 
 &&
 
-answerKeyQuestions.length
+answerOption[1]
+
+&&
+
+answerOption[2] === ""
+
+&&
+
+!last.answerKey
 
 ){
 
-const last =
+last.answerKey =
 
-answerKeyQuestions[
+normalizeHindiAnswerValue(
 
-answerKeyQuestions.length - 1
+answerOption[1]
 
-];
-
-
-last.options.push({
-
-letter:
-
-answerOption[1],
-
-text:
-
-cleanText(
-
-answerOption[2]
-
-)
-
-});
-
+);
 
 return;
 
 }
 
 
+const answerOptionWithText =
+
+normalized.match(
+
+/^\(?([कखगघ])\)?\s*[.:-]\s*(.+)$/u
+
+);
+
+
 if(
 
-answerKeyQuestions.length
+answerOptionWithText
+
+&&
+
+answerOptionWithText[1]
+
+&&
+
+!last.answerKey
+
+&&
+
+answerOptionWithText[2]
 
 ){
 
-const last =
+last.answerKey =
 
-answerKeyQuestions[
+normalizeHindiAnswerValue(
 
-answerKeyQuestions.length - 1
+answerOptionWithText[1]
 
-];
+);
 
-
-last.text =
+last.solution =
 
 cleanText(
 
 (
 
-last.text
+last.solution
 
-? last.text + " "
+? last.solution + "\n"
+
+: ""
+
+) +
+
+answerOptionWithText[2]
+
+);
+
+return;
+
+}
+
+
+last.solution =
+
+cleanText(
+
+(
+
+last.solution
+
+? last.solution + "\n"
 
 : ""
 
@@ -951,6 +1749,7 @@ normalized
 return;
 
 }
+
 
 
 /*
@@ -1106,6 +1905,8 @@ createQuestion(
 normalized
 
 );
+
+readingInlineAnswerKey = false;
 
 
 return;
@@ -1814,18 +2615,25 @@ question={question}
 
 function AnswerKey({questions=[]}){
 
+const answerQuestions =
+Array.isArray(questions)
+? questions
+: [];
+
+if(!answerQuestions.length){
+
+return null;
+
+}
+
 return(
 
 <View
-
 style={{
-
-marginTop:14,
-
+marginTop:18,
 width:"100%"
-
 }}
-
+wrap={true}
 >
 
 <GlassBadge>
@@ -1834,85 +2642,94 @@ width:"100%"
 
 </GlassBadge>
 
-
 {
 
-questions.map((question,index)=>(
+answerQuestions.map((question,index)=>(
 
 <View
-
-key={"answer-" + index}
-
+key={"answer-key-" + index}
 style={{
-
-marginBottom:8,
-
+marginBottom:10,
 width:"100%"
-
 }}
-
 wrap={false}
-
 >
 
+{
+cleanText(question.sectionTitle || "") &&
+(
+index === 0 ||
+cleanText(question.sectionTitle || "") !==
+cleanText(answerQuestions[index - 1]?.sectionTitle || "")
+) &&
+<HindiAnswerSectionBadge
+title={
+cleanText(
+question.sectionTitle || ""
+)
+}
+/>
+
+}
+
 <View
-
 style={{
-
 flexDirection:"row",
-
-alignItems:"flex-start"
-
+alignItems:"flex-start",
+width:"100%"
 }}
-
 >
 
 <QuestionNumberCircle
-
-number={question.number || index + 1}
-
+number={
+question.number ||
+index + 1
+}
 />
 
-<Text
-
+<View
 style={{
-
-fontFamily:"NotoSansDevanagari",
-
-fontSize:10,
-
-lineHeight:1.35,
-
-color:"#161C48",
-
-flex:1
-
+flex:1,
+width:"100%"
 }}
-
 >
 
-{question.text}
+{
+(() => {
 
-</Text>
+const answerData =
+getHindiAnswerData(
+question
+);
+
+return(
+<>
+
+{answerData.answer &&
+<HindiAnswerBubble
+answer={
+answerData.answer
+}
+/>
+}
+
+{answerData.solution &&
+<HindiSolutionSteps
+solution={
+answerData.solution
+}
+/>
+}
+
+</>
+);
+
+})()
+}
 
 </View>
 
-
-{
-
-question.options.map((option,optionIndex)=>(
-
-<HindiOption
-
-key={"answer-option-" + index + "-" + optionIndex}
-
-option={option || {letter:"",text:""}}
-
-/>
-
-))
-
-}
+</View>
 
 </View>
 
@@ -1923,6 +2740,231 @@ option={option || {letter:"",text:""}}
 </View>
 
 );
+
+}
+
+function HindiAnswerSectionBadge({title=""}){
+
+const value = cleanText(title);
+
+if(!value){
+
+return null;
+
+}
+
+return(
+
+<View
+wrap={false}
+style={{
+alignSelf:"flex-start",
+marginLeft:26,
+marginTop:5,
+marginBottom:6,
+paddingHorizontal:9,
+paddingVertical:4,
+backgroundColor:"#F5F1FF",
+borderWidth:1,
+borderColor:"#D8CCFF",
+borderRadius:8
+}}
+>
+
+<Text
+style={{
+fontFamily:"NotoSansDevanagari",
+fontSize:8.5,
+fontWeight:"bold",
+color:"#4F46E5",
+lineHeight:1.25
+}}
+>
+{value}
+</Text>
+
+</View>
+
+);
+
+}
+
+
+function HindiAnswerBubble({answer=""}){
+
+const value =
+normalizeHindiAnswerValue(
+answer
+);
+
+if(!value){
+
+return null;
+
+}
+
+const isOptionAnswer =
+/^\([कखगघ]\)$/u.test(
+value
+);
+
+return(
+
+<View
+wrap={false}
+style={{
+marginTop:7,
+marginBottom:5,
+marginLeft:26,
+width:"100%"
+}}
+>
+
+<View
+wrap={false}
+style={{
+alignSelf:"flex-start",
+paddingHorizontal:9,
+paddingVertical:4,
+backgroundColor:"#F5F1FF",
+borderWidth:1,
+borderColor:"#D8CCFF",
+borderRadius:8
+}}
+>
+
+<Text
+style={{
+fontFamily:"NotoSansDevanagari",
+fontSize:8.5,
+fontWeight:"bold",
+color:"#4F46E5",
+lineHeight:1.25
+}}
+>
+
+{
+isOptionAnswer
+? "उत्तर: " + value
+: "उत्तर:"
+}
+
+</Text>
+
+</View>
+
+{
+!isOptionAnswer &&
+
+<Text
+style={{
+fontFamily:"NotoSansDevanagari",
+fontSize:9.5,
+fontWeight:"bold",
+color:"#161C48",
+lineHeight:1.35,
+marginTop:4,
+paddingLeft:1
+}}
+>
+{value}
+</Text>
+
+}
+
+</View>
+
+);
+
+}
+
+function HindiSolutionSteps({solution=""}){
+
+const steps =
+splitHindiSolutionSteps(
+solution
+);
+
+if(!steps.length){
+
+return null;
+
+}
+
+return(
+
+<View
+style={{
+marginLeft:26,
+marginTop:2,
+marginBottom:6,
+width:"100%"
+}}
+>
+
+{
+
+steps.map(
+(step,index)=>(
+
+<Text
+key={"answer-solution-step-" + index}
+style={{
+fontFamily:"NotoSansDevanagari",
+fontSize:9.5,
+lineHeight:1.4,
+color:"#161C48",
+marginBottom:4
+}}
+>
+
+{cleanText(step)}
+
+</Text>
+
+)
+)
+
+}
+
+</View>
+
+);
+
+}
+
+
+function getHindiAnswerData(question = {}){
+
+const directAnswer =
+normalizeHindiAnswerValue(
+question.answerKey || ""
+);
+
+const extracted =
+extractHindiAnswerKey(
+question.answerKey || ""
+);
+
+let answer =
+directAnswer ||
+normalizeHindiAnswerValue(
+extracted.answer || ""
+);
+
+let solution =
+String(question.solution || "")
+.split("\n")
+.filter(line => !isSectionLine(line))
+.map(line => cleanText(line))
+.filter(line => !/^(?:खंड\s*['"“”]?[कखगघa-d]['"“”]?|section\s+[a-d])(?:\s*[:：-].*)?$/iu.test(line))
+.filter(Boolean)
+.join("\n");
+
+return {
+answer,
+solution
+};
 
 }
 
@@ -1950,7 +2992,7 @@ const normalized = String(line || "")
 .replace(/[*_`]/g, "")
 .trim();
 
-return /^(?:उत्तर\s*कुंजी|answer\s*key)(?:\s*[:：-]|\s*)$/iu.test(
+return /^(?:उत्तर\s*कुंजी|answer\s*key)(?:\s*\([^)]*\))?(?:\s+(?:खंड|section)\s*['"“”]?[कखगघa-d]['"“”]?)?\s*(?:[:：-]|\s*)$/iu.test(
 normalized
 );
 
@@ -1980,6 +3022,40 @@ section &&
 
 section.title !== "सामान्य निर्देश"
 
+);
+
+
+const hindiMetadata =
+getHindiMetadata(
+data,
+data.content || ""
+);
+
+const answerKeyByNumber = {};
+
+parsed.answerKeyQuestions.forEach(
+question => {
+
+const number =
+Number(question?.number);
+
+if(!Number.isFinite(number)){
+
+return;
+
+}
+
+answerKeyByNumber[number] = {
+...getHindiAnswerData(
+question
+),
+sectionTitle:
+cleanText(
+question.sectionTitle || ""
+)
+};
+
+}
 );
 
 
@@ -2167,6 +3243,9 @@ safeQuestion.options
 : [];
 
 
+
+
+
 return(
 
 <View
@@ -2351,6 +3430,9 @@ index
 )
 
 }
+
+
+
 
 </View>
 
@@ -2714,7 +3796,7 @@ textAlign:"center"
 
 >
 
-{data.title || "Nyxora Document"}
+{hindiMetadata.title}
 
 </Text>
 
@@ -2786,13 +3868,13 @@ width:"100%"
 
 [
 
-["SUBJECT", data.subject || data.subjectName || "Not Provided"],
+["SUBJECT", hindiMetadata.subject],
 
-["CLASS", data.className || data.class || data.grade || "Not Provided"],
+["CLASS", hindiMetadata.className],
 
-["CHAPTER", data.chapter || data.chapterName || data.topic || "Not Provided"],
+["CHAPTER", hindiMetadata.chapter],
 
-["TYPE", data.type || data.documentType || "Document"]
+["TYPE", hindiMetadata.type]
 
 ]
 
@@ -2957,98 +4039,13 @@ index,
 
 {
 
-hasWrittenAnswerKey &&
-
-parsed.answerKeyQuestions.length > 0 &&
-
-<View
-
-style={{
-
-marginTop:18,
-
-width:"100%"
-
-}}
-
->
-
-<Text
-
-style={{
-
-fontFamily:"NotoSansDevanagari",
-
-fontSize:14,
-
-fontWeight:"bold",
-
-color:"#4F46E5",
-
-marginBottom:10
-
-}}
-
->
-
-उत्तर कुंजी
-
-</Text>
-
-
-{
-
-parsed.answerKeyQuestions.map(
-
-(question,index)=>
-
-renderQuestion(
-
-question,
-
-index,
-
-"answer"
-
-)
-
-)
+<AnswerKey
+questions={
+parsed.answerKeyQuestions
+}
+/>
 
 }
-
-</View>
-
-}
-
-
-{
-
-!hasWrittenAnswerKey &&
-
-<View
-
-wrap={false}
-
-style={{
-
-marginTop:18,
-
-width:"100%"
-
-}}
-
->
-
-<GlassBadge>
-
-उत्तर कुंजी
-
-</GlassBadge>
-
-</View>
-
-}
-
 
 
 </Page>

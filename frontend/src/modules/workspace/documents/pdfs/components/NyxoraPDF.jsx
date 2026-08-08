@@ -224,6 +224,863 @@ color:"#6D5DFB"
 
 }
 
+
+function AnswerKeySectionBubble({title}){
+
+return(
+
+<View
+
+style={{
+
+alignSelf:"flex-start",
+
+backgroundColor:"#F5F1FF",
+
+borderWidth:1,
+
+borderColor:"#D8CCFF",
+
+borderRadius:11,
+
+paddingVertical:6,
+
+paddingHorizontal:10,
+
+marginTop:4,
+
+marginBottom:8
+
+}}
+
+wrap={false}
+
+minPresenceAhead={120}
+
+>
+
+<Text
+
+style={{
+
+fontFamily:"NotoSansDevanagari",
+
+fontSize:10,
+
+fontWeight:"bold",
+
+color:"#4F46E5"
+
+}}
+
+>
+
+{cleanText(title)}
+
+</Text>
+
+</View>
+
+);
+
+}
+
+
+
+function AnswerKeyLabelBubble({text}){
+
+return(
+
+<View
+
+style={{
+
+alignSelf:"flex-start",
+
+backgroundColor:"#F8F5FF",
+
+borderWidth:1,
+
+borderColor:"#E0D7FF",
+
+borderRadius:8,
+
+paddingVertical:4,
+
+paddingHorizontal:8,
+
+marginTop:5,
+
+marginBottom:4
+
+}}
+
+wrap={false}
+
+>
+
+<Text
+
+style={{
+
+fontFamily:"NotoSansDevanagari",
+
+fontSize:8.5,
+
+fontWeight:"bold",
+
+color:"#5B4DE8"
+
+}}
+
+>
+
+{cleanText(text)}
+
+</Text>
+
+</View>
+
+);
+
+}
+
+
+
+function AnswerKeyOptionBubble({letter,text}){
+
+return(
+
+<View
+
+style={{
+
+alignSelf:"flex-start",
+
+flexDirection:"row",
+
+alignItems:"flex-start",
+
+backgroundColor:"#F8F5FF",
+
+borderWidth:1,
+
+borderColor:"#E0D7FF",
+
+borderRadius:8,
+
+paddingVertical:4,
+
+paddingHorizontal:7,
+
+marginTop:4,
+
+marginBottom:2,
+
+maxWidth:"100%"
+
+}}
+
+>
+
+<View
+
+style={{
+
+width:14,
+
+height:14,
+
+borderRadius:7,
+
+backgroundColor:"#6D5DFB",
+
+justifyContent:"center",
+
+alignItems:"center",
+
+marginRight:6,
+
+marginTop:1,
+
+flexShrink:0
+
+}}
+
+>
+
+<Text
+
+style={{
+
+fontFamily:"NotoSansDevanagari",
+
+fontSize:7,
+
+fontWeight:"bold",
+
+color:"#FFFFFF",
+
+lineHeight:8
+
+}}
+
+>
+
+{letter}
+
+</Text>
+
+</View>
+
+<Text
+
+style={{
+
+fontFamily:"NotoSansDevanagari",
+
+fontSize:8.8,
+
+lineHeight:1.3,
+
+color:"#111827",
+
+flexShrink:1
+
+}}
+
+>
+
+{cleanText(text)}
+
+</Text>
+
+</View>
+
+);
+
+}
+
+
+
+
+function cleanAnswerKeyText(text = ""){
+return String(text || "")
+.replace(/\*\*/g,"")
+.replace(/\*/g,"")
+.replace(/\\implies/g,"⇒")
+.replace(/\\Rightarrow/g,"⇒")
+.replace(/\\Longrightarrow/g,"⇒")
+.replace(/\\rightarrow/g,"→")
+.replace(/\\to/g,"→")
+.replace(/\\therefore/g,"∴")
+.replace(/\\because/g,"∵")
+.replace(/\\text\{([^{}]+)\}/g,"$1")
+.replace(/\\mathrm\{([^{}]+)\}/g,"$1")
+.replace(/\\mathbf\{([^{}]+)\}/g,"$1")
+.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g,"$1/$2")
+.replace(/\\times/g,"×")
+.replace(/\\div/g,"÷")
+.replace(/\\cdot/g,"·")
+.replace(/\\circ/g,"°")
+.replace(/\\angle/g,"∠")
+.replace(/\\pm/g,"±")
+.replace(/\\leq/g,"≤")
+.replace(/\\le/g,"≤")
+.replace(/\\geq/g,"≥")
+.replace(/\\ge/g,"≥")
+.replace(/\\neq/g,"≠")
+.replace(/\\left/g,"")
+.replace(/\\right/g,"")
+.replace(/\\_/g,"_")
+.replace(/\\,/g," ")
+.replace(/\$/g,"")
+.replace(/\\\(/g,"")
+.replace(/\\\)/g,"")
+.replace(/\\ /g," ")
+.replace(/[ \t]+/g," ")
+.replace(/[ \t]*\r?\n[ \t]*/g,"\n")
+.trim();
+}
+
+function isLikelyAnswerKeyStepLine(text = ""){
+
+const value = cleanAnswerKeyText(text)
+.replace(/^(?:Q\s*)?\d+[.)]\s*/i, "")
+.replace(/^प्र(?:श्न)?\s*\d+[.)]\s*/u, "")
+.trim();
+
+if(!value){
+return false;
+}
+
+if(/^(?:Correct Option|Solution|Explanation|Answer|Working|Proof|उत्तर|समाधान|व्याख्या|उत्तर है)\b/i.test(value)){
+return false;
+}
+
+if(/^(?:what|why|how|which|find|calculate|solve|prove|show|state|write|define|explain|if|let|given|in|a|an|the)\b/i.test(value)){
+return false;
+}
+
+if(/^(?:[A-Z]{1,5}\s*=|[A-Z]{1,5}\s*(?:≤|≥|<|>|≠)|\(?[a-z]\)?\s*=|x\s*=|y\s*=|\d+\s*[+\-×÷=])/i.test(value)){
+return true;
+}
+
+if(/^(?:By|Since|Thus|Therefore|Hence|So|Then|Also|Similarly|Because|As|From|Using|Given that|This implies|This shows)\b/i.test(value)){
+return true;
+}
+
+if(/^(?:AB|BC|CD|DA|AC|BD|AD|BC|PQ|QR|RS|SP|DE|EF|FG|GH)\s*=/.test(value)){
+return true;
+}
+
+if(/\b(?:opposite sides|common side|alternate interior angles|mid-point theorem|congruent triangles|perpendicular|parallel)\b/i.test(value)){
+return true;
+}
+
+return false;
+}
+
+
+function splitAnswerKeySteps(text = ""){
+const cleaned = cleanAnswerKeyText(text);
+
+if(!cleaned){
+return [];
+}
+
+const sourceLines = cleaned
+.split(/\r?\n+/)
+.map(line=>line.trim())
+.filter(Boolean);
+
+const steps = [];
+
+sourceLines.forEach(line=>{
+const implicationParts = line
+.split(/\s*(?:⇒|\\implies|\\Rightarrow|\\Longrightarrow)\s*/u)
+.map(part=>part.trim())
+.filter(Boolean);
+
+if(implicationParts.length > 1){
+implicationParts.forEach(part=>steps.push(part));
+return;
+}
+
+const semicolonParts = line
+.split(/\s*;\s+/)
+.map(part=>part.trim())
+.filter(Boolean);
+
+if(semicolonParts.length > 1){
+semicolonParts.forEach(part=>steps.push(part));
+return;
+}
+
+const sentenceParts = line
+.split(/(?<=[.!?])\s+(?=[A-ZА-Яअ-ह0-9])/u)
+.map(part=>part.trim())
+.filter(Boolean);
+
+if(sentenceParts.length > 1){
+sentenceParts.forEach(part=>steps.push(part));
+}else{
+steps.push(line);
+}
+});
+
+return steps;
+}
+
+
+function parseAnswerKeyDisplay(question={}){
+
+const raw = cleanAnswerKeyText(String(question?.text || ""));
+
+const labels = [
+
+"Correct Option",
+
+"Solution",
+
+"Explanation",
+
+"Answer",
+
+"Working",
+
+"Proof",
+
+"उत्तर",
+
+"समाधान",
+
+"व्याख्या",
+
+"उत्तर है"
+
+];
+
+const escapedLabels = labels.map(
+
+label =>
+
+label.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")
+
+);
+
+const labelPattern = new RegExp(
+
+"(?:^|\\s)(" +
+
+escapedLabels.join("|") +
+
+")\\s*[:：-]?\\s*",
+
+"iu"
+
+);
+
+const match = raw.match(labelPattern);
+
+let questionText = raw;
+
+const parts = [];
+
+
+
+if(match){
+
+const start = match.index;
+
+questionText = raw.slice(0,start).trim();
+
+const rest = raw.slice(start);
+
+const partPattern = new RegExp(
+
+"(" +
+
+escapedLabels.join("|") +
+
+")\\s*[:：-]?\\s*",
+
+"giu"
+
+);
+
+const matches = [];
+
+let partMatch;
+
+while((partMatch = partPattern.exec(rest)) !== null){
+
+matches.push({
+
+index:partMatch.index,
+
+length:partMatch[0].length,
+
+label:partMatch[1]
+
+});
+
+}
+
+matches.forEach((entry,index)=>{
+
+const contentStart = entry.index + entry.length;
+
+const contentEnd =
+
+index + 1 < matches.length
+
+?
+
+matches[index + 1].index
+
+:
+
+rest.length;
+
+parts.push({
+
+label:entry.label,
+
+content:cleanAnswerKeyText(
+
+rest.slice(contentStart,contentEnd)
+
+)
+
+});
+
+});
+
+}
+
+
+
+return {
+
+questionText,
+
+parts,
+
+options:Array.isArray(question?.options)
+
+?
+
+question.options.filter(Boolean)
+
+:
+
+[]
+
+};
+
+}
+
+
+
+function AnswerKeyQuestion({question,index}){
+
+const parsedNumber = Number(question?.number);
+
+const number =
+
+Number.isFinite(parsedNumber) &&
+
+parsedNumber > 0
+
+?
+
+parsedNumber
+
+:
+
+index + 1;
+
+const parsed =
+
+parseAnswerKeyDisplay(question);
+
+const optionLetters = ["a","b","c","d","e","f"];
+
+return(
+
+<View
+
+style={{
+
+width:"100%",
+
+marginBottom:7
+
+}}
+
+>
+
+<View
+
+style={{
+
+flexDirection:"row",
+
+alignItems:"flex-start",
+
+width:"100%",
+
+paddingTop:2,
+
+paddingBottom:2
+
+}}
+
+>
+
+<View
+
+style={{
+
+width:22,
+
+height:22,
+
+borderRadius:11,
+
+backgroundColor:"#6D5DFB",
+
+justifyContent:"center",
+
+alignItems:"center",
+
+marginRight:8
+
+}}
+
+>
+
+<Text
+
+style={{
+
+fontFamily:"NotoSansDevanagari",
+
+color:"#FFFFFF",
+
+fontSize:9,
+
+fontWeight:700
+
+}}
+
+>
+
+{String(number)}
+
+</Text>
+
+</View>
+
+<Text
+
+style={{
+
+fontFamily:"NotoSansDevanagari",
+
+fontSize:10,
+
+lineHeight:1.4,
+
+color:"#111827",
+
+fontWeight:"500",
+
+flex:1
+
+}}
+
+>
+
+{parsed.questionText}
+
+</Text>
+
+</View>
+
+
+
+{
+
+parsed.options.length > 0 &&
+
+<View
+
+style={{
+
+width:"100%",
+
+paddingLeft:25,
+
+marginTop:1
+
+}}
+
+>
+
+{
+
+parsed.options.map((option,optionIndex)=>(
+
+<AnswerKeyOptionBubble
+
+key={
+
+"answer-option-"+
+
+number+
+
+"-"+
+
+optionIndex
+
+}
+
+letter={
+
+optionLetters[optionIndex] ||
+
+String(optionIndex + 1)
+
+}
+
+text={option}
+
+/>
+
+))
+
+}
+
+</View>
+
+}
+
+
+
+{
+
+parsed.parts.map((part,partIndex)=>(
+
+<View
+
+key={
+
+"answer-part-"+
+
+number+
+
+"-"+
+
+partIndex
+
+}
+
+style={{
+
+width:"100%",
+
+paddingLeft:25,
+
+marginTop:1
+
+}}
+
+>
+
+<AnswerKeyLabelBubble
+
+text={
+
+part.label === "Correct Option"
+
+?
+
+"Correct Option" +
+
+(
+
+part.content
+
+?
+
+": " + part.content
+
+:
+
+""
+
+)
+
+:
+
+part.label
+
+}
+
+/>
+
+
+
+{
+
+part.label !== "Correct Option" &&
+
+part.content &&
+
+<View
+
+style={{
+
+width:"100%",
+
+paddingRight:4,
+
+marginBottom:3
+
+}}
+
+>
+
+{
+
+splitAnswerKeySteps(part.content).map(
+
+(step,stepIndex)=>(
+
+<Text
+
+key={
+
+"answer-step-"+
+
+number+
+
+"-"+
+
+partIndex+
+
+"-"+
+
+stepIndex
+
+}
+
+style={{
+
+fontFamily:"NotoSansDevanagari",
+
+fontSize:9.5,
+
+lineHeight:1.45,
+
+color:"#111827",
+
+marginBottom:3
+
+}}
+
+>
+
+{step}
+
+</Text>
+
+)
+
+)
+
+}
+
+</View>
+
+}
+
+</View>
+
+))
+
+}
+
+</View>
+
+);
+
+}
+
+
+
 function cleanNoteText(text = ""){
 
 return text
@@ -346,7 +1203,7 @@ return (
 
 ||
 
-/^[A-Za-z][A-Za-z0-9 &()\/-]{1,60}:\s*$/.test(cleaned)
+/^[A-Za-z\u0900-\u097F][A-Za-z0-9\u0900-\u097F &()\/-]{1,60}:\s*$/u.test(cleaned)
 
 );
 
@@ -2264,6 +3121,64 @@ if(readingAnswerKey){
 
 
 
+if(
+
+/^section\s+[a-d](?:\s*[:：-].*)?$/i.test(clean)
+
+||
+
+/^खंड\s*["']?[कखगघ](?:["']?\s*[:：-].*)?/u.test(clean)
+
+){
+
+pushCurrentAnswerSection();
+
+
+
+currentAnswerSection = {
+
+title:clean,
+
+questions:[]
+
+};
+
+
+
+currentAnswerQuestion = null;
+
+
+
+return;
+
+}
+
+
+
+if(
+currentAnswerQuestion &&
+isLikelyAnswerKeyStepLine(clean)
+){
+
+const continuationText = clean
+.replace(
+/^(?:Q\s*)?\d+[.)]\s*/i,
+""
+)
+.replace(
+/^प्र(?:श्न)?\s*\d+[.)]\s*/u,
+""
+)
+.trim();
+
+if(continuationText){
+currentAnswerQuestion.text +=
+"\n" + continuationText;
+}
+
+return;
+}
+
 const answerQuestionMatch = clean.match(
 
 /^(?:Q\s*)?(\d+)[.)]/i
@@ -2382,7 +3297,7 @@ if(currentAnswerQuestion){
 
 currentAnswerQuestion.text +=
 
-" " + clean;
+"\n" + clean;
 
 }
 
@@ -2440,7 +3355,7 @@ return;
 
 if(
 
-/^(सामान्य निर्देश|निर्देश|Instructions)/iu.test(clean)
+/^(?:सामान्य निर्देश|निर्देश|General Instructions|General Instruction|Instructions)(?:\s*[:：-])?/iu.test(clean)
 
 ){
 
@@ -2459,6 +3374,48 @@ questions:[]
 
 
 currentQuestion = null;
+
+return;
+
+}
+
+
+
+if(
+
+currentSection.title === "Instructions"
+
+){
+
+const instructionText = clean
+
+.replace(
+
+/^\s*(?:[-*•]|\d+[.)])\s*/,
+
+""
+
+)
+
+.trim();
+
+
+
+if(instructionText){
+
+currentSection.questions.push({
+
+text:instructionText,
+
+options:[],
+
+number:currentSection.questions.length + 1
+
+});
+
+}
+
+
 
 return;
 
@@ -2922,7 +3879,11 @@ data.content || ""
 
 const isNotes =
 
-String(data.type || "").toLowerCase() === "notes";
+/notes|नोट्स/iu.test(
+
+String(data.type || "")
+
+);
 
 
 
@@ -2935,6 +3896,84 @@ parseNotes(data.content || "")
 :
 
 [];
+
+
+
+const noteChapterHeading =
+
+isNotes
+
+?
+
+(() => {
+
+const rawNotesContent =
+
+String(data.content || "");
+
+
+
+const mainTopicMatch =
+
+rawNotesContent.match(
+
+/(?:^|\n|\r)\s*(?:यहाँ\s*)?(?:\*\*\s*)?(.+?)(?:\s*\*\*)?\s+अध्याय\s+के\s+विस्तृत\s+और\s+सरल\s+नोट्स\s+दिए\s+गए\s+हैं\s*:?/iu
+
+);
+
+
+
+if(mainTopicMatch && mainTopicMatch[1]){
+
+const extractedTopic =
+
+cleanNoteText(
+
+mainTopicMatch[1]
+
+)
+
+.replace(
+
+/^यहाँ\s*/iu,
+
+""
+
+)
+
+.trim();
+
+
+
+if(extractedTopic){
+
+return extractedTopic;
+
+}
+
+}
+
+
+
+return
+
+noteBlocks.find(
+
+block =>
+
+block &&
+
+block.type === "heading" &&
+
+String(block.text || "").trim()
+
+)?.text || "";
+
+})()
+
+:
+
+"";
 
 
 
@@ -3016,6 +4055,28 @@ const normalizedMetadata = {
 
 subject:
 
+isNotes &&
+
+/^Hindi$/iu.test(
+
+String(
+
+data.subject ||
+
+data.subjectName ||
+
+""
+
+).trim()
+
+)
+
+?
+
+"हिंदी"
+
+:
+
 data.subject ||
 
 data.subjectName ||
@@ -3074,10 +4135,17 @@ String(data.title || "").match(
 
 chapter:
 
+isNotes &&
+noteChapterHeading
+
+?
+
+noteChapterHeading
+
+:
+
 data.chapter ||
-
 data.topic ||
-
 data.chapterName ||
 
 (
@@ -3146,6 +4214,14 @@ String(data.title || "").match(
 
 type:
 
+isNotes
+
+?
+
+"नोट्स"
+
+:
+
 data.type ||
 
 data.documentType ||
@@ -3153,6 +4229,58 @@ data.documentType ||
 "",
 
 className:
+
+isNotes &&
+
+metadataClass
+
+?
+
+(
+
+/^Class\s*\d+(?:\s*[A-Za-z])?$/iu.test(
+
+String(metadataClass).trim()
+
+)
+
+?
+
+"कक्षा " +
+
+String(metadataClass)
+
+.trim()
+
+.replace(
+
+/^Class\s*/i,
+
+""
+
+)
+
+:
+
+/^\d+(?:\s*[A-Za-z])?$/u.test(
+
+String(metadataClass).trim()
+
+)
+
+?
+
+"कक्षा " +
+
+String(metadataClass).trim()
+
+:
+
+metadataClass
+
+)
+
+:
 
 metadataClass ||
 
@@ -3468,47 +4596,99 @@ section =>
 
 section &&
 
-Array.isArray(
+Array.isArray(section.questions) &&
+
+section.questions.length > 0
+
+)
+
+.map(
+
+(section,sectionIndex)=>(
+
+<View
+
+key={"answer-section-"+sectionIndex}
+
+style={{
+
+width:"100%",
+
+marginTop:2,
+
+marginBottom:8
+
+}}
+
+>
+
+{
+
+section.title &&
+
+section.title !== "ANSWER KEY" &&
+
+section.title !== "उत्तर कुंजी" &&
+
+<AnswerKeySectionBubble
+
+title={section.title}
+
+/>
+
+}
+
+
+
+{
 
 section.questions
-
-)
-
-)
-
-.flatMap(
-
-section =>
-
-section.questions || []
-
-)
 
 .filter(Boolean)
 
 .map(
 
-(question,index)=>(
+(question,questionIndex)=>(
 
-<PDFQuestion
+<AnswerKeyQuestion
 
 key={
 
-"answer-question-"+index
+"answer-question-"+
+
+sectionIndex+
+
+"-"+
+
+questionIndex+
+
+"-"+
+
+String(question?.number || questionIndex + 1)
 
 }
 
 number={
 
-index + 1
+Number(question?.number) ||
+
+questionIndex + 1
 
 }
 
 question={question}
 
-isInstruction={false}
+index={questionIndex}
 
 />
+
+)
+
+)
+
+}
+
+</View>
 
 )
 

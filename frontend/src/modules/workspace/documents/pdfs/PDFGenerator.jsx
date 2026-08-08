@@ -115,6 +115,14 @@ function isHindiQuestionTest(
             data?.type || ""
         );
 
+    if (
+        /notes|नोट्स/iu.test(
+            type
+        )
+    ) {
+        return false;
+    }
+
     const subject =
         String(
             data?.subject || ""
@@ -800,6 +808,22 @@ export default function PDFGenerator() {
 
       content:
         form.content,
+
+      className:
+        /notes|नोट्स/iu.test(
+          String(
+            form.type || ""
+          )
+        )
+          ? (
+              classMap[
+                selectedDocument?.classId
+              ]?.name ||
+              selectedDocument?.className ||
+              selectedDocument?.class ||
+              ""
+            )
+          : "",
 
     };
 
