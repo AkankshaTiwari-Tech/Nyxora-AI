@@ -29,6 +29,13 @@ import {
     downloadWorkspacePdf,
 } from "./renderer/generatePdf";
 
+import {
+    pdf,
+} from "@react-pdf/renderer";
+
+import HindiQuestionTestPDF
+    from "./renderer/HindiQuestionTestPDF";
+
 
 // ======================================================
 // EMPTY FORM
@@ -89,6 +96,198 @@ function createEditorFriendlyContent(
         .trim();
 
 }
+
+// ======================================================
+// HINDI QUESTION TEST DETECTION
+// ======================================================
+
+function isHindiQuestionTest(
+    data = {}
+) {
+
+    const title =
+        String(
+            data?.title || ""
+        );
+
+    const type =
+        String(
+            data?.type || ""
+        );
+
+    const subject =
+        String(
+            data?.subject || ""
+        );
+
+    const chapter =
+        String(
+            data?.chapter || ""
+        );
+
+    const content =
+        String(
+            data?.content || ""
+        );
+
+    const combinedText =
+        [
+            title,
+            type,
+            subject,
+            chapter,
+            content,
+        ].join(" ");
+
+
+    const hasHindi =
+        /[\u0900-\u097F]/u.test(
+            combinedText
+        );
+
+
+    if (!hasHindi) {
+        return false;
+    }
+
+
+    const looksLikeQuestionPaper =
+        /खंड\s*[-–—:]?/u.test(
+            content
+        )
+        ||
+        /बहुविकल्पीय\s*प्रश्न/u.test(
+            content
+        )
+        ||
+        /रिक्त\s*स्थान/u.test(
+            content
+        )
+        ||
+        /सही\s*(?:\/|या)?\s*गलत/u.test(
+            content
+        )
+        ||
+        /लघु\s*उत्तरीय\s*प्रश्न/u.test(
+            content
+        )
+        ||
+        /उत्तर\s*कुंजी/u.test(
+            content
+        )
+        ||
+        /(?:^|\n)\s*(?:प्र(?:श्न)?\s*)?\d+\s*[.)]/u.test(
+            content
+        );
+
+
+    const looksLikeTestType =
+        /test|exam|assessment|paper|परीक्षा|प्रश्न\s*पत्र|प्रश्नपत्र/iu.test(
+            type
+        );
+
+
+    const looksLikeHindiMath =
+        /गणित|गणितीय|mathematics|math|ज्यामिति|बीजगणित|अंकगणित|संख्या|भिन्न|दशमलव|प्रतिशत|अनुपात|समानुपात|रेखा|रेखाएँ|कोण|निर्देशांक|क्षेत्रफल|परिमाप|आँकड़े|आंकड़े|समीकरण/u.test(
+            combinedText
+        );
+
+
+    return (
+        hasHindi &&
+        (
+            looksLikeQuestionPaper ||
+            (
+                looksLikeTestType &&
+                looksLikeHindiMath
+            )
+        )
+    );
+
+}
+
+
+// ======================================================
+// HINDI QUESTION TEST PDF HELPERS
+// ======================================================
+
+async function createHindiQuestionTestPdfUrl(
+    data = {}
+) {
+
+    const blob =
+        await pdf(
+            <HindiQuestionTestPDF
+                data={data}
+            />
+        ).toBlob();
+
+
+    return URL.createObjectURL(
+        blob
+    );
+
+}
+
+
+async function downloadHindiQuestionTestPdf(
+    data = {}
+) {
+
+    const blob =
+        await pdf(
+            <HindiQuestionTestPDF
+                data={data}
+            />
+        ).toBlob();
+
+
+    const url =
+        URL.createObjectURL(
+            blob
+        );
+
+
+    const anchor =
+        document.createElement(
+            "a"
+        );
+
+    anchor.href =
+        url;
+
+    anchor.download =
+        `${String(
+            data?.title ||
+            "Nyxora-Hindi-Test"
+        )
+            .replace(
+                /[^a-zA-Z0-9\u0900-\u097F\-_ ]/gu,
+                ""
+            )
+            .trim() || "Nyxora-Hindi-Test"}.pdf`;
+
+
+    document.body.appendChild(
+        anchor
+    );
+
+    anchor.click();
+
+    anchor.remove();
+
+
+    setTimeout(
+        () => {
+            URL.revokeObjectURL(
+                url
+            );
+        },
+        1000
+    );
+
+}
+
 
 // ======================================================
 // PDF GENERATOR
@@ -632,10 +831,22 @@ export default function PDFGenerator() {
       clearPreview();
 
 
+      const pdfData =
+        getPdfData();
+
+
       const url =
-        await createWorkspacePdfUrl(
-          getPdfData()
-        );
+        isHindiQuestionTest(
+          pdfData
+        )
+
+          ? await createHindiQuestionTestPdfUrl(
+              pdfData
+            )
+
+          : await createWorkspacePdfUrl(
+              pdfData
+            );
 
 
       previewUrlRef.current =
@@ -689,9 +900,27 @@ export default function PDFGenerator() {
 
     try {
 
-      await downloadWorkspacePdf(
-        getPdfData()
-      );
+      const pdfData =
+        getPdfData();
+
+
+      if (
+        isHindiQuestionTest(
+          pdfData
+        )
+      ) {
+
+        await downloadHindiQuestionTestPdf(
+          pdfData
+        );
+
+      } else {
+
+        await downloadWorkspacePdf(
+          pdfData
+        );
+
+      }
 
     } catch (
       error
