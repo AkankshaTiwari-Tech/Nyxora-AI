@@ -36,6 +36,9 @@ import {
 import HindiQuestionTestPDF
     from "./renderer/HindiQuestionTestPDF";
 
+import MathDiagramTestPDF
+    from "./diagrams/MathDiagramTestPDF";
+
 
 // ======================================================
 // EMPTY FORM
@@ -238,6 +241,21 @@ async function createHindiQuestionTestPdfUrl(
 }
 
 
+async function createMathDiagramTestPdfUrl() {
+
+    const blob =
+        await pdf(
+            <MathDiagramTestPDF />
+        ).toBlob();
+
+
+    return URL.createObjectURL(
+        blob
+    );
+
+}
+
+
 async function downloadHindiQuestionTestPdf(
     data = {}
 ) {
@@ -323,6 +341,56 @@ export default function PDFGenerator() {
         },
       }
     );
+
+  }
+
+
+  async function handleMathDiagramTest() {
+
+    try {
+
+      setPreviewing(
+        true
+      );
+
+
+      clearPreview();
+
+
+      const url =
+        await createMathDiagramTestPdfUrl();
+
+
+      previewUrlRef.current =
+        url;
+
+
+      setPreviewUrl(
+        url
+      );
+
+    } catch (
+      error
+    ) {
+
+      console.error(
+        "Math diagram test PDF error:",
+        error
+      );
+
+
+      alert(
+        error?.message ||
+        "Nyxora could not generate the math diagram test PDF."
+      );
+
+    } finally {
+
+      setPreviewing(
+        false
+      );
+
+    }
 
   }
 
@@ -1382,6 +1450,45 @@ export default function PDFGenerator() {
                 {previewing
                   ? "Generating..."
                   : "Preview"}
+
+              </button>
+
+
+              <button
+                type="button"
+                onClick={
+                  handleMathDiagramTest
+                }
+                disabled={
+                  previewing
+                }
+                className="
+                  flex
+                  items-center
+                  gap-2
+                  rounded-xl
+                  border
+                  border-violet-400/20
+                  bg-violet-500/[0.06]
+                  px-4
+                  py-2.5
+                  text-sm
+                  font-medium
+                  text-violet-200
+                  transition-all
+                  duration-300
+                  hover:border-violet-400/35
+                  hover:bg-violet-500/[0.10]
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                "
+              >
+
+                <Eye
+                  size={17}
+                />
+
+                Math Diagram Test
 
               </button>
 

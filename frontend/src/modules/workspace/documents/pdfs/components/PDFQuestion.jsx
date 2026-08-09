@@ -16,6 +16,10 @@ import MathExpression
 
 from "../renderer/MathExpression";
 
+import MathDiagram
+
+from "../diagrams/MathDiagram";
+
 import pdfTheme
 
 from "../styles/pdfTheme";
@@ -74,8 +78,6 @@ fontWeight:700
 
 {number}
 
-
-
 </Text>
 
 
@@ -102,7 +104,7 @@ const value = String(text || "")
 
 const firstOption = value.search(
 
-/\([कखगघ]\)\s*/u
+/([कखगघ])\s\*/u
 
 );
 
@@ -144,7 +146,7 @@ const matches = [
 
 ...optionPart.matchAll(
 
-/\(([कखगघ])\)\s*([\s\S]*?)(?=\s*\([कखगघ]\)\s*|$)/gu
+/(([कखगघ]))\s\*([\s\S]*?)(?=\s*([कखगघ])\s\*|$)/gu
 
 )
 
@@ -280,8 +282,6 @@ fontWeight:700
 
 {letter}
 
-
-
 </Text>
 
 
@@ -307,8 +307,6 @@ flex:1
 >
 
 {text}
-
-
 
 </Text>
 
@@ -508,7 +506,7 @@ separateHindiOptions.length >= 2
 
 &&
 
-/\([कखगघ]\)/u.test(
+/([कखगघ])/u.test(
 
 separateHindiOptions
 
@@ -652,14 +650,6 @@ color:"#161C48"
 
 
 
-</Text>
-
-
-
-</View>
-
-
-
 {
 
 question.math &&
@@ -671,6 +661,14 @@ value={question.math}
 />
 
 }
+
+
+
+</Text>
+
+
+
+</View>
 
 
 
@@ -746,10 +744,6 @@ color:"#161C48"
 
 
 
-</Text>
-
-
-
 {
 
 question.math &&
@@ -764,7 +758,51 @@ value={question.math}
 
 
 
+</Text>
+
+
+
 </View>
+
+
+
+{
+
+!isInstruction &&
+
+question.diagram &&
+
+(
+
+<View
+
+wrap={false}
+
+style={{
+
+width:"100%",
+
+marginTop:10,
+
+marginBottom:8,
+
+alignItems:"center"
+
+}}
+
+>
+
+<MathDiagram
+
+{...question.diagram}
+
+/>
+
+</View>
+
+)
+
+}
 
 
 

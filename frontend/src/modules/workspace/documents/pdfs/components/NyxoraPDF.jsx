@@ -4218,7 +4218,17 @@ isNotes
 
 ?
 
+/[\u0900-\u097F]/u.test(
+String(data.content || "")
+)
+
+?
+
 "नोट्स"
+
+:
+
+"Notes"
 
 :
 
