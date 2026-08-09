@@ -135,21 +135,8 @@ export default function ChatInput({
 
       event.preventDefault();
 
-
-      const pastedImage =
-        new File(
-          [file],
-          file.name ||
-            `nyxora-image-${Date.now()}.png`,
-          {
-            type: file.type || "image/png",
-            lastModified: Date.now(),
-          }
-        );
-
-
       handleFileSelect(
-        pastedImage
+        file
       );
 
       return;
