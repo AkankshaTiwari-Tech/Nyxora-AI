@@ -650,7 +650,7 @@ function cleanAnswerKeyText(text = "") {
       .replace(/\\triangle/g, "△ ")
       .replace(/\\Delta/g, "Δ")
 
-      .replace(/\\angle/g, "Angle")
+      .replace(/\\angle/g, "∠")
       .replace(/\\alpha/g, "α")
       .replace(/\\beta/g, "β")
       .replace(/\\gamma/g, "γ")
