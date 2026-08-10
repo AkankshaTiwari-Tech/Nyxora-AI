@@ -695,6 +695,7 @@ function cleanAnswerKeyText(text = "") {
 
       .replace(/\\parallel/g, " || ")
       .replace(/\\parallel/g, " || ")
+      .replace(/\\perpendicular/g, "⊥")
 
       .replace(/\\in/g, "∈")
       .replace(/\\notin/g, "∉");
@@ -1369,25 +1370,30 @@ marginBottom:3
 
 {
   splitAnswerKeySteps(part.content).map(
-    (step,stepIndex)=>(
+    (step, stepIndex) => (
       <Text
         key={
-          "answer-step-"+
-          number+
-          "-"+
-          partIndex+
-          "-"+
+          "answer-step-" +
+          number +
+          "-" +
+          partIndex +
+          "-" +
           stepIndex
         }
         style={{
-          fontFamily:"NotoSansDevanagari",
-          fontSize:9.5,
-          lineHeight:1.45,
-          color:"#111827",
-          marginBottom:3
+          fontFamily: "NotoSansDevanagari",
+          fontSize: 9.5,
+          lineHeight: 1.45,
+          color: "#111827",
+          marginBottom: 3
         }}
       >
-        {renderMixedMathText(step)}
+        {renderMixedMathText(
+          step.replace(
+            /^(?:\d+[.)]\s*|[①②③④⑤⑥⑦⑧⑨⑩]\s*)/,
+            ""
+          )
+        )}
       </Text>
     )
   )
