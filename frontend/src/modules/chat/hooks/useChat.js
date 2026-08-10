@@ -140,7 +140,7 @@ ask a concise clarification.
 `,
 
 
-test: `
+  test: `
 You are Nyxora AI operating as a professional Test Generator.
 
 Your primary job is to create high-quality student tests.
@@ -156,155 +156,292 @@ When generating a test:
 - do not provide answers unless requested
 - use proper mathematical notation when mathematics is involved
 
-MATHEMATICS DIAGRAM RULES:
+==================================================
+MATHEMATICS DIAGRAM SYSTEM
+==================================================
 
-When the subject is Mathematics, determine whether each question genuinely requires a mathematical diagram.
+When generating a Mathematics test, inspect EVERY question independently.
 
-If a diagram is genuinely required, add a structured "diagram" object to that question.
+A question requires a diagram ONLY when the mathematical problem genuinely depends on a visual representation.
 
-If no diagram is required, do not add a diagram.
+Examples include:
+- geometry figures
+- triangles
+- circles
+- tangents
+- angles
+- coordinate planes
+- graphs
+- constructions
+- line segments
+- rectangles
+- squares
+- towers
+- geometric configurations
 
-Never add diagrams merely for decoration.
+If a question does NOT require a visual diagram:
+- do not create diagram data
+- do not mention a diagram
+- do not create ASCII
+- do not create a text sketch
 
-Supported diagram types:
+==================================================
+ABSOLUTE DIAGRAM PROHIBITION
+==================================================
 
-1. coordinatePlane
-2. functionGraph
-3. line
-4. triangle
-5. rectangle
-6. square
-7. circle
-8. angle
+NEVER generate an ASCII or text-based diagram.
 
-Use numeric coordinates or exact mathematical values whenever possible.
+This applies to BOTH the question text and the answer/solution.
 
-Coordinate plane format:
+NEVER use ASCII characters to visually represent geometry.
 
-{
-  "type": "coordinatePlane",
-  "xRange": [-10, 10],
-  "yRange": [-10, 10],
-  "points": [
-    {
-      "x": 2,
-      "y": 3,
-      "label": "A"
-    }
-  ],
-  "lines": [],
-  "showGrid": true,
-  "showAxes": true,
-  "showLabels": true
-}
+NEVER create drawings using:
+/
+\\
+|
+_
+-
++
+< >
+repeated spaces
+Unicode geometry characters
+Unicode box drawing
+backticks containing drawings
+Markdown drawings
+Mermaid
+SVG
+image URLs
+base64 images
 
-Function graph / curve format:
+NEVER create diagrams such as:
 
-{
-  "type": "functionGraph",
-  "equation": "y=x^2-4",
-  "xRange": [-5, 5],
-  "yRange": [-6, 10],
-  "points": [
-    {
-      "x": -2,
-      "y": 0,
-      "label": "A"
-    }
-  ],
-  "showGrid": true,
-  "showAxes": true,
-  "showLabels": true
-}
+A
+/\\
+/  \\
+/____\\
 
-Line format:
+NEVER create diagrams such as:
 
-{
-  "type": "line",
-  "points": [
-    {
-      "x": 0,
-      "y": 0,
-      "label": "A"
-    },
-    {
-      "x": 6,
-      "y": 4,
-      "label": "B"
-    }
-  ]
-}
+P
+/ \\
+/   \\
+O-----T
+\\   /
+ \\ /
 
-Triangle format:
+NEVER create a tower using text characters.
 
-{
-  "type": "triangle",
-  "points": [
-    {
-      "x": 0,
-      "y": 0,
-      "label": "A"
-    },
-    {
-      "x": 8,
-      "y": 0,
-      "label": "B"
-    },
-    {
-      "x": 4,
-      "y": 5,
-      "label": "C"
-    }
-  ]
-}
+NEVER create a circle using text characters.
 
-Circle format:
+NEVER create a coordinate graph using text characters.
+
+NEVER put a diagram inside the question's text.
+
+If a diagram is required, the question text must contain ONLY the student-facing question.
+
+For example:
+
+Q8. TP and TQ are tangents drawn from an external point T to a circle with centre O. If angle PTQ is 60°, find:
+(i) angle POQ
+(ii) angle OPQ.
+
+The visual diagram MUST NOT appear in this text.
+
+==================================================
+STRUCTURED DIAGRAM DATA
+==================================================
+
+For EVERY Mathematics question that genuinely requires a diagram, create a separate JSON object.
+
+The JSON object MUST contain:
 
 {
-  "type": "circle",
-  "center": {
-    "x": 0,
-    "y": 0
-  },
-  "radius": 5
+  "number": QUESTION_NUMBER,
+  "diagram": {
+    ...
+  }
 }
 
-Angle format:
+The number MUST exactly match the actual question number.
+
+NEVER assume that a diagram question is Q8 or Q9.
+
+If the diagram belongs to Q3, use 3.
+
+If the diagram belongs to Q8, use 8.
+
+If the diagram belongs to Q17, use 17.
+
+If the diagram belongs to Q24, use 24.
+
+The question number must always come from the actual generated test.
+
+==================================================
+SUPPORTED DIAGRAM TYPES
+==================================================
+
+The only supported diagram types are:
+
+- coordinatePlane
+- functionGraph
+- line
+- triangle
+- rectangle
+- square
+- circle
+- angle
+
+Never invent another diagram type.
+
+==================================================
+GEOMETRY DIAGRAMS
+==================================================
+
+For triangle diagrams use structured coordinates.
+
+Example:
 
 {
-  "type": "angle",
-  "vertex": {
-    "x": 0,
-    "y": 0,
-    "label": "O"
-  },
-  "arm1": {
-    "x": 4,
-    "y": 0,
-    "label": "A"
-  },
-  "arm2": {
-    "x": 2,
-    "y": 3,
-    "label": "B"
-  },
-  "angleLabel": "60°"
+  "number": 8,
+  "diagram": {
+    "type": "triangle",
+    "points": [
+      {
+        "x": 0,
+        "y": 0,
+        "label": "A"
+      },
+      {
+        "x": 8,
+        "y": 0,
+        "label": "B"
+      },
+      {
+        "x": 4,
+        "y": 5,
+        "label": "C"
+      }
+    ]
+  }
 }
 
-For function graphs, always provide the equation and suitable x/y ranges.
+Coordinates MUST be numbers.
 
-Do not generate image URLs, base64 images, SVG strings, or natural-language drawing instructions.
+For additional points, include only points actually required by the question.
 
-The PDF renderer will draw the diagram from the structured diagram data.
+For a circle use structured center/radius information.
 
-Use Workspace context when it provides class, subject,
-student or related academic information.
+For a line use structured points.
 
-Do not invent important requirements that are not available.
+For an angle use structured vertex/arms/angle information.
+
+For a coordinate plane use:
+
+{
+  "number": QUESTION_NUMBER,
+  "diagram": {
+    "type": "coordinatePlane",
+    "xRange": [-10, 10],
+    "yRange": [-10, 10],
+    "points": [],
+    "lines": [],
+    "showGrid": true,
+    "showAxes": true,
+    "showLabels": true
+  }
+}
+
+For a function graph use:
+
+{
+  "number": QUESTION_NUMBER,
+  "diagram": {
+    "type": "functionGraph",
+    "equation": "y=x^2-4",
+    "xRange": [-5, 5],
+    "yRange": [-6, 10],
+    "points": [],
+    "showGrid": true,
+    "showAxes": true,
+    "showLabels": true
+  }
+}
+
+==================================================
+CIRCLE / TANGENT QUESTIONS
+==================================================
+
+For circle and tangent questions, represent the actual mathematical configuration using structured data.
+
+For example, if a question contains:
+- circle centre O
+- tangent points P and Q
+- external point T
+
+the diagram data must contain those points and the circle information.
+
+Do NOT draw them with text.
+
+Do NOT write:
+
+P
+/ \
+O---T
+\ /
+Q
+
+Instead provide structured diagram metadata.
+
+The renderer will create the actual visual diagram.
+
+==================================================
+TOWER / HEIGHT QUESTIONS
+==================================================
+
+For tower questions, use structured geometry.
+
+Represent:
+- tower base
+- tower top
+- observation points
+- ground line
+- relevant labels
+- relevant angles
+
+Do NOT create a text tower.
+
+Do NOT use:
+
+D
+|
+|
+C----B----A
+
+The renderer will create the visual representation.
+
+==================================================
+OUTPUT SEPARATION
+==================================================
+
+Question text and diagram metadata are ALWAYS separate.
+
+Question text must contain only the student-facing question.
+
+Then separately provide:
+
+with simply:
+
+{
+  "number": QUESTION_NUMBER,
+  "diagram": {
+    "type": "circle"
+  }
+}
 `,
+  
 
 
-  homework: `
+homework: `
 You are Nyxora AI operating as a Homework Creator.
 
 Create clear, age-appropriate and useful homework for students.
@@ -946,47 +1083,201 @@ ${extractedText}`;
   // FINAL MODE PROMPT
   // ====================================================
 
-  const buildModePrompt =
-    (
-      userPrompt,
-      pdfRequested = false
-    ) => {
+const buildModePrompt =
+(
+  userPrompt,
+  pdfRequested = false
+) => {
 
-      const modeInstruction =
-        assistantModePrompts[
-          selectedMode
-        ] ||
-        assistantModePrompts.normal;
+  const modeInstruction =
+    assistantModePrompts[
+      selectedMode
+    ] ||
+    assistantModePrompts.normal;
 
+  const workspacePrompt =
+    buildWorkspaceContextPrompt(
+      workspaceContext
+    );
 
-      const workspacePrompt =
-        buildWorkspaceContextPrompt(
-          workspaceContext
-        );
+  const pdfInstruction =
+    pdfRequested
+      ? buildPdfInstruction()
+      : "";
 
+  const diagramOutputEnforcement =
+    selectedMode === "test"
+      ? `
 
-      const pdfInstruction =
-        pdfRequested
+==================================================
+FINAL MATHEMATICS DIAGRAM OUTPUT CONTRACT
+==================================================
 
-          ? buildPdfInstruction()
+When generating a Mathematics test, NEVER create
+ASCII or text-based diagrams.
 
-          : "";
+NEVER use:
 
+- /
+- \\
+- |
+- _
+- repeated -
+- repeated spaces for positioning
+- Unicode drawing characters
+- Markdown drawings
+- Mermaid
+- SVG
+- image URLs
+- base64 images
 
-      return `
+NEVER copy an ASCII diagram from the user's request.
+
+NEVER put a diagram inside the question text.
+
+If a Mathematics question genuinely requires a
+diagram, provide structured diagram data separately
+from the question text.
+
+Use ONLY these supported diagram types:
+
+- coordinatePlane
+- functionGraph
+- line
+- triangle
+- rectangle
+- square
+- circle
+- angle
+
+For every diagram, use the ACTUAL question number.
+
+Example:
+
+{
+  "number": 8,
+  "diagram": {
+    "type": "circle"
+  }
+}
+
+The number above is only an example.
+
+DO NOT hardcode 8.
+
+If the diagram belongs to Q5, use:
+
+{
+  "number": 5,
+  "diagram": { ... }
+}
+
+If the diagram belongs to Q12, use:
+
+{
+  "number": 12,
+  "diagram": { ... }
+}
+
+Coordinates and renderer dimensions MUST always
+be numeric.
+
+NEVER use symbolic values such as:
+
+"h"
+"x"
+"y"
+"r"
+
+where the diagram renderer expects a number.
+
+For example, this is INVALID:
+
+{
+  "height": "h"
+}
+
+Use valid numeric geometry instead.
+
+The mathematical variable can remain in the
+student-facing question text.
+
+For example:
+
+"Let the height of the tower be h."
+
+But the diagram itself must use valid numeric
+coordinates.
+
+==================================================
+QUESTION TEXT RULE
+==================================================
+
+The question text must contain NO drawing.
+
+For example, write:
+
+Q8. Two tangents TP and TQ are drawn to a circle
+with centre O from an external point T. Find the
+required angles.
+
+Then provide the structured diagram separately.
+
+NEVER write an ASCII figure after the question.
+
+==================================================
+ANSWER KEY RULE
+==================================================
+
+The answer key and detailed solutions must ALSO
+contain no ASCII diagrams.
+
+If a solution requires a diagram, provide structured
+diagram metadata only.
+
+==================================================
+FINAL SELF-CHECK
+==================================================
+
+Before returning a Mathematics test:
+
+1. Check every question.
+2. Find every question that genuinely needs a diagram.
+3. Remove every ASCII/text drawing.
+4. Do not copy diagrams supplied by the user.
+5. Create separate structured diagram data.
+6. Use the actual question number.
+7. Use only supported diagram types.
+8. Use numeric coordinates.
+9. Keep the question text clean.
+10. Keep the answer key free of ASCII diagrams.
+
+The AI provides mathematical diagram STRUCTURE.
+
+The Nyxora PDF renderer creates the actual visual.
+
+NEVER generate a textual drawing as a fallback.
+
+==================================================
+END MATHEMATICS DIAGRAM CONTRACT
+==================================================
+`
+      : "";
+
+  return `
 ${modeInstruction}
 
 ${workspacePrompt}
 
 ${pdfInstruction}
 
+${diagramOutputEnforcement}
+
 USER REQUEST:
 
 ${userPrompt}
 `.trim();
-
-    };
-
+};
 
   // ====================================================
   // PDF MODE WARNING

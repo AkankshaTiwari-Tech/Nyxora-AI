@@ -2973,7 +2973,111 @@ option=>option.text
 
 
 
+
+function extractMathDiagramData(content=""){
+
+const diagramsByNumber = {};
+
+const unnumberedDiagrams = [];
+
+const source = String(content || "");
+
+const blocks = [
+
+...source.matchAll(
+
+/```(?:json|javascript|js)?\s*([\s\S]*?)```/gi
+
+)
+
+].map(match=>match[1]);
+
+
+
+const collect = value => {
+
+if(!value || typeof value !== "object"){
+
+return;
+
+}
+
+
+
+if(value.diagram && typeof value.diagram === "object"){
+
+const number = Number(
+
+value.number ??
+value.questionNumber ??
+value.questionNo ??
+value.qNumber
+
+);
+
+
+
+if(Number.isFinite(number) && number > 0){
+
+diagramsByNumber[number] = value.diagram;
+
+}else{
+
+unnumberedDiagrams.push(value.diagram);
+
+}
+
+}
+
+
+
+if(Array.isArray(value)){
+
+value.forEach(collect);
+
+return;
+
+}
+
+
+
+Object.values(value).forEach(collect);
+
+};
+
+
+
+blocks.forEach(block=>{
+
+try{
+
+collect(JSON.parse(block.trim()));
+
+}catch(error){
+
+return;
+
+}
+
+});
+
+
+
+return {
+
+diagramsByNumber,
+
+unnumberedDiagrams
+
+};
+
+}
+
+
 function parseContent(content=""){
+
+const mathDiagramData =
+extractMathDiagramData(content);
 
 const lines = content
 
@@ -3794,6 +3898,52 @@ currentQuestion.text +=
 pushCurrentSection();
 
 pushCurrentAnswerSection();
+
+
+
+let fallbackDiagramIndex = 0;
+
+
+
+sections.forEach(section=>{
+
+(section.questions || []).forEach(question=>{
+
+const questionNumber = Number(
+question.number
+);
+
+
+
+if(
+Number.isFinite(questionNumber) &&
+mathDiagramData.diagramsByNumber[questionNumber]
+){
+
+question.diagram =
+mathDiagramData.diagramsByNumber[questionNumber];
+
+return;
+
+}
+
+
+
+if(
+!question.diagram &&
+mathDiagramData.unnumberedDiagrams[fallbackDiagramIndex]
+){
+
+question.diagram =
+mathDiagramData.unnumberedDiagrams[fallbackDiagramIndex];
+
+fallbackDiagramIndex += 1;
+
+}
+
+});
+
+});
 
 
 

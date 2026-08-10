@@ -16,7 +16,6 @@ const PDF_PATTERNS = [
   /\bpdf\s+file\b/i,
 ];
 
-
 // ======================================================
 // CHECK WHETHER USER WANTS PDF
 // ======================================================
@@ -45,27 +44,14 @@ export function isPdfRequest(value) {
 // generate pdf
 // ======================================================
 
-export function hasGeneratePdfCommand(
-  value
-) {
-
-  const text =
-    String(
-      value || ""
-    ).trim();
-
+export function hasGeneratePdfCommand(value) {
+  const text = String(value || "").trim();
 
   if (!text) {
-
     return false;
-
   }
 
-
-  return /\bgenerate\s+pdf\b/i.test(
-    text
-  );
-
+  return /\bgenerate\s+pdf\b/i.test(text);
 }
 
 // ======================================================
@@ -102,7 +88,6 @@ export function createChatPdfTitle(
   return firstLine.slice(0, 100);
 }
 
-
 // ======================================================
 // PROFESSIONAL PDF AI INSTRUCTION
 // ======================================================
@@ -118,16 +103,14 @@ Generate the COMPLETE content that should appear inside the final PDF.
 Nyxora AI has its own professional PDF rendering engine.
 Your responsibility is to generate clean, structured, PDF-ready content.
 
-==================================================
-DOCUMENT STRUCTURE
-==================================================
-
 Always give the document a clear title.
 
 Use Markdown-style headings where appropriate:
 
 # Main Title
+
 ## Major Section
+
 ### Subsection
 
 Organize long documents into logical sections.
@@ -138,11 +121,8 @@ Keep paragraphs readable.
 
 Use whitespace logically.
 
-==================================================
-BULLET POINTS
-==================================================
-
 Use bullet points when presenting:
+
 - features
 - facts
 - characteristics
@@ -158,11 +138,8 @@ Use this format:
 - Second point
 - Third point
 
-==================================================
-NUMBERED STEPS
-==================================================
-
 Use numbered lists for:
+
 - procedures
 - methods
 - sequences
@@ -174,10 +151,6 @@ Example:
 1. First step
 2. Second step
 3. Third step
-
-==================================================
-PROFESSIONAL HIGHLIGHT BOXES
-==================================================
 
 Nyxora can automatically turn these labels into styled information boxes.
 
@@ -200,10 +173,6 @@ Important: especially important information
 Warning: something that needs caution
 
 Do not overuse these boxes.
-
-==================================================
-TESTS
-==================================================
 
 When creating a test:
 
@@ -235,10 +204,6 @@ Q1. ...
 
 Q2. ...
 
-==================================================
-WORKSHEETS
-==================================================
-
 For worksheets:
 
 - Give a clear title.
@@ -246,10 +211,6 @@ For worksheets:
 - Group similar question types where useful.
 - Use age-appropriate difficulty.
 - Leave answers out unless requested.
-
-==================================================
-NOTES
-==================================================
 
 For notes:
 
@@ -261,10 +222,6 @@ For notes:
 - Highlight important facts.
 - Add a short summary or revision section when useful.
 
-==================================================
-HOMEWORK
-==================================================
-
 For homework:
 
 - Mention topic/subject when known.
@@ -274,13 +231,10 @@ For homework:
 - Use different question types when useful.
 - Do not include solutions unless requested.
 
-==================================================
-MATHEMATICS
-==================================================
-
 Preserve proper mathematical notation.
 
 Use mathematically correct:
+
 - powers
 - fractions
 - roots
@@ -293,76 +247,181 @@ Do not replace correct mathematics with unnecessary plain-English descriptions.
 
 Nyxora's PDF renderer handles mathematical formatting.
 
-==================================================
-LANGUAGE
-==================================================
-
 Write in the language requested by the user.
 
 If the user requests Hindi:
+
 - write proper Devanagari Hindi
 - do not transliterate Hindi into English
 - preserve mathematical expressions correctly
 
 Nyxora has a separate Hindi PDF rendering system.
 
-==================================================
-DIAGRAMS
-==================================================
 
-When a diagram genuinely helps explain the topic, include a diagram specification.
+// ====================================================
+// UNIVERSAL DIAGRAM OUTPUT RULE
+// ====================================================
 
-Use EXACTLY this format:
+When a diagram genuinely helps explain the document, DO NOT create the diagram using ordinary text, ASCII characters, slash/backslash drawings, Mermaid, SVG, image URLs, base64, or natural-language drawing instructions.
 
-[DIAGRAM]
-Title: Water Cycle
-Type: cycle
-Items:
-- Evaporation
-- Condensation
-- Precipitation
-- Collection
-[/DIAGRAM]
+The diagram MUST be provided as a separate machine-readable JSON object inside a fenced JSON code block.
 
-For a process:
+The normal student-facing content must remain clean.
 
-[DIAGRAM]
-Title: Photosynthesis Process
-Type: process
-Items:
-- Sunlight reaches the leaf
-- Roots absorb water
-- Leaves take in carbon dioxide
-- Glucose is produced
-- Oxygen is released
-[/DIAGRAM]
+The diagram JSON must contain the question number when the diagram belongs to a numbered question.
 
-For a hierarchy:
+MANDATORY STRUCTURE:
 
-[DIAGRAM]
-Title: Classification
-Type: hierarchy
-Items:
-- Main Category
-- Category A
-- Category B
-- Category C
-[/DIAGRAM]
+\`\`\`json
+{
+  "number": 1,
+  "diagram": {
+    "type": "..."
+  }
+}
+\`\`\`
 
-For comparison:
+The PDF renderer reads these structured JSON objects and draws the actual diagram.
 
-[DIAGRAM]
-Title: Plant Cell vs Animal Cell
-Type: comparison
-Items:
-- Plant Cell
-- Animal Cell
-- Cell Wall
-- Chloroplast
-- Vacuole
-[/DIAGRAM]
 
-Supported diagram types:
+// ====================================================
+// MATHEMATICS DIAGRAM RULES
+// ====================================================
+
+For Mathematics tests, inspect every question and determine whether a real mathematical diagram is required.
+
+If a question requires a diagram:
+
+- NEVER generate an ASCII diagram.
+- NEVER generate a text-based geometry drawing.
+- NEVER write a "Diagram:" heading followed by a drawing.
+- NEVER use slash/backslash geometry.
+- NEVER use "|" or "_" to draw shapes.
+- NEVER use Mermaid.
+- NEVER use SVG.
+- NEVER use image URLs.
+- NEVER use base64 images.
+- NEVER describe the diagram only in natural language.
+
+Instead, output a separate fenced JSON object.
+
+The JSON MUST contain:
+
+- the exact question number
+- a "diagram" object
+- the appropriate diagram "type"
+- all required geometric information
+
+Example:
+
+\`\`\`json
+{
+  "number": 9,
+  "diagram": {
+    "type": "triangle",
+    "points": [
+      {
+        "x": 0,
+        "y": 8,
+        "label": "A"
+      },
+      {
+        "x": -6,
+        "y": 0,
+        "label": "B"
+      },
+      {
+        "x": 6,
+        "y": 0,
+        "label": "C"
+      },
+      {
+        "x": -3,
+        "y": 4,
+        "label": "D"
+      },
+      {
+        "x": 3,
+        "y": 4,
+        "label": "E"
+      }
+    ]
+  }
+}
+\`\`\`
+
+Supported mathematical diagram types include:
+
+- triangle
+- line
+- angle
+- circle
+- rectangle
+- square
+- coordinatePlane
+- functionGraph
+
+For geometry questions:
+
+- Use coordinates that make the intended shape clear.
+- Use labels that match the question exactly.
+- Do not invent unnecessary labels.
+- Represent referenced sides, points, angles and radii consistently.
+- Keep the diagram mathematically consistent with the question.
+
+For triangle questions:
+
+- Use "triangle".
+- Put the required vertices and points inside "points".
+- Use exact labels from the question.
+- Add internal points when the question references them.
+
+For line segment questions:
+
+- Use "line".
+- Put the endpoints inside "points".
+
+For angle questions:
+
+- Use "angle".
+- Provide the vertex.
+- Provide arm1 and arm2.
+- Include an angleLabel when an angle measure is given.
+
+For circle questions:
+
+- Use "circle".
+- Provide "center".
+- Provide "radius".
+
+For coordinate geometry:
+
+- Use "coordinatePlane".
+- Provide suitable "xRange".
+- Provide suitable "yRange".
+- Put required points in "points".
+- Put required line segments in "lines" when applicable.
+- Keep "showGrid", "showAxes" and "showLabels" true unless the question specifically requires otherwise.
+
+For function graphs:
+
+- Use "functionGraph".
+- ALWAYS provide the equation.
+- ALWAYS provide suitable "xRange".
+- ALWAYS provide suitable "yRange".
+- Add important intercepts, vertices, turning points or referenced points when appropriate.
+- Never draw the curve using ASCII or ordinary text.
+
+
+// ====================================================
+// NON-MATHEMATICS DIAGRAM RULES
+// ====================================================
+
+For science, social science, general education or other non-mathematical documents, diagrams may also be useful.
+
+Use the same structured JSON system.
+
+Supported conceptual diagram types include:
 
 - flowchart
 - process
@@ -370,15 +429,98 @@ Supported diagram types:
 - hierarchy
 - comparison
 
-Only include a diagram when it improves the document.
+Example:
 
-Do not add meaningless decorative diagrams.
+\`\`\`json
+{
+  "number": 1,
+  "diagram": {
+    "type": "process",
+    "title": "Photosynthesis Process",
+    "items": [
+      "Sunlight reaches the leaf",
+      "Roots absorb water",
+      "Leaves take in carbon dioxide",
+      "Glucose is produced",
+      "Oxygen is released"
+    ]
+  }
+}
+\`\`\`
 
-==================================================
-IMPORTANT OUTPUT RULES
-==================================================
+For conceptual diagrams:
+
+- Use concise items.
+- Keep the sequence logical.
+- Do not create decorative diagrams unnecessarily.
+- Only include a diagram when it improves understanding.
+
+IMPORTANT:
+
+Do NOT use the old [DIAGRAM] ... [/DIAGRAM] format.
+
+Do NOT use:
+
+Diagram:
+Title:
+Type:
+Items:
+
+The ONLY supported diagram output format is the structured fenced JSON format described above.
+
+
+// ====================================================
+// OUTPUT SEPARATION
+// ====================================================
+
+Keep the normal document content separate from diagram metadata.
+
+Example:
+
+Question:
+9. In triangle ABC, prove that ...
+
+Then separately provide:
+
+\`\`\`json
+{
+  "number": 9,
+  "diagram": {
+    "type": "triangle",
+    "points": [
+      {
+        "x": 0,
+        "y": 8,
+        "label": "A"
+      },
+      {
+        "x": -6,
+        "y": 0,
+        "label": "B"
+      },
+      {
+        "x": 6,
+        "y": 0,
+        "label": "C"
+      }
+    ]
+  }
+}
+\`\`\`
+
+NEVER turn the structured diagram JSON into part of the question sentence.
+
+NEVER output a text-based substitute for the structured diagram.
+
+The PDF renderer will draw the actual diagram from the structured diagram data.
+
+
+// ====================================================
+// GENERAL PDF RESTRICTIONS
+// ====================================================
 
 Do NOT output:
+
 - HTML
 - CSS
 - JavaScript
@@ -387,12 +529,18 @@ Do NOT output:
 - fake download links
 - PDF source code
 - instructions telling the user to manually create a PDF
+- ASCII diagrams
+- Mermaid diagrams
+- SVG diagrams
+- image URLs
+- natural-language drawing instructions
 
 Do NOT say:
+
 "I cannot generate PDFs."
 
 Nyxora will automatically convert your response into the actual PDF.
 
-Return only the useful document content.
+Return only the useful document content and the required structured JSON diagram metadata.
 `.trim();
 }

@@ -9,6 +9,17 @@ import {
 }
 from "react";
 
+import {
+    Buffer
+}
+from "buffer";
+
+if (
+    typeof globalThis.Buffer === "undefined"
+) {
+    globalThis.Buffer = Buffer;
+}
+
 
 import NyxoraPDF
 from "../components/NyxoraPDF";
@@ -17,58 +28,22 @@ from "../components/NyxoraPDF";
 
 
 
-async function createPdfBlob(
+async function createPdfBlob(data = {}) {
+    const documentElement = createElement(
+        NyxoraPDF,
+        {
+            data
+        }
+    );
 
-    data = {}
+    const instance = pdf(
+        documentElement
+    );
 
-){
+    const blob =
+        await instance.toBlob();
 
-
-const documentElement =
-
-createElement(
-
-    NyxoraPDF,
-
-    {
-
-        data
-
-    }
-
-);
-
-
-
-
-
-const instance =
-
-pdf();
-
-
-
-instance.updateContainer(
-
-    documentElement
-
-);
-
-
-
-
-
-const blob =
-
-await instance.toBlob();
-
-
-
-
-
-return blob;
-
-
+    return blob;
 }
 
 

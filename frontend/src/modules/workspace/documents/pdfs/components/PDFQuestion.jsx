@@ -450,6 +450,8 @@ isInstruction = false
 
 }){
 
+console.log("NYXORA DIAGRAM DEBUG:", number, question.diagram);
+
 
 
 const rawQuestionText =

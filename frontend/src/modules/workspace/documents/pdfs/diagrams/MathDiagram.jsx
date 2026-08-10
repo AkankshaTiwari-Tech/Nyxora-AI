@@ -16,6 +16,14 @@ function finite(value, fallback = 0) {
         : fallback;
 }
 
+function safeDimension(value, fallback) {
+    const number = Number(value);
+
+    return Number.isFinite(number) && number > 0
+        ? number
+        : fallback;
+}
+
 function safeRange(range, fallbackMin, fallbackMax) {
     const min = finite(range?.[0], fallbackMin);
     const max = finite(range?.[1], fallbackMax);
@@ -44,6 +52,48 @@ function mapY(value, minY, maxY, height, padding) {
     );
 }
 
+function createEquationFunction(equation) {
+    if (typeof equation === "function") {
+        return equation;
+    }
+
+    const source = String(equation || "")
+        .trim()
+        .replace(/^y\s*=\s*/i, "")
+        .replace(/\^/g, "**")
+        .replace(/\bpi\b/gi, "Math.PI")
+        .replace(/\be\b/g, "Math.E")
+        .replace(/\bsqrt\s*\(/gi, "Math.sqrt(")
+        .replace(/\bsin\s*\(/gi, "Math.sin(")
+        .replace(/\bcos\s*\(/gi, "Math.cos(")
+        .replace(/\btan\s*\(/gi, "Math.tan(")
+        .replace(/\babs\s*\(/gi, "Math.abs(")
+        .replace(/\blog\s*\(/gi, "Math.log(")
+        .replace(/\bln\s*\(/gi, "Math.log(");
+
+    if (!source) {
+        return null;
+    }
+
+    if (!/^[0-9xXyY+\-*/().,%\s_*a-zA-Z]+$/.test(source)) {
+        return null;
+    }
+
+    try {
+        const evaluator = new Function(
+            "x",
+            `return (${source});`
+        );
+
+        return (x) => {
+            const result = evaluator(x);
+            return Number(result);
+        };
+    } catch {
+        return null;
+    }
+}
+
 function buildFunctionPath({
     equation,
     minX,
@@ -53,8 +103,13 @@ function buildFunctionPath({
     padding,
     samples = 180,
 }) {
+    const equationFunction =
+        createEquationFunction(
+            equation
+        );
+
     if (
-        typeof equation !== "function" ||
+        typeof equationFunction !== "function" ||
         samples < 2
     ) {
         return "";
@@ -72,7 +127,9 @@ function buildFunctionPath({
         let y;
 
         try {
-            y = Number(equation(x));
+            y = Number(
+                equationFunction(x)
+            );
         } catch {
             y = NaN;
         }
@@ -119,6 +176,9 @@ function CoordinatePlane({
     showAxes = true,
     showLabels = true,
 }) {
+    const safeWidth = safeDimension(width, 515);
+    const safeHeight = safeDimension(height, 260);
+
     const padding = 28;
 
     const [minX, maxX] = safeRange(
@@ -139,10 +199,10 @@ function CoordinatePlane({
                   0,
                   minY,
                   maxY,
-                  height,
+                  safeHeight,
                   padding
               )
-            : height - padding;
+            : safeHeight - padding;
 
     const yAxisX =
         minX <= 0 && maxX >= 0
@@ -150,7 +210,7 @@ function CoordinatePlane({
                   0,
                   minX,
                   maxX,
-                  width,
+                  safeWidth,
                   padding
               )
             : padding;
@@ -170,7 +230,7 @@ function CoordinatePlane({
                 x,
                 minX,
                 maxX,
-                width,
+                safeWidth,
                 padding
             );
 
@@ -180,7 +240,7 @@ function CoordinatePlane({
                     x1={px}
                     y1={padding}
                     x2={px}
-                    y2={height - padding}
+                    y2={safeHeight - padding}
                     stroke="#E5E7EB"
                     strokeWidth={0.6}
                 />
@@ -199,7 +259,7 @@ function CoordinatePlane({
                 y,
                 minY,
                 maxY,
-                height,
+                safeHeight,
                 padding
             );
 
@@ -208,7 +268,7 @@ function CoordinatePlane({
                     key={`grid-y-${y}`}
                     x1={padding}
                     y1={py}
-                    x2={width - padding}
+                    x2={safeWidth - padding}
                     y2={py}
                     stroke="#E5E7EB"
                     strokeWidth={0.6}
@@ -219,9 +279,9 @@ function CoordinatePlane({
 
     return (
         <Svg
-            width={width}
-            height={height}
-            viewBox={`0 0 ${width} ${height}`}
+            safeWidth={safeWidth}
+            safeHeight={safeHeight}
+            viewBox={`0 0 ${safeWidth} ${safeHeight}`}
         >
             {gridLines}
 
@@ -230,7 +290,7 @@ function CoordinatePlane({
                     <Line
                         x1={padding}
                         y1={xAxisY}
-                        x2={width - padding}
+                        x2={safeWidth - padding}
                         y2={xAxisY}
                         stroke="#111827"
                         strokeWidth={1.2}
@@ -238,7 +298,7 @@ function CoordinatePlane({
 
                     <Line
                         x1={yAxisX}
-                        y1={height - padding}
+                        y1={safeHeight - padding}
                         x2={yAxisX}
                         y2={padding}
                         stroke="#111827"
@@ -253,7 +313,7 @@ function CoordinatePlane({
                         finite(line?.x1),
                         minX,
                         maxX,
-                        width,
+                        safeWidth,
                         padding
                     );
 
@@ -261,7 +321,7 @@ function CoordinatePlane({
                         finite(line?.y1),
                         minY,
                         maxY,
-                        height,
+                        safeHeight,
                         padding
                     );
 
@@ -269,7 +329,7 @@ function CoordinatePlane({
                         finite(line?.x2),
                         minX,
                         maxX,
-                        width,
+                        safeWidth,
                         padding
                     );
 
@@ -277,7 +337,7 @@ function CoordinatePlane({
                         finite(line?.y2),
                         minY,
                         maxY,
-                        height,
+                        safeHeight,
                         padding
                     );
 
@@ -301,7 +361,7 @@ function CoordinatePlane({
                         finite(point?.x),
                         minX,
                         maxX,
-                        width,
+                        safeWidth,
                         padding
                     );
 
@@ -309,7 +369,7 @@ function CoordinatePlane({
                         finite(point?.y),
                         minY,
                         maxY,
-                        height,
+                        safeHeight,
                         padding
                     );
 
@@ -345,7 +405,7 @@ function CoordinatePlane({
             {showLabels && (
                 <>
                     <Text
-                        x={width - padding + 5}
+                        x={safeWidth - padding + 5}
                         y={xAxisY - 5}
                         fontSize={9}
                         fill="#111827"
@@ -378,6 +438,9 @@ function FunctionGraph({
     showAxes = true,
     showLabels = true,
 }) {
+    const safeWidth = safeDimension(width, 515);
+    const safeHeight = safeDimension(height, 260);
+
     const padding = 28;
 
     const [minX, maxX] = safeRange(
@@ -398,10 +461,10 @@ function FunctionGraph({
                   0,
                   minY,
                   maxY,
-                  height,
+                  safeHeight,
                   padding
               )
-            : height - padding;
+            : safeHeight - padding;
 
     const yAxisX =
         minX <= 0 && maxX >= 0
@@ -409,7 +472,7 @@ function FunctionGraph({
                   0,
                   minX,
                   maxX,
-                  width,
+                  safeWidth,
                   padding
               )
             : padding;
@@ -426,7 +489,7 @@ function FunctionGraph({
                 x,
                 minX,
                 maxX,
-                width,
+                safeWidth,
                 padding
             );
 
@@ -436,7 +499,7 @@ function FunctionGraph({
                     x1={px}
                     y1={padding}
                     x2={px}
-                    y2={height - padding}
+                    y2={safeHeight - padding}
                     stroke="#E5E7EB"
                     strokeWidth={0.6}
                 />
@@ -452,7 +515,7 @@ function FunctionGraph({
                 y,
                 minY,
                 maxY,
-                height,
+                safeHeight,
                 padding
             );
 
@@ -461,7 +524,7 @@ function FunctionGraph({
                     key={`function-grid-y-${y}`}
                     x1={padding}
                     y1={py}
-                    x2={width - padding}
+                    x2={safeWidth - padding}
                     y2={py}
                     stroke="#E5E7EB"
                     strokeWidth={0.6}
@@ -474,17 +537,17 @@ function FunctionGraph({
         equation,
         minX,
         maxX,
-        width,
-        height,
+        safeWidth,
+        safeHeight,
         padding,
         samples: 220,
     });
 
     return (
         <Svg
-            width={width}
-            height={height}
-            viewBox={`0 0 ${width} ${height}`}
+            safeWidth={safeWidth}
+            safeHeight={safeHeight}
+            viewBox={`0 0 ${safeWidth} ${safeHeight}`}
         >
             {gridLines}
 
@@ -493,7 +556,7 @@ function FunctionGraph({
                     <Line
                         x1={padding}
                         y1={xAxisY}
-                        x2={width - padding}
+                        x2={safeWidth - padding}
                         y2={xAxisY}
                         stroke="#111827"
                         strokeWidth={1.2}
@@ -501,7 +564,7 @@ function FunctionGraph({
 
                     <Line
                         x1={yAxisX}
-                        y1={height - padding}
+                        y1={safeHeight - padding}
                         x2={yAxisX}
                         y2={padding}
                         stroke="#111827"
@@ -525,7 +588,7 @@ function FunctionGraph({
                         finite(point?.x),
                         minX,
                         maxX,
-                        width,
+                        safeWidth,
                         padding
                     );
 
@@ -533,7 +596,7 @@ function FunctionGraph({
                         finite(point?.y),
                         minY,
                         maxY,
-                        height,
+                        safeHeight,
                         padding
                     );
 
@@ -569,7 +632,7 @@ function FunctionGraph({
             {showLabels && (
                 <>
                     <Text
-                        x={width - padding + 5}
+                        x={safeWidth - padding + 5}
                         y={xAxisY - 5}
                         fontSize={9}
                         fill="#111827"
@@ -591,6 +654,471 @@ function FunctionGraph({
     );
 }
 
+function mapDiagramPoint(
+    point,
+    minX,
+    maxX,
+    minY,
+    maxY,
+    width,
+    height,
+    padding
+) {
+    return {
+        x: mapX(
+            finite(point?.x),
+            minX,
+            maxX,
+            width,
+            padding
+        ),
+        y: mapY(
+            finite(point?.y),
+            minY,
+            maxY,
+            height,
+            padding
+        )
+    };
+}
+
+function GeometryLabels({
+    points = [],
+    showLabels = true,
+    minX,
+    maxX,
+    minY,
+    maxY,
+    width,
+    height,
+    padding
+}) {
+    if (!showLabels) {
+        return null;
+    }
+
+    return (
+        <>
+            {points.map(
+                (point, index) => {
+                    const mapped =
+                        mapDiagramPoint(
+                            point,
+                            minX,
+                            maxX,
+                            minY,
+                            maxY,
+                            width,
+                            height,
+                            padding
+                        );
+
+                    return point?.label ? (
+                        <Text
+                            key={`geometry-label-${index}`}
+                            x={mapped.x + 6}
+                            y={mapped.y - 6}
+                            fontSize={10}
+                            fill="#111827"
+                        >
+                            {point.label}
+                        </Text>
+                    ) : null;
+                }
+            )}
+        </>
+    );
+}
+
+function GeometryDiagram({
+    type,
+    width = 515,
+    height = 260,
+    xRange = [-10, 10],
+    yRange = [-10, 10],
+    points = [],
+    lines = [],
+    showLabels = true,
+    center = { x: 0, y: 0 },
+    radius = 5,
+    vertex = { x: 0, y: 0 },
+    arm1 = { x: 4, y: 0 },
+    arm2 = { x: 2, y: 3 },
+    angleLabel = ""
+}) {
+    const safeWidth = safeDimension(width, 515);
+    const safeHeight = safeDimension(height, 260);
+
+    const padding = 28;
+
+    const [minX, maxX] = safeRange(
+        xRange,
+        -10,
+        10
+    );
+
+    const [minY, maxY] = safeRange(
+        yRange,
+        -10,
+        10
+    );
+
+    const mappedPoints = points.map(
+        (point) =>
+            mapDiagramPoint(
+                point,
+                minX,
+                maxX,
+                minY,
+                maxY,
+                safeWidth,
+                safeHeight,
+                padding
+            )
+    );
+
+    const renderLine = (
+        line,
+        index
+    ) => {
+        let first = line;
+        let second = null;
+
+        if (
+            Array.isArray(line?.points) &&
+            line.points.length >= 2
+        ) {
+            first = line.points[0];
+            second = line.points[1];
+        }
+
+        if (!second) {
+            second = {
+                x: line?.x2,
+                y: line?.y2
+            };
+
+            first = {
+                x: line?.x1,
+                y: line?.y1
+            };
+        }
+
+        const start =
+            mapDiagramPoint(
+                first,
+                minX,
+                maxX,
+                minY,
+                maxY,
+                safeWidth,
+                safeHeight,
+                padding
+            );
+
+        const end =
+            mapDiagramPoint(
+                second,
+                minX,
+                maxX,
+                minY,
+                maxY,
+                safeWidth,
+                safeHeight,
+                padding
+            );
+
+        return (
+            <Line
+                key={`geometry-line-${index}`}
+                x1={start.x}
+                y1={start.y}
+                x2={end.x}
+                y2={end.y}
+                stroke="#6D5DFB"
+                strokeWidth={1.8}
+            />
+        );
+    };
+
+    const renderPolygon = (
+        polygonPoints,
+        closePath = true
+    ) => {
+        if (
+            !Array.isArray(polygonPoints) ||
+            polygonPoints.length < 2
+        ) {
+            return null;
+        }
+
+        const mapped = polygonPoints.map(
+            (point) =>
+                mapDiagramPoint(
+                    point,
+                    minX,
+                    maxX,
+                    minY,
+                    maxY,
+                    safeWidth,
+                    safeHeight,
+                    padding
+                )
+        );
+
+        const first = mapped[0];
+
+        const commands = [
+            `M ${first.x} ${first.y}`
+        ];
+
+        mapped.slice(1).forEach(
+            (point) => {
+                commands.push(
+                    `L ${point.x} ${point.y}`
+                );
+            }
+        );
+
+        if (closePath) {
+            commands.push("Z");
+        }
+
+        return (
+            <Path
+                d={commands.join(" ")}
+                fill="none"
+                stroke="#6D5DFB"
+                strokeWidth={1.8}
+            />
+        );
+    };
+
+    const renderAngle = () => {
+        const mappedVertex =
+            mapDiagramPoint(
+                vertex,
+                minX,
+                maxX,
+                minY,
+                maxY,
+                safeWidth,
+                safeHeight,
+                padding
+            );
+
+        const mappedArm1 =
+            mapDiagramPoint(
+                arm1,
+                minX,
+                maxX,
+                minY,
+                maxY,
+                safeWidth,
+                safeHeight,
+                padding
+            );
+
+        const mappedArm2 =
+            mapDiagramPoint(
+                arm2,
+                minX,
+                maxX,
+                minY,
+                maxY,
+                safeWidth,
+                safeHeight,
+                padding
+            );
+
+        const labelX =
+            (mappedArm1.x + mappedArm2.x) /
+                2;
+
+        const labelY =
+            (mappedArm1.y + mappedArm2.y) /
+                2;
+
+        return (
+            <>
+                <Line
+                    x1={mappedVertex.x}
+                    y1={mappedVertex.y}
+                    x2={mappedArm1.x}
+                    y2={mappedArm1.y}
+                    stroke="#6D5DFB"
+                    strokeWidth={1.8}
+                />
+
+                <Line
+                    x1={mappedVertex.x}
+                    y1={mappedVertex.y}
+                    x2={mappedArm2.x}
+                    y2={mappedArm2.y}
+                    stroke="#6D5DFB"
+                    strokeWidth={1.8}
+                />
+
+                {showLabels &&
+                    vertex?.label && (
+                        <Text
+                            x={mappedVertex.x + 6}
+                            y={mappedVertex.y - 6}
+                            fontSize={10}
+                            fill="#111827"
+                        >
+                            {vertex.label}
+                        </Text>
+                    )}
+
+                {showLabels &&
+                    arm1?.label && (
+                        <Text
+                            x={mappedArm1.x + 6}
+                            y={mappedArm1.y - 6}
+                            fontSize={10}
+                            fill="#111827"
+                        >
+                            {arm1.label}
+                        </Text>
+                    )}
+
+                {showLabels &&
+                    arm2?.label && (
+                        <Text
+                            x={mappedArm2.x + 6}
+                            y={mappedArm2.y - 6}
+                            fontSize={10}
+                            fill="#111827"
+                        >
+                            {arm2.label}
+                        </Text>
+                    )}
+
+                {showLabels &&
+                    angleLabel && (
+                        <Text
+                            x={labelX + 6}
+                            y={labelY - 6}
+                            fontSize={10}
+                            fill="#111827"
+                        >
+                            {angleLabel}
+                        </Text>
+                    )}
+            </>
+        );
+    };
+
+    const mappedCenter =
+        mapDiagramPoint(
+            center,
+            minX,
+            maxX,
+            minY,
+            maxY,
+            safeWidth,
+            safeHeight,
+            padding
+        );
+
+    const radiusX =
+        (finite(radius, 5) /
+            (maxX - minX)) *
+        (safeWidth - padding * 2);
+
+    const radiusY =
+        (finite(radius, 5) /
+            (maxY - minY)) *
+        (safeHeight - padding * 2);
+
+    return (
+        <Svg
+            safeWidth={safeWidth}
+            safeHeight={safeHeight}
+            viewBox={`0 0 ${safeWidth} ${safeHeight}`}
+        >
+
+            {type === "triangle" &&
+                renderPolygon(
+                    points
+                )}
+
+            {type === "rectangle" &&
+                renderPolygon(
+                    points
+                )}
+
+            {type === "square" &&
+                renderPolygon(
+                    points
+                )}
+
+            {type === "line" &&
+                lines.map(
+                    renderLine
+                )}
+
+            {type === "line" &&
+                lines.length === 0 &&
+                points.length >= 2 &&
+                renderPolygon(
+                    points,
+                    false
+                )}
+
+            {type === "circle" && (
+                <Circle
+                    cx={mappedCenter.x}
+                    cy={mappedCenter.y}
+                    rx={Math.max(
+                        2,
+                        radiusX
+                    )}
+                    ry={Math.max(
+                        2,
+                        radiusY
+                    )}
+                    fill="none"
+                    stroke="#6D5DFB"
+                    strokeWidth={1.8}
+                />
+            )}
+
+            {type === "angle" &&
+                renderAngle()}
+
+            {mappedPoints.map(
+                (point, index) => (
+                    <React.Fragment
+                        key={`geometry-point-${index}`}
+                    >
+                        <Circle
+                            cx={point.x}
+                            cy={point.y}
+                            r={3}
+                            fill="#6D5DFB"
+                        />
+                    </React.Fragment>
+                )
+            )}
+
+            <GeometryLabels
+                points={points}
+                showLabels={showLabels}
+                minX={minX}
+                maxX={maxX}
+                minY={minY}
+                maxY={maxY}
+                safeWidth={safeWidth}
+                safeHeight={safeHeight}
+                padding={padding}
+            />
+
+        </Svg>
+    );
+}
+
 export default function MathDiagram({
     type = "coordinatePlane",
     ...props
@@ -598,6 +1126,22 @@ export default function MathDiagram({
     if (type === "functionGraph") {
         return (
             <FunctionGraph
+                {...props}
+            />
+        );
+    }
+
+    if (
+        type === "line" ||
+        type === "triangle" ||
+        type === "rectangle" ||
+        type === "square" ||
+        type === "circle" ||
+        type === "angle"
+    ) {
+        return (
+            <GeometryDiagram
+                type={type}
                 {...props}
             />
         );
