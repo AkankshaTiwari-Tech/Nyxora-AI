@@ -152,7 +152,7 @@ title={section.title}
 
 key={index}
 
-number={index + 1}
+number={question.number || index + 1}
 
 question={question}
 

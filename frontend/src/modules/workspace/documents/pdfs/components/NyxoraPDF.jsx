@@ -35,7 +35,6 @@ import PDFQuestion
 from "./PDFQuestion";
 
 
-
 function cleanText(text = ""){
 
 
@@ -69,6 +68,7 @@ return text
 .replace(/\^\{([^}]+)\}/g,"^$1")
 
 .replace(/\\angle/g,"∠")
+
 
 .replace(/\\rightarrow/g,"→")
 
@@ -105,6 +105,7 @@ return text
 .replace(/\s*---\s*/g,"")
 
 .replace(/\\ /g," ")
+
 
 .trim();
 
@@ -461,46 +462,399 @@ flexShrink:1
 
 }
 
+function readBalancedGroup(text, startIndex) {
+  if (text[startIndex] !== "{") {
+    return null;
+  }
+
+  let depth = 0;
+
+  for (let i = startIndex; i < text.length; i++) {
+    if (text[i] === "{") {
+      depth++;
+    } else if (text[i] === "}") {
+      depth--;
+
+      if (depth === 0) {
+        return {
+          content: text.slice(
+            startIndex + 1,
+            i
+          ),
+          endIndex: i + 1
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+
+function replaceBalancedLatexCommand(
+  text,
+  command,
+  replacer
+) {
+  let result = text;
+  let searchFrom = 0;
+
+  while (true) {
+    const commandIndex =
+      result.indexOf(
+        "\\" + command,
+        searchFrom
+      );
+
+    if (commandIndex < 0) {
+      break;
+    }
+
+    const braceStart =
+      commandIndex + command.length + 1;
+
+    if (result[braceStart] !== "{") {
+      searchFrom =
+        braceStart + 1;
+
+      continue;
+    }
+
+    const firstGroup =
+      readBalancedGroup(
+        result,
+        braceStart
+      );
+
+    if (!firstGroup) {
+      break;
+    }
+
+    let replacement;
+    let endIndex =
+      firstGroup.endIndex;
+
+    if (command === "frac") {
+      const secondBraceStart =
+        firstGroup.endIndex;
+
+      if (
+        result[secondBraceStart] !== "{"
+      ) {
+        searchFrom =
+          firstGroup.endIndex;
+
+        continue;
+      }
+
+      const secondGroup =
+        readBalancedGroup(
+          result,
+          secondBraceStart
+        );
+
+      if (!secondGroup) {
+        break;
+      }
+
+      replacement = replacer(
+        firstGroup.content,
+        secondGroup.content
+      );
+
+      endIndex =
+        secondGroup.endIndex;
+    } else {
+      replacement = replacer(
+        firstGroup.content
+      );
+    }
+
+    result =
+      result.slice(0, commandIndex) +
+      replacement +
+      result.slice(endIndex);
+
+    searchFrom =
+      commandIndex +
+      replacement.length;
+  }
+
+  return result;
+}
+
+
+function cleanAnswerKeyText(text = "") {
+
+  let value =
+    String(text || "");
+
+
+  // Remove markdown
+  value =
+    value
+      .replace(/\*\*/g, "")
+      .replace(/`/g, "");
+
+
+  // --------------------------------------------------
+  // FRACTIONS
+  // --------------------------------------------------
+
+  value =
+    replaceBalancedLatexCommand(
+      value,
+      "frac",
+      (numerator, denominator) =>
+        `${numerator}/${denominator}`
+    );
+
+  value =
+    replaceBalancedLatexCommand(
+      value,
+      "dfrac",
+      (numerator, denominator) =>
+        `${numerator}/${denominator}`
+    );
+
+
+  // --------------------------------------------------
+  // SQUARE ROOTS
+  // --------------------------------------------------
+
+  value =
+    replaceBalancedLatexCommand(
+      value,
+      "sqrt",
+      content =>
+        `√(${content})`
+    );
+
+
+  // --------------------------------------------------
+  // COMMON LATEX COMMANDS
+  // --------------------------------------------------
+
+  value =
+    value
+      .replace(/\\implies/g, "⇒")
+      .replace(/\\Rightarrow/g, "⇒")
+      .replace(/\\Longrightarrow/g, "⇒")
+
+      .replace(/\\therefore/g, "∴")
+      .replace(/\\because/g, "∵")
+
+      .replace(/\\rightarrow/g, "→")
+      .replace(/\\to/g, "→")
+
+      .replace(/\\triangle/g, "△ ")
+      .replace(/\\Delta/g, "Δ")
+
+      .replace(/\\angle/g, "Angle")
+      .replace(/\\alpha/g, "α")
+      .replace(/\\beta/g, "β")
+      .replace(/\\gamma/g, "γ")
+      .replace(/\\delta/g, "δ")
+      .replace(/\\epsilon/g, "ε")
+      .replace(/\\theta/g, "θ")
+      .replace(/\\lambda/g, "λ")
+      .replace(/\\mu/g, "μ")
+      .replace(/\\pi/g, "π")
+      .replace(/\\rho/g, "ρ")
+      .replace(/\\sigma/g, "σ")
+      .replace(/\\phi/g, "φ")
+      .replace(/\\psi/g, "ψ")
+      .replace(/\\omega/g, "ω")
+      .replace(/\\Gamma/g, "Γ")
+      .replace(/\\Delta/g, "Δ")
+      .replace(/\\Theta/g, "Θ")
+      .replace(/\\Lambda/g, "Λ")
+      .replace(/\\Pi/g, "Π")
+      .replace(/\\Sigma/g, "Σ")
+      .replace(/\\Phi/g, "Φ")
+      .replace(/\\Psi/g, "Ψ")
+      .replace(/\\Omega/g, "Ω")
+      .replace(/\\cong/g, "≅")
+      .replace(/\\approx/g, "≈")
+      
+      .replace(/\\times/g, "×")
+      .replace(/\\cdot/g, "·")
+      .replace(/\\div/g, "÷")
+
+      .replace(/\\pm/g, "±")
+
+      .replace(/\\leq/g, "≤")
+      .replace(/\\le/g, "≤")
+
+      .replace(/\\geq/g, "≥")
+      .replace(/\\ge/g, "≥")
+
+      .replace(/\\neq/g, "≠")
+
+      .replace(/\\sim/g, "∼")
+
+      .replace(/\\parallel/g, " || ")
+      .replace(/\\parallel/g, " || ")
+
+      .replace(/\\in/g, "∈")
+      .replace(/\\notin/g, "∉");
+
+
+  // --------------------------------------------------
+  // TRIGONOMETRY
+  // --------------------------------------------------
+
+  value =
+    value
+      .replace(/\\tan\b/g, "tan")
+      .replace(/\\theta/g, "θ")
+      .replace(/\\sin\b/g, "sin")
+      .replace(/\\cos\b/g, "cos")
+      .replace(/\\cot\b/g, "cot")
+      .replace(/\\sec\b/g, "sec")
+      .replace(/\\csc\b/g, "csc");
 
 
 
-function cleanAnswerKeyText(text = ""){
-return String(text || "")
-.replace(/\*\*/g,"")
-.replace(/\*/g,"")
-.replace(/\\implies/g,"⇒")
-.replace(/\\Rightarrow/g,"⇒")
-.replace(/\\Longrightarrow/g,"⇒")
-.replace(/\\rightarrow/g,"→")
-.replace(/\\to/g,"→")
-.replace(/\\therefore/g,"∴")
-.replace(/\\because/g,"∵")
-.replace(/\\text\{([^{}]+)\}/g,"$1")
-.replace(/\\mathrm\{([^{}]+)\}/g,"$1")
-.replace(/\\mathbf\{([^{}]+)\}/g,"$1")
-.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g,"$1/$2")
-.replace(/\\times/g,"×")
-.replace(/\\div/g,"÷")
-.replace(/\\cdot/g,"·")
-.replace(/\\circ/g,"°")
-.replace(/\\angle/g,"∠")
-.replace(/\\pm/g,"±")
-.replace(/\\leq/g,"≤")
-.replace(/\\le/g,"≤")
-.replace(/\\geq/g,"≥")
-.replace(/\\ge/g,"≥")
-.replace(/\\neq/g,"≠")
-.replace(/\\left/g,"")
-.replace(/\\right/g,"")
-.replace(/\\_/g,"_")
-.replace(/\\,/g," ")
-.replace(/\$/g,"")
-.replace(/\\\(/g,"")
-.replace(/\\\)/g,"")
-.replace(/\\ /g," ")
-.replace(/[ \t]+/g," ")
-.replace(/[ \t]*\r?\n[ \t]*/g,"\n")
-.trim();
+  // --------------------------------------------------
+  // TEXT COMMANDS
+  // --------------------------------------------------
+
+  value =
+    value
+      .replace(
+        /\\text\{([^{}]*)\}/g,
+        "$1"
+      )
+
+      .replace(
+        /\\mathrm\{([^{}]*)\}/g,
+        "$1"
+      )
+
+      .replace(
+        /\\mathbf\{([^{}]*)\}/g,
+        "$1"
+      )
+
+      .replace(
+        /\\textbf\{([^{}]*)\}/g,
+        "$1"
+      )
+
+      .replace(
+        /\\textit\{([^{}]*)\}/g,
+        "$1"
+      );
+
+
+  // --------------------------------------------------
+  // ANGLES / POWERS
+  // --------------------------------------------------
+
+  value =
+    value
+      .replace(
+        /\^\{([^{}]+)\}/g,
+        "^$1"
+      )
+
+      .replace(
+        /\^\\circ/g,
+        "°"
+      )
+
+      .replace(
+        /\^o\b/g,
+        "°"
+      )
+
+      .replace(
+        /\\circ/g,
+        "°"
+      );
+
+
+  // --------------------------------------------------
+  // LATEX DELIMITERS
+  // --------------------------------------------------
+
+  value =
+    value
+      .replace(/\\left/g, "")
+      .replace(/\\right/g, "")
+
+      .replace(/\\\(/g, "")
+      .replace(/\\\)/g, "")
+
+      .replace(/\\\[/g, "")
+      .replace(/\\\]/g, "")
+
+      .replace(/\$\$/g, "")
+      .replace(/\$/g, "")
+
+      .replace(/\\,/g, " ")
+      .replace(/\\_/g, "_")
+      .replace(/\\ /g, " ");
+
+
+  // --------------------------------------------------
+  // CLEAN SPACING
+  // --------------------------------------------------
+
+  value =
+    value
+      .replace(
+        /[ \t]+/g,
+        " "
+      )
+
+      .replace(
+        /[ \t]*\r?\n[ \t]*/g,
+        "\n"
+      )
+
+      .trim();
+
+
+  return value;
+}
+
+function renderMixedMathText(text = "") {
+  const value = String(text || "");
+
+  const mathSymbols =
+    /[△α-ωΑ-ΩθπμσφψΔΓΣΩ∠∼≅≈≠≤≥±×÷·√∞∴∵→⇒←↔∈∉°]/u;
+
+  const parts = value.split(
+    /([△α-ωΑ-ΩθπμσφψΔΓΣΩ∠∼≅≈≠≤≥±×÷·√∞∴∵→⇒←↔∈∉°])/u
+  );
+
+  return parts.map((part, index) => {
+    if (!part) return null;
+
+    let fontFamily = "NotoSans";
+
+    if (/[\u0900-\u097F]/u.test(part)) {
+      fontFamily = "NotoSansDevanagari";
+    } else if (part === "△") {
+      fontFamily = "NotoSansSymbols2";
+    } else if (mathSymbols.test(part)) {
+      fontFamily = "STIXTwoMath";
+    }
+
+    return (
+      <Text
+        key={"mixed-math-" + index}
+        style={{
+          fontFamily,
+          fontSize: 9.5,
+        }}
+      >
+        {part}
+      </Text>
+    );
+  });
 }
 
 function isLikelyAnswerKeyStepLine(text = ""){
@@ -863,7 +1217,7 @@ flex:1
 
 >
 
-{parsed.questionText}
+{renderMixedMathText(parsed.questionText)}
 
 </Text>
 
@@ -1014,53 +1368,29 @@ marginBottom:3
 >
 
 {
-
-splitAnswerKeySteps(part.content).map(
-
-(step,stepIndex)=>(
-
-<Text
-
-key={
-
-"answer-step-"+
-
-number+
-
-"-"+
-
-partIndex+
-
-"-"+
-
-stepIndex
-
-}
-
-style={{
-
-fontFamily:"NotoSansDevanagari",
-
-fontSize:9.5,
-
-lineHeight:1.45,
-
-color:"#111827",
-
-marginBottom:3
-
-}}
-
->
-
-{step}
-
-</Text>
-
-)
-
-)
-
+  splitAnswerKeySteps(part.content).map(
+    (step,stepIndex)=>(
+      <Text
+        key={
+          "answer-step-"+
+          number+
+          "-"+
+          partIndex+
+          "-"+
+          stepIndex
+        }
+        style={{
+          fontFamily:"NotoSansDevanagari",
+          fontSize:9.5,
+          lineHeight:1.45,
+          color:"#111827",
+          marginBottom:3
+        }}
+      >
+        {renderMixedMathText(step)}
+      </Text>
+    )
+  )
 }
 
 </View>
@@ -1118,6 +1448,7 @@ return text
 .replace(/\\circ/g,"°")
 
 .replace(/\\angle/g,"∠")
+
 
 .replace(/\\rightarrow/g,"→")
 
