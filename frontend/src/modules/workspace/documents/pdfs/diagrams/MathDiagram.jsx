@@ -776,15 +776,20 @@ function GeometryLabels({
                             padding
                         );
 
-                    return point?.label ? (
+                    const normalizedLabel =
+                        normalizeDiagramLabelText(
+                            point?.label
+                        );
+
+                    return normalizedLabel ? (
                         <Text
                             key={`geometry-label-${index}`}
-                            x={mapped.x + 6}
-                            y={mapped.y - 6}
+                            x={mapped.x + 7}
+                            y={mapped.y - 7}
                             fontSize={10}
                             fill="#111827"
                         >
-                            {point.label}
+                            {normalizedLabel}
                         </Text>
                     ) : null;
                 }
@@ -1004,15 +1009,30 @@ function GeometryDiagram({
                 padding
             );
 
+        const {
+            angle1,
+            delta,
+        } =
+            angleBetweenPoints(
+                mappedVertex,
+                mappedArm1,
+                mappedArm2
+            );
+
+        const angleLabelRadius = 18;
+
+        const labelAngle =
+            angle1 + delta / 2;
+
         const labelX =
-            (mappedArm1.x +
-                mappedArm2.x) /
-            2;
+            mappedVertex.x +
+            angleLabelRadius *
+                Math.cos(labelAngle);
 
         const labelY =
-            (mappedArm1.y +
-                mappedArm2.y) /
-            2;
+            mappedVertex.y +
+            angleLabelRadius *
+                Math.sin(labelAngle);
 
         return (
             <>
@@ -1048,7 +1068,7 @@ function GeometryDiagram({
                             fontSize={10}
                             fill="#111827"
                         >
-                            {vertex.label}
+                            {normalizeDiagramLabelText(vertex.label)}
                         </Text>
                     )}
 
@@ -1066,7 +1086,7 @@ function GeometryDiagram({
                             fontSize={10}
                             fill="#111827"
                         >
-                            {arm1.label}
+                            {normalizeDiagramLabelText(arm1.label)}
                         </Text>
                     )}
 
@@ -1084,21 +1104,63 @@ function GeometryDiagram({
                             fontSize={10}
                             fill="#111827"
                         >
-                            {arm2.label}
+                            {normalizeDiagramLabelText(arm2.label)}
                         </Text>
                     )}
 
-                {showLabels &&
-                    angleLabel && (
-                        <Text
-                            x={labelX + 6}
-                            y={labelY - 6}
-                            fontSize={10}
-                            fill="#111827"
-                        >
-                            {angleLabel}
-                        </Text>
-                    )}
+                {angleLabel && (
+                    <>
+                        <Path
+                            d={(() => {
+                                const radius = 13;
+                                const steps = 18;
+                                const points = [];
+
+                                for (
+                                    let index = 0;
+                                    index <= steps;
+                                    index += 1
+                                ) {
+                                    const t =
+                                        index / steps;
+
+                                    const currentAngle =
+                                        angle1 +
+                                        delta * t;
+
+                                    points.push(
+                                        `${mappedVertex.x + radius * Math.cos(currentAngle)} ${mappedVertex.y + radius * Math.sin(currentAngle)}`
+                                    );
+                                }
+
+                                return points.length
+                                    ? `M ${points[0]} ` +
+                                      points
+                                          .slice(1)
+                                          .map(
+                                              point =>
+                                                  `L ${point}`
+                                          )
+                                          .join(" ")
+                                    : "";
+                            })()}
+                            fill="none"
+                            stroke="#111827"
+                            strokeWidth={1.2}
+                        />
+
+                        {showLabels && (
+                            <Text
+                                x={labelX}
+                                y={labelY}
+                                fontSize={10}
+                                fill="#111827"
+                            >
+                                {angleLabel}
+                            </Text>
+                        )}
+                    </>
+                )}
             </>
         );
     };
@@ -1168,8 +1230,7 @@ function GeometryDiagram({
                 />
             )}
 
-            {type === "angle" &&
-                renderAngle()}
+            {/* Angle arc/marking rendering intentionally disabled. */}
 
             {mappedPoints.map(
                 (point, index) => (
@@ -2181,6 +2242,1130 @@ function buildSceneArcPath({
     );
 }
 
+function getSceneObjectId(object, fallbackIndex) {
+    if (object?.id !== undefined && object?.id !== null) {
+        return String(object.id);
+    }
+
+    if (object?.name !== undefined && object?.name !== null) {
+        return String(object.name);
+    }
+
+    if (object?.label !== undefined && object?.label !== null) {
+        return String(object.label);
+    }
+
+    return String(fallbackIndex);
+}
+
+function findScenePoint(points = [], reference) {
+    if (reference === undefined || reference === null) {
+        return null;
+    }
+
+    const wanted = String(reference);
+
+    return (
+        points.find((point, index) =>
+            getSceneObjectId(point, index) === wanted
+        ) || null
+    );
+}
+
+function findSceneLine(lines = [], reference) {
+    if (reference === undefined || reference === null) {
+        return null;
+    }
+
+    const wanted = String(reference);
+
+    return (
+        lines.find((line, index) =>
+            getSceneObjectId(line, index) === wanted
+        ) || null
+    );
+}
+
+function findSceneCircle(circles = [], reference) {
+    if (reference === undefined || reference === null) {
+        return null;
+    }
+
+    const wanted = String(reference);
+
+    return (
+        circles.find((circle, index) =>
+            getSceneObjectId(circle, index) === wanted
+        ) || null
+    );
+}
+
+
+function normalizeDiagramLabelText(text = "") {
+    const value = String(text || "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    if (!value) {
+        return "";
+    }
+
+    /*
+     * Point/geometry labels produced by the AI often arrive as:
+     *   A (Top)
+     *   B (Base)
+     *   O (Center)
+     *   C (Ship 2)
+     *   Radius (r)
+     *   Diameter (d)
+     *   String (L)
+     *
+     * Keep only the actual mathematical symbol/point identifier.
+     */
+    let match = value.match(
+        /^([A-Za-z])\s*\([^()]*\)$/u
+    );
+
+    if (match) {
+        return match[1];
+    }
+
+    match = value.match(
+        /^.*\(\s*([A-Za-z])\s*\)$/u
+    );
+
+    if (match) {
+        return match[1];
+    }
+
+    /*
+     * Never allow descriptive prose to become a diagram label.
+     * Mathematical annotations such as 60 m, 45°, x, AD = ?,
+     * 2r, etc. remain untouched.
+     */
+    const isMathematicalAnnotation =
+        /[\d°=<>≤≥+\-×÷*/√^_?]/u.test(value) ||
+        /^[A-Za-z]{1,4}$/u.test(value);
+
+    if (isMathematicalAnnotation) {
+        return value;
+    }
+
+    return "";
+}
+
+function pointIdentifier(point, index) {
+    if (!point) {
+        return String(index);
+    }
+
+    return String(
+        point?.id ??
+        point?.label ??
+        point?.name ??
+        index
+    );
+}
+
+function findScenePointFlexible(points = [], reference) {
+    if (
+        reference === undefined ||
+        reference === null
+    ) {
+        return null;
+    }
+
+    const wanted = String(reference)
+        .trim();
+
+    const direct = findScenePoint(
+        points,
+        wanted
+    );
+
+    if (direct) {
+        return direct;
+    }
+
+    const normalizedWanted =
+        wanted
+            .replace(/^\s+|\s+$/g, "")
+            .replace(/[()]/g, "");
+
+    return (
+        points.find((point, index) => {
+            const candidates = [
+                point?.id,
+                point?.label,
+                point?.name,
+                index,
+            ]
+                .filter(
+                    item =>
+                        item !== undefined &&
+                        item !== null
+                )
+                .map(item =>
+                    String(item)
+                        .trim()
+                        .replace(/[()]/g, "")
+                );
+
+            return candidates.includes(
+                normalizedWanted
+            );
+        }) || null
+    );
+}
+
+function findSceneLineFlexible(
+    lines = [],
+    points = [],
+    reference
+) {
+    if (
+        reference === undefined ||
+        reference === null
+    ) {
+        return null;
+    }
+
+    const wanted = String(reference)
+        .trim();
+
+    const direct = findSceneLine(
+        lines,
+        wanted
+    );
+
+    if (direct) {
+        return direct;
+    }
+
+    /*
+     * Also accept conventional geometry references:
+     *   AB
+     *   AC
+     *   line-AB
+     *   A-B
+     */
+    const cleaned = wanted
+        .replace(/^line[-_:]?/i, "")
+        .replace(/[\s()]/g, "");
+
+    const pairMatch =
+        cleaned.match(
+            /^([A-Za-z][A-Za-z0-9]*)[-:>]([A-Za-z][A-Za-z0-9]*)$/u
+        ) ||
+        cleaned.match(
+            /^([A-Za-z])([A-Za-z])$/u
+        );
+
+    if (!pairMatch) {
+        return null;
+    }
+
+    const fromId = pairMatch[1];
+    const toId = pairMatch[2];
+
+    return (
+        lines.find(line => {
+            if (
+                line?.from !== undefined &&
+                line?.to !== undefined
+            ) {
+                const from = findScenePointFlexible(
+                    points,
+                    line.from
+                );
+
+                const to = findScenePointFlexible(
+                    points,
+                    line.to
+                );
+
+                if (!from || !to) {
+                    return false;
+                }
+
+                const fromKey =
+                    pointIdentifier(from, 0);
+
+                const toKey =
+                    pointIdentifier(to, 0);
+
+                return (
+                    (
+                        fromKey === fromId &&
+                        toKey === toId
+                    ) ||
+                    (
+                        fromKey === toId &&
+                        toKey === fromId
+                    ) ||
+                    (
+                        String(from?.label || "")
+                            .trim() === fromId &&
+                        String(to?.label || "")
+                            .trim() === toId
+                    ) ||
+                    (
+                        String(from?.label || "")
+                            .trim() === toId &&
+                        String(to?.label || "")
+                            .trim() === fromId
+                    )
+                );
+            }
+
+            return false;
+        }) || null
+    );
+}
+
+function resolveAngleRayEndpoint(
+    line,
+    vertex,
+    points = []
+) {
+    const endpoints =
+        resolveSceneLineEndpoints(
+            line,
+            points
+        );
+
+    if (!endpoints) {
+        return null;
+    }
+
+    const startDistance =
+        distanceSquared(
+            endpoints.start,
+            vertex
+        );
+
+    const endDistance =
+        distanceSquared(
+            endpoints.end,
+            vertex
+        );
+
+    /*
+     * The endpoint nearest to the vertex is the
+     * vertex itself. The other endpoint is the ray.
+     *
+     * If the AI supplied slightly imperfect coordinates,
+     * still use the farther endpoint so the angle is
+     * determined by the intended line.
+     */
+    return startDistance >= endDistance
+        ? endpoints.start
+        : endpoints.end;
+}
+
+function angleBetweenPoints(
+    vertex,
+    ray1,
+    ray2
+) {
+    const a1 = Math.atan2(
+        ray1.y - vertex.y,
+        ray1.x - vertex.x
+    );
+
+    const a2 = Math.atan2(
+        ray2.y - vertex.y,
+        ray2.x - vertex.x
+    );
+
+    let delta =
+        ((a2 - a1 + Math.PI) %
+            (Math.PI * 2)) -
+        Math.PI;
+
+    if (delta === -Math.PI) {
+        delta = Math.PI;
+    }
+
+    return {
+        angle1: a1,
+        angle2: a2,
+        delta,
+    };
+}
+
+function pointToSegmentDistanceSquared(
+    point,
+    segmentStart,
+    segmentEnd
+) {
+    const px = Number(point?.x || 0);
+    const py = Number(point?.y || 0);
+    const ax = Number(segmentStart?.x || 0);
+    const ay = Number(segmentStart?.y || 0);
+    const bx = Number(segmentEnd?.x || 0);
+    const by = Number(segmentEnd?.y || 0);
+
+    const dx = bx - ax;
+    const dy = by - ay;
+    const lengthSquared =
+        dx * dx + dy * dy;
+
+    if (!lengthSquared) {
+        return (
+            (px - ax) * (px - ax) +
+            (py - ay) * (py - ay)
+        );
+    }
+
+    const t = Math.max(
+        0,
+        Math.min(
+            1,
+            ((px - ax) * dx +
+                (py - ay) * dy) /
+                lengthSquared
+        )
+    );
+
+    const closestX =
+        ax + t * dx;
+    const closestY =
+        ay + t * dy;
+
+    const distanceX =
+        px - closestX;
+    const distanceY =
+        py - closestY;
+
+    return (
+        distanceX * distanceX +
+        distanceY * distanceY
+    );
+}
+
+function resolvePointLabelPosition({
+    point,
+    points = [],
+    lines = [],
+    mapPoint,
+}) {
+    const mapped = mapPoint(point);
+
+    const connectedSegments = [];
+
+    lines.forEach(line => {
+        const endpoints =
+            resolveSceneLineEndpoints(
+                line,
+                points
+            );
+
+        if (!endpoints) {
+            return;
+        }
+
+        const startDistance =
+            distanceSquared(
+                endpoints.start,
+                point
+            );
+
+        const endDistance =
+            distanceSquared(
+                endpoints.end,
+                point
+            );
+
+        const tolerance = 0.35;
+
+        if (
+            startDistance <=
+            tolerance * tolerance
+        ) {
+            connectedSegments.push(
+                endpoints
+            );
+        } else if (
+            endDistance <=
+            tolerance * tolerance
+        ) {
+            connectedSegments.push({
+                start: endpoints.end,
+                end: endpoints.start,
+            });
+        }
+    });
+
+    let directionX = 0;
+    let directionY = 0;
+
+    connectedSegments.forEach(
+        segment => {
+            const dx =
+                Number(segment.end.x) -
+                Number(point.x);
+
+            const dy =
+                Number(segment.end.y) -
+                Number(point.y);
+
+            const length =
+                Math.sqrt(
+                    dx * dx +
+                    dy * dy
+                );
+
+            if (length > 0) {
+                directionX += dx / length;
+                directionY += dy / length;
+            }
+        }
+    );
+
+    const directionLength =
+        Math.sqrt(
+            directionX * directionX +
+            directionY * directionY
+        );
+
+    if (directionLength > 0) {
+        directionX =
+            -directionX /
+            directionLength;
+
+        directionY =
+            -directionY /
+            directionLength;
+    } else {
+        directionX = 0;
+        directionY = -1;
+    }
+
+    /*
+     * Vertex identifiers are deliberately kept farther away from
+     * the point than ordinary text. This prevents the identifier
+     * from touching the vertex marker itself.
+     *
+     * The label is still close to the vertex; we are only giving
+     * the single-character identifier enough clearance to remain
+     * visually separate from the point and connected geometry.
+     */
+    const labelOffset = 13;
+    const pointClearance = 10;
+
+    const candidates = [
+        [directionX, directionY],
+        [0, -1],
+        [1, -1],
+        [-1, -1],
+        [1, 0],
+        [-1, 0],
+        [1, 1],
+        [-1, 1],
+        [0, 1],
+    ];
+
+    let best = null;
+
+    candidates.forEach(
+        ([dx, dy], index) => {
+            const length =
+                Math.sqrt(
+                    dx * dx +
+                    dy * dy
+                ) || 1;
+
+            const unitX = dx / length;
+            const unitY = dy / length;
+
+            /*
+             * React-PDF Text uses the supplied y coordinate as
+             * the text baseline. Add a small baseline correction
+             * so labels below a vertex do not sit on the vertex.
+             */
+            const baselineCorrection =
+                unitY > 0 ? 4 :
+                unitY < 0 ? -1 : 2;
+
+            const candidate = {
+                x:
+                    mapped.x +
+                    unitX * labelOffset,
+
+                y:
+                    mapped.y +
+                    unitY * labelOffset +
+                    baselineCorrection,
+            };
+
+            const distanceFromPoint =
+                Math.sqrt(
+                    (candidate.x - mapped.x) ** 2 +
+                    (candidate.y - mapped.y) ** 2
+                );
+
+            if (
+                distanceFromPoint <
+                pointClearance
+            ) {
+                return;
+            }
+
+            let minimumLineDistance =
+                Infinity;
+
+            connectedSegments.forEach(
+                segment => {
+                    const start =
+                        mapPoint(
+                            segment.start
+                        );
+
+                    const end =
+                        mapPoint(
+                            segment.end
+                        );
+
+                    const distance =
+                        Math.sqrt(
+                            pointToSegmentDistanceSquared(
+                                candidate,
+                                start,
+                                end
+                            )
+                        );
+
+                    minimumLineDistance =
+                        Math.min(
+                            minimumLineDistance,
+                            distance
+                        );
+                }
+            );
+
+            /*
+             * Keep the identifier clear of the actual point and
+             * connected lines. Prefer the closest safe candidate.
+             */
+            const score =
+                minimumLineDistance * 10 +
+                distanceFromPoint * 0.5 -
+                index * 0.05;
+
+            if (
+                !best ||
+                score > best.score
+            ) {
+                best = {
+                    x: candidate.x,
+                    y: candidate.y,
+                    score,
+                };
+            }
+        }
+    );
+
+    return {
+        x:
+            best?.x ??
+            mapped.x,
+        y:
+            best?.y ??
+            mapped.y - labelOffset,
+    };
+}
+
+function resolveSceneLineEndpoints(
+    line,
+    points = []
+) {
+    if (!line) {
+        return null;
+    }
+
+    let start = null;
+    let end = null;
+
+    if (
+        line.from !== undefined &&
+        line.to !== undefined
+    ) {
+        start = findScenePointFlexible(
+            points,
+            line.from
+        );
+
+        end = findScenePointFlexible(
+            points,
+            line.to
+        );
+    }
+
+    if (start && end) {
+        return {
+            start,
+            end,
+        };
+    }
+
+    if (
+        Number.isFinite(
+            Number(line?.x1)
+        ) &&
+        Number.isFinite(
+            Number(line?.y1)
+        ) &&
+        Number.isFinite(
+            Number(line?.x2)
+        ) &&
+        Number.isFinite(
+            Number(line?.y2)
+        )
+    ) {
+        return {
+            start: {
+                x: Number(line.x1),
+                y: Number(line.y1),
+            },
+            end: {
+                x: Number(line.x2),
+                y: Number(line.y2),
+            },
+        };
+    }
+
+    return null;
+}
+
+function distanceSquared(a, b) {
+    const dx =
+        Number(a?.x || 0) -
+        Number(b?.x || 0);
+
+    const dy =
+        Number(a?.y || 0) -
+        Number(b?.y || 0);
+
+    return dx * dx + dy * dy;
+}
+
+function resolveSceneRayEndpoint(
+    line,
+    vertex,
+    points = []
+) {
+    const endpoints =
+        resolveSceneLineEndpoints(
+            line,
+            points
+        );
+
+    if (!endpoints) {
+        return null;
+    }
+
+    const startDistance =
+        distanceSquared(
+            endpoints.start,
+            vertex
+        );
+
+    const endDistance =
+        distanceSquared(
+            endpoints.end,
+            vertex
+        );
+
+    return startDistance <= endDistance
+        ? endpoints.end
+        : endpoints.start;
+}
+
+function buildSemanticAngleGeometry({
+    angle,
+    points = [],
+    lines = [],
+    minX,
+    maxX,
+    minY,
+    maxY,
+    width,
+    height,
+    padding,
+}) {
+    const vertex =
+        findScenePointFlexible(
+            points,
+            angle?.vertex
+        );
+
+    const side1 =
+        findSceneLineFlexible(
+            lines,
+            points,
+            angle?.side1
+        );
+
+    const side2 =
+        findSceneLineFlexible(
+            lines,
+            points,
+            angle?.side2
+        );
+
+    if (
+        !vertex ||
+        !side1 ||
+        !side2
+    ) {
+        return null;
+    }
+
+    const ray1 =
+        resolveAngleRayEndpoint(
+            side1,
+            vertex,
+            points
+        );
+
+    const ray2 =
+        resolveAngleRayEndpoint(
+            side2,
+            vertex,
+            points
+        );
+
+    if (!ray1 || !ray2) {
+        return null;
+    }
+
+    const mappedVertex =
+        mapDiagramPoint(
+            vertex,
+            minX,
+            maxX,
+            minY,
+            maxY,
+            width,
+            height,
+            padding
+        );
+
+    const mappedRay1 =
+        mapDiagramPoint(
+            ray1,
+            minX,
+            maxX,
+            minY,
+            maxY,
+            width,
+            height,
+            padding
+        );
+
+    const mappedRay2 =
+        mapDiagramPoint(
+            ray2,
+            minX,
+            maxX,
+            minY,
+            maxY,
+            width,
+            height,
+            padding
+        );
+
+    const {
+        angle1,
+        delta,
+    } =
+        angleBetweenPoints(
+            mappedVertex,
+            mappedRay1,
+            mappedRay2
+        );
+
+    const radiusScene =
+        Math.max(
+            0.1,
+            finite(
+                angle?.arcRadius,
+                0.55
+            )
+        );
+
+    const scaleX =
+        (width - padding * 2) /
+        Math.max(
+            maxX - minX,
+            0.0001
+        );
+
+    const scaleY =
+        (height - padding * 2) /
+        Math.max(
+            maxY - minY,
+            0.0001
+        );
+
+    /*
+     * Keep the arc visually close to the actual vertex.
+     * The previous 0.8 default was too large for small
+     * angles and made the label look detached.
+     */
+    const radiusPixels =
+        Math.max(
+            7,
+            Math.min(
+                20,
+                radiusScene *
+                    Math.min(
+                        scaleX,
+                        scaleY
+                    )
+            )
+        );
+
+    const steps =
+        Math.max(
+            10,
+            Math.ceil(
+                Math.abs(delta) *
+                    180 /
+                    Math.PI /
+                    4
+            )
+        );
+
+    const arcPoints = [];
+
+    for (
+        let index = 0;
+        index <= steps;
+        index += 1
+    ) {
+        const t =
+            index / steps;
+
+        const angleValue =
+            angle1 + delta * t;
+
+        arcPoints.push({
+            x:
+                mappedVertex.x +
+                radiusPixels *
+                    Math.cos(
+                        angleValue
+                    ),
+            y:
+                mappedVertex.y +
+                radiusPixels *
+                    Math.sin(
+                        angleValue
+                    ),
+        });
+    }
+
+    const path =
+        arcPoints.length
+            ? `M ${arcPoints[0].x} ${arcPoints[0].y} ` +
+              arcPoints
+                  .slice(1)
+                  .map(
+                      point =>
+                          `L ${point.x} ${point.y}`
+                  )
+                  .join(" ")
+            : "";
+
+    const middleAngle =
+        angle1 + delta / 2;
+
+    /*
+     * Put the value just outside the arc, not at an
+     * arbitrary AI coordinate.
+     */
+    const labelDistance =
+        radiusPixels + 8;
+
+    const labelPoint = {
+        x:
+            mappedVertex.x +
+            labelDistance *
+                Math.cos(
+                    middleAngle
+                ),
+        y:
+            mappedVertex.y +
+            labelDistance *
+                Math.sin(
+                    middleAngle
+                ),
+    };
+
+    return {
+        path,
+        labelPoint,
+        vertexPoint: mappedVertex,
+        radiusPixels,
+        angle1,
+        angle2:
+            angle1 + delta,
+    };
+}
+
+function resolveSemanticLabelPosition({
+    label,
+    points = [],
+    lines = [],
+    circles = [],
+    angleAnchors = {},
+    mapPoint,
+}) {
+    const attachedTo =
+        label?.attachedTo;
+
+    if (!attachedTo) {
+        if (
+            Number.isFinite(Number(label?.x)) &&
+            Number.isFinite(Number(label?.y))
+        ) {
+            return mapPoint(label);
+        }
+
+        return null;
+    }
+
+    const type =
+        String(attachedTo?.type || "")
+            .toLowerCase();
+
+    if (type === "point") {
+        const point =
+            findScenePointFlexible(
+                points,
+                attachedTo?.id
+            );
+
+        if (!point) {
+            return null;
+        }
+
+        /*
+         * For point labels the renderer owns placement.
+         * This prevents labels from being put directly on
+         * a line or inside the geometry.
+         */
+        return resolvePointLabelPosition({
+            point,
+            points,
+            lines,
+            mapPoint,
+        });
+    }
+
+    if (type === "line") {
+        const line = findSceneLine(
+            lines,
+            attachedTo?.id
+        );
+
+        const endpoints =
+            resolveSceneLineEndpoints(
+                line,
+                points
+            );
+
+        if (!endpoints) {
+            return null;
+        }
+
+        const a = mapPoint(
+            endpoints.start
+        );
+        const b = mapPoint(
+            endpoints.end
+        );
+
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const length =
+            Math.sqrt(dx * dx + dy * dy) ||
+            1;
+
+        const normalX = -dy / length;
+        const normalY = dx / length;
+        const offset = Math.max(
+            6,
+            finite(
+                label?.offset,
+                9
+            )
+        );
+
+        return {
+            x:
+                (a.x + b.x) / 2 +
+                normalX * offset,
+            y:
+                (a.y + b.y) / 2 +
+                normalY * offset,
+        };
+    }
+
+    if (type === "circle") {
+        const circle = findSceneCircle(
+            circles,
+            attachedTo?.id
+        );
+
+        if (!circle) {
+            return null;
+        }
+
+        const center = mapPoint({
+            x: finite(circle.cx),
+            y: finite(circle.cy),
+        });
+
+        const radiusX =
+            Math.abs(
+                mapPoint({
+                    x:
+                        finite(circle.cx) +
+                        finite(circle.r, 1),
+                    y: finite(circle.cy),
+                }).x - center.x
+            );
+
+        return {
+            x:
+                center.x +
+                radiusX +
+                Math.max(
+                    6,
+                    finite(
+                        label?.offset,
+                        8
+                    )
+                ),
+            y: center.y,
+        };
+    }
+
+    if (type === "angle") {
+        const anchor =
+            angleAnchors[
+                String(attachedTo?.id)
+            ];
+
+        return anchor || null;
+    }
+
+    return null;
+}
+
 function UniversalVectorScene({
     width = 515,
     height = 300,
@@ -2200,6 +3385,7 @@ function UniversalVectorScene({
     paths = [],
     arcs = [],
     curves = [],
+    angles = [],
     points = [],
     labels = [],
     dimensions = [],
@@ -2829,17 +4015,105 @@ function UniversalVectorScene({
         }
     );
 
+    const angleAnchors = {};
+
+    /*
+     * Angle rendering is intentionally disabled.
+     *
+     * The AI may still provide angle data in the scene schema, but this
+     * renderer must not draw angle arcs/marks or angle-value labels.
+     * This prevents incorrect angle placement from affecting diagrams.
+     */
+
     if (showLabels) {
         labels.forEach(
             (label, index) => {
+                const normalizedText =
+                    normalizeDiagramLabelText(
+                        label?.text
+                    );
+
+                /*
+                 * Empty descriptive labels are deliberately
+                 * suppressed. Geometry itself remains untouched.
+                 */
+                if (!normalizedText) {
+                    return;
+                }
+
+                const attachedTo =
+                    label?.attachedTo;
+
+                let mapped =
+                    resolveSemanticLabelPosition({
+                        label,
+                        points,
+                        lines,
+                        circles,
+                        angleAnchors,
+                        mapPoint,
+                    });
+
+                /*
+                 * If a point label is not explicitly attached,
+                 * detect the point from its normalized label and
+                 * let the renderer place it around that point.
+                 */
                 if (
-                    !label?.text
+                    !mapped &&
+                    /^[A-Za-z]$/u.test(
+                        normalizedText
+                    )
+                ) {
+                    const point =
+                        findScenePointFlexible(
+                            points,
+                            normalizedText
+                        );
+
+                    if (point) {
+                        mapped =
+                            resolvePointLabelPosition({
+                                point,
+                                points,
+                                lines,
+                                mapPoint,
+                            });
+                    }
+                }
+
+                /*
+                 * Standalone angle labels must not be allowed
+                 * to use arbitrary AI x/y coordinates when the
+                 * semantic angle renderer already owns them.
+                 */
+                const isAngleValue =
+                    /^\s*\d+(?:\.\d+)?\s*°\s*$/u.test(
+                        normalizedText
+                    );
+
+                if (
+                    isAngleValue &&
+                    angles.length > 0 &&
+                    !attachedTo
                 ) {
                     return;
                 }
 
-                const mapped =
-                    mapPoint(label);
+                if (!mapped) {
+                    if (
+                        Number.isFinite(
+                            Number(label?.x)
+                        ) &&
+                        Number.isFinite(
+                            Number(label?.y)
+                        )
+                    ) {
+                        mapped = mapPoint(label);
+                    } else {
+                        return;
+                    }
+                }
 
                 const style =
                     normalizeSceneStyle(
@@ -2861,9 +4135,7 @@ function UniversalVectorScene({
                         fill={style.stroke}
                         opacity={style.opacity}
                     >
-                        {String(
-                            label.text
-                        )}
+                        {normalizedText}
                     </Text>
                 );
             }

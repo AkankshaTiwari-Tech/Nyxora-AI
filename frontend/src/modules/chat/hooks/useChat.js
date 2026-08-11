@@ -538,6 +538,71 @@ Use curves for mathematical graphs and other genuinely curved
 visuals.
 
 ==================================================
+ANGLE MARKING RULE — DISABLED
+==================================================
+
+DO NOT GENERATE ANY ANGLE MARKINGS IN DIAGRAMS.
+
+Never generate:
+
+- angle arcs
+- angle sectors
+- angle wedges
+- angle markers
+- right-angle boxes
+- angle-value labels such as 30°, 45°, 60°, 80°, 90°
+- standalone angle text
+- semantic "angles" objects
+- diagrams with type "angle"
+- arcs whose purpose is to indicate an angle
+
+If the question contains an angle such as:
+
+∠APB = 80°
+∠BAT = 60°
+∠ABC = 45°
+
+the angle information must remain ONLY in the question text.
+
+The diagram should contain the relevant geometry
+(points, vertices, lines, circles, etc.) but MUST NOT
+draw the angle marking or angle value.
+
+IMPORTANT:
+
+Do not try to represent an angle using:
+- an "arc"
+- a "label"
+- an "angle" object
+- a "dimension"
+- a curved path
+
+Angles are mathematical information in the question,
+not visual markings in the generated diagram.
+
+Example:
+
+Question:
+"Given ∠APB = 80°, find ..."
+
+Diagram:
+
+KEEP:
+A
+P
+B
+PA
+PB
+
+REMOVE:
+80°
+angle arc
+angle wedge
+angle marker
+
+==================================================
+
+==================================================
 LABEL
 ==================================================
 
@@ -1722,6 +1787,104 @@ Curve:
             "y": 4
         }
     ]
+}
+
+==================================================
+LABEL PLACEMENT
+==================================================
+
+Labels are rendered at the exact x/y coordinates you provide.
+
+YOU are responsible for choosing good final label positions.
+
+For EVERY label:
+
+- Place it close to the geometry it describes.
+- Place it in clear empty space.
+- NEVER place it directly on a line, circle, arc, curve, polygon
+  edge, rectangle edge, vertex, point, arrow or dimension.
+- NEVER overlap another label.
+- NEVER allow label text to cross or hide mathematical geometry.
+- Keep the complete label visible inside the diagram area.
+- Consider the ENTIRE diagram before choosing the position.
+- Do not use the same fixed offset for every label.
+- Choose the best position individually for each label.
+- If the natural position is occupied, move the label to the
+  nearest clear position while keeping it visually associated
+  with the geometry.
+- Keep point labels close to their corresponding points while
+  placing the text outside the point/geometry.
+- Keep descriptive labels close to the geometry they describe.
+- Leave enough space for the COMPLETE text, not just its first
+  character.
+
+Before returning the diagram JSON, perform a final visual check:
+
+1. Check every label against every line.
+2. Check every label against every circle/arc/curve.
+3. Check every label against every point/vertex.
+4. Check every label against every other label.
+5. Check that no label hides an important mathematical marking.
+6. Reposition any conflicting label before returning the JSON.
+
+The x/y coordinates are the FINAL rendering positions.
+Do not treat them as approximate positions.
+
+IMPORTANT LABEL DISTANCE AND COLLISION RULES
+
+- Labels must remain visually CLOSE to the geometry they describe.
+- Do NOT move a label far away just to find empty space.
+- Prefer the nearest safe position to the original geometry.
+- Minimize the distance between the label and its associated
+  point/line/shape while still preventing overlap.
+
+For point labels:
+
+- The label must stay close to its point.
+- Place the text just outside the point/vertex.
+- Consider the FULL WIDTH and HEIGHT of the label text.
+- The complete text bounding area must be clear of ALL geometry.
+- A label is NOT considered safe merely because its starting
+  coordinate does not touch the geometry.
+- Check where the ENTIRE text will extend from the given x/y position.
+
+For long labels such as:
+
+"A (Tower Top)"
+"B (Building Top)"
+"P (Point)"
+"Point of Contact (P)"
+"Tangent Line"
+"Radius (r)"
+
+give the text enough local empty space, but keep it as close
+as possible to the associated geometry.
+
+PRIORITY ORDER:
+
+1. Keep the label close to the geometry it describes.
+2. Prevent the COMPLETE label text from overlapping geometry.
+3. Prevent overlap with other labels.
+4. Keep the label inside the diagram.
+5. If several positions are safe, ALWAYS choose the closest one
+   to the associated geometry.
+
+Do NOT sacrifice proximity for excessive empty space.
+
+A label should normally be only a small offset from its associated
+geometry, not several coordinate units away, unless no nearby
+position is safe.
+
+==================================================
+LABEL
+==================================================
+
+Use:
+
+{
+  "x": 0,
+  "y": 0,
+  "text": "O"
 }
 
 Label:
