@@ -640,6 +640,7 @@ function cleanAnswerKeyText(text = "") {
       .replace(/\\implies/g, "⇒")
       .replace(/\\Rightarrow/g, "⇒")
       .replace(/\\Longrightarrow/g, "⇒")
+      
 
       .replace(/\\therefore/g, "∴")
       .replace(/\\because/g, "∵")
@@ -696,6 +697,7 @@ function cleanAnswerKeyText(text = "") {
       .replace(/\\parallel/g, " || ")
       .replace(/\\parallel/g, " || ")
       .replace(/\\perpendicular/g, "⊥")
+      .replace(/\\perp/g, "⊥")
 
       .replace(/\\in/g, "∈")
       .replace(/\\notin/g, "∉");
@@ -825,14 +827,86 @@ function renderMixedMathText(text = "") {
   const value = String(text || "");
 
   const mathSymbols =
-    /[△α-ωΑ-ΩθπμσφψΔΓΣΩ∠∼≅≈≠≤≥±×÷·√∞∴∵→⇒←↔∈∉°]/u;
+    /[△⊥∥α-ωΑ-ΩθπμσφψΔΓΣΩ∠∼≅≈≠≤≥±×÷·√∞∴∵→⇒←↔∈∉°]/u;
 
   const parts = value.split(
-    /([△α-ωΑ-ΩθπμσφψΔΓΣΩ∠∼≅≈≠≤≥±×÷·√∞∴∵→⇒←↔∈∉°])/u
-  );
+  /(r_[A-Za-z0-9]+(?:\^[A-Za-z0-9]+)?|[A-Za-z]\^[A-Za-z0-9]+|[A-Za-z]_[A-Za-z0-9]+|[△⊥∥α-ωΑ-ΩθπμσφψΔΓΣΩ∠∼≅≈≠≤≥±×÷·√∞∴∵→⇒←↔∈∉°])/u
+);
 
   return parts.map((part, index) => {
     if (!part) return null;
+
+    const subSupMatch = part.match(
+      /^([A-Za-z])_([A-Za-z0-9]+)\^([A-Za-z0-9]+)$/
+    );
+
+    if (subSupMatch) {
+      return (
+        <Text key={"mixed-math-" + index}>
+          <Text>{subSupMatch[1]}</Text>
+
+          <Text
+            style={{
+              fontSize: 6.5,
+              verticalAlign: "sub"
+            }}
+          >
+            {subSupMatch[2]}
+          </Text>
+
+          <Text
+            style={{
+              fontSize: 6.5,
+              verticalAlign: "super"
+            }}
+          >
+            {subSupMatch[3]}
+          </Text>
+        </Text>
+      );
+    }
+
+    const subMatch = part.match(
+      /^([A-Za-z])_([A-Za-z0-9]+)$/
+    );
+
+    if (subMatch) {
+      return (
+        <Text key={"mixed-math-" + index}>
+          <Text>{subMatch[1]}</Text>
+
+          <Text
+            style={{
+              fontSize: 6.5,
+              verticalAlign: "sub"
+            }}
+          >
+            {subMatch[2]}
+          </Text>
+        </Text>
+      );
+    }
+
+    const supMatch = part.match(
+      /^([A-Za-z])\^([A-Za-z0-9]+)$/
+    );
+
+    if (supMatch) {
+      return (
+        <Text key={"mixed-math-" + index}>
+          <Text>{supMatch[1]}</Text>
+
+          <Text
+            style={{
+              fontSize: 6.5,
+              verticalAlign: "super"
+            }}
+          >
+            {supMatch[2]}
+          </Text>
+        </Text>
+      );
+    }
 
     let fontFamily = "NotoSans";
 
@@ -849,7 +923,7 @@ function renderMixedMathText(text = "") {
         key={"mixed-math-" + index}
         style={{
           fontFamily,
-          fontSize: 9.5,
+          fontSize: 9.5
         }}
       >
         {part}
@@ -858,6 +932,7 @@ function renderMixedMathText(text = "") {
   });
 }
 
+ 
 function isLikelyAnswerKeyStepLine(text = ""){
 
 const value = cleanAnswerKeyText(text)
@@ -3320,14 +3395,16 @@ const unnumberedDiagrams = [];
 const source = String(content || "");
 
 const blocks = [
+  ...source.matchAll(
+    /```(?:json|javascript|js)?\s*([\s\S]*?)```/gi
+  )
+].map(match => match[1]);
 
-...source.matchAll(
-
-/```(?:json|javascript|js)?\s*([\s\S]*?)```/gi
-
-)
-
-].map(match=>match[1]);
+// Also try the complete response when the AI returns
+// vector diagram JSON without a fenced code block.
+if (blocks.length === 0) {
+  blocks.push(source.trim());
+}
 
 
 
@@ -3342,30 +3419,65 @@ return;
 
 
 if(value.diagram && typeof value.diagram === "object"){
+  const number = Number(
+    value.number ??
+    value.questionNumber ??
+    value.questionNo ??
+    value.qNumber
+  );
 
-const number = Number(
-
-value.number ??
-value.questionNumber ??
-value.questionNo ??
-value.qNumber
-
-);
-
-
-
-if(Number.isFinite(number) && number > 0){
-
-diagramsByNumber[number] = value.diagram;
-
-}else{
-
-unnumberedDiagrams.push(value.diagram);
-
+  if(Number.isFinite(number) && number > 0){
+    diagramsByNumber[number] = value.diagram;
+  }else{
+    unnumberedDiagrams.push(value.diagram);
+  }
 }
 
-}
+/*
+ * Support direct vector diagram objects.
+ * Example:
+ * {
+ *   "number": 1,
+ *   "type": "geometry",
+ *   "points": [...],
+ *   "lines": [...],
+ *   "labels": [...]
+ * }
+ */
+const hasVectorDiagramData =
+  !value.diagram &&
+  (
+    Array.isArray(value.points) ||
+    Array.isArray(value.lines) ||
+    Array.isArray(value.segments) ||
+    Array.isArray(value.vectors) ||
+    Array.isArray(value.labels)
+  );
 
+if(hasVectorDiagramData){
+
+  const number = Number(
+    value.number ??
+    value.questionNumber ??
+    value.questionNo ??
+    value.qNumber
+  );
+
+  const diagram = {
+    ...value
+  };
+
+  delete diagram.number;
+  delete diagram.questionNumber;
+  delete diagram.questionNo;
+  delete diagram.qNumber;
+
+  if(Number.isFinite(number) && number > 0){
+    diagramsByNumber[number] = diagram;
+  }else{
+    unnumberedDiagrams.push(diagram);
+  }
+}
 
 
 if(Array.isArray(value)){
@@ -3415,6 +3527,15 @@ function parseContent(content=""){
 
 const mathDiagramData =
 extractMathDiagramData(content);
+console.log(
+  "NYXORA DIAGRAM DATA:",
+  JSON.stringify(mathDiagramData, null, 2)
+);
+
+console.log(
+  "NYXORA RAW CONTENT:",
+  content
+);
 
 const lines = content
 

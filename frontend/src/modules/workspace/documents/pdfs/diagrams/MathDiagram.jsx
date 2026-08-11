@@ -1210,20 +1210,12 @@ function ASCIIDiagram({
     width = 515,
     height = 260,
 }) {
-    const safeWidth = safeDimension(
-        width,
-        515
-    );
+    const safeWidth = safeDimension(width, 515);
+    const safeHeight = safeDimension(height, 260);
 
-    const safeHeight = safeDimension(
-        height,
-        260
-    );
-
-    const source = String(
-        ascii || ""
-    )
+    const source = String(ascii || "")
         .replace(/\r/g, "")
+        .replace(/```(?:text|txt)?/gi, "")
         .replace(/```/g, "")
         .trim();
 
@@ -1231,93 +1223,437 @@ function ASCIIDiagram({
         return null;
     }
 
-    const rows = source
-        .split("\n")
-        .filter(
-            (row) =>
-                row.trim().length > 0
-        );
+    const rows = source.split("\n");
+
+    while (
+        rows.length &&
+        !rows[0].trim()
+    ) {
+        rows.shift();
+    }
+
+    while (
+        rows.length &&
+        !rows[rows.length - 1].trim()
+    ) {
+        rows.pop();
+    }
 
     if (!rows.length) {
         return null;
     }
 
-    const maxColumns = Math.max(
-        ...rows.map(
-            (row) => row.length
-        )
-    );
+    const rowCount = rows.length;
 
-    const columns = Math.max(
-        maxColumns,
+    const columnCount = Math.max(
+        ...rows.map(row => row.length),
         1
     );
 
-    const rowCount = Math.max(
-        rows.length,
-        1
-    );
-
-    const horizontalPadding = 24;
-    const verticalPadding = 20;
+    const paddingX = 25;
+    const paddingY = 20;
 
     const cellWidth =
-        (safeWidth -
-            horizontalPadding * 2) /
-        columns;
+        (safeWidth - paddingX * 2) /
+        Math.max(columnCount, 1);
 
     const cellHeight =
-        (safeHeight -
-            verticalPadding * 2) /
-        rowCount;
+        (safeHeight - paddingY * 2) /
+        Math.max(rowCount, 1);
 
     const elements = [];
 
-    const isHorizontal = (char) =>
-        char === "-" ||
-        char === "_" ||
-        char === "─";
+    const getChar = (
+        row,
+        column
+    ) => {
+        if (
+            row < 0 ||
+            row >= rowCount ||
+            column < 0 ||
+            column >= rows[row].length
+        ) {
+            return " ";
+        }
 
-    const isVertical = (char) =>
-        char === "|" ||
-        char === "│";
-
-    const isDiagonalDown = (char) =>
-        char === "\\" ||
-        char === "＼";
-
-    const isDiagonalUp = (char) =>
-        char === "/" ||
-        char === "／";
+        return rows[row][column];
+    };
 
     const getPoint = (
         row,
         column
     ) => ({
         x:
-            horizontalPadding +
+            paddingX +
             column * cellWidth +
             cellWidth / 2,
 
         y:
-            verticalPadding +
+            paddingY +
             row * cellHeight +
             cellHeight / 2,
     });
 
+    const horizontalChars =
+        new Set([
+            "-",
+            "_",
+            "─",
+            "━",
+            "═",
+        ]);
+
+    const verticalChars =
+        new Set([
+            "|",
+            "│",
+            "┃",
+            "║",
+        ]);
+
+    const diagonalDownChars =
+        new Set([
+            "\\",
+            "＼",
+            "╲",
+        ]);
+
+    const diagonalUpChars =
+        new Set([
+            "/",
+            "／",
+            "╱",
+        ]);
+
+    const junctionChars =
+        new Set([
+            "+",
+            "┼",
+            "╋",
+            "├",
+            "┤",
+            "┬",
+            "┴",
+            "┌",
+            "┐",
+            "└",
+            "┘",
+        ]);
+
+    const arrowChars =
+        new Set([
+            "→",
+            "←",
+            "↑",
+            "↓",
+            "↔",
+            "↕",
+        ]);
+
+    const isGeometryChar = char =>
+        horizontalChars.has(char) ||
+        verticalChars.has(char) ||
+        diagonalDownChars.has(char) ||
+        diagonalUpChars.has(char) ||
+        junctionChars.has(char) ||
+        arrowChars.has(char);
+
+    const addLine = (
+        key,
+        x1,
+        y1,
+        x2,
+        y2,
+        strokeWidth = 1.6
+    ) => {
+        elements.push(
+            <Line
+                key={key}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                stroke="#111827"
+                strokeWidth={strokeWidth}
+            />
+        );
+    };
+
+    /*
+     * Horizontal geometry
+     *
+     * Instead of drawing one tiny line for every "-",
+     * collect consecutive horizontal characters into
+     * one continuous vector.
+     */
+    rows.forEach(
+        (row, rowIndex) => {
+            let start = -1;
+
+            for (
+                let column = 0;
+                column <= columnCount;
+                column += 1
+            ) {
+                const char =
+                    column < columnCount
+                        ? getChar(
+                              rowIndex,
+                              column
+                          )
+                        : " ";
+
+                const horizontal =
+                    horizontalChars.has(char);
+
+                if (
+                    horizontal &&
+                    start === -1
+                ) {
+                    start = column;
+                }
+
+                if (
+                    !horizontal &&
+                    start !== -1
+                ) {
+                    const end =
+                        column - 1;
+
+                    const left =
+                        getPoint(
+                            rowIndex,
+                            start
+                        );
+
+                    const right =
+                        getPoint(
+                            rowIndex,
+                            end
+                        );
+
+                    addLine(
+                        `ascii-horizontal-${rowIndex}-${start}`,
+                        left.x -
+                            cellWidth / 2,
+                        left.y,
+                        right.x +
+                            cellWidth / 2,
+                        right.y
+                    );
+
+                    start = -1;
+                }
+            }
+        }
+    );
+
+    /*
+     * Vertical geometry
+     *
+     * Collect consecutive "|" characters into
+     * one continuous vector.
+     */
+    for (
+        let column = 0;
+        column < columnCount;
+        column += 1
+    ) {
+        let start = -1;
+
+        for (
+            let rowIndex = 0;
+            rowIndex <= rowCount;
+            rowIndex += 1
+        ) {
+            const char =
+                rowIndex < rowCount
+                    ? getChar(
+                          rowIndex,
+                          column
+                      )
+                    : " ";
+
+            const vertical =
+                verticalChars.has(char);
+
+            if (
+                vertical &&
+                start === -1
+            ) {
+                start = rowIndex;
+            }
+
+            if (
+                !vertical &&
+                start !== -1
+            ) {
+                const end =
+                    rowIndex - 1;
+
+                const top =
+                    getPoint(
+                        start,
+                        column
+                    );
+
+                const bottom =
+                    getPoint(
+                        end,
+                        column
+                    );
+
+                addLine(
+                    `ascii-vertical-${column}-${start}`,
+                    top.x,
+                    top.y -
+                        cellHeight / 2,
+                    bottom.x,
+                    bottom.y +
+                        cellHeight / 2
+                );
+
+                start = -1;
+            }
+        }
+    }
+
+    /*
+     * Diagonal geometry.
+     *
+     * Each diagonal character is connected to
+     * the next diagonal character in the same
+     * direction.
+     */
     rows.forEach(
         (row, rowIndex) => {
             for (
                 let column = 0;
-                column < row.length;
+                column < columnCount;
                 column += 1
             ) {
                 const char =
-                    row[column];
+                    getChar(
+                        rowIndex,
+                        column
+                    );
+
+                /*
+                 * \
+                 */
+                if (
+                    diagonalDownChars.has(
+                        char
+                    )
+                ) {
+                    const next =
+                        getChar(
+                            rowIndex + 1,
+                            column + 1
+                        );
+
+                    if (
+                        diagonalDownChars.has(
+                            next
+                        )
+                    ) {
+                        const start =
+                            getPoint(
+                                rowIndex,
+                                column
+                            );
+
+                        const end =
+                            getPoint(
+                                rowIndex + 1,
+                                column + 1
+                            );
+
+                        addLine(
+                            `ascii-diagonal-down-${rowIndex}-${column}`,
+                            start.x -
+                                cellWidth / 2,
+                            start.y -
+                                cellHeight / 2,
+                            end.x +
+                                cellWidth / 2,
+                            end.y +
+                                cellHeight / 2
+                        );
+                    }
+                }
+
+                /*
+                 * /
+                 */
+                if (
+                    diagonalUpChars.has(
+                        char
+                    )
+                ) {
+                    const next =
+                        getChar(
+                            rowIndex + 1,
+                            column - 1
+                        );
+
+                    if (
+                        diagonalUpChars.has(
+                            next
+                        )
+                    ) {
+                        const start =
+                            getPoint(
+                                rowIndex,
+                                column
+                            );
+
+                        const end =
+                            getPoint(
+                                rowIndex + 1,
+                                column - 1
+                            );
+
+                        addLine(
+                            `ascii-diagonal-up-${rowIndex}-${column}`,
+                            start.x +
+                                cellWidth / 2,
+                            start.y -
+                                cellHeight / 2,
+                            end.x -
+                                cellWidth / 2,
+                            end.y +
+                                cellHeight / 2
+                        );
+                    }
+                }
+            }
+        }
+    );
+
+    /*
+     * Junctions.
+     *
+     * Draw a small vector intersection so
+     * corners and crossings don't disappear.
+     */
+    rows.forEach(
+        (row, rowIndex) => {
+            for (
+                let column = 0;
+                column < columnCount;
+                column += 1
+            ) {
+                const char =
+                    getChar(
+                        rowIndex,
+                        column
+                    );
 
                 if (
-                    !char ||
-                    char === " "
+                    !junctionChars.has(
+                        char
+                    )
                 ) {
                     continue;
                 }
@@ -1328,176 +1664,221 @@ function ASCIIDiagram({
                         column
                     );
 
-                if (
-                    isHorizontal(char)
-                ) {
-                    const left =
-                        getPoint(
-                            rowIndex,
-                            Math.max(
-                                0,
-                                column - 1
-                            )
-                        );
+                const radius =
+                    Math.min(
+                        cellWidth,
+                        cellHeight
+                    ) * 0.35;
 
-                    const right =
-                        getPoint(
-                            rowIndex,
-                            Math.min(
-                                columns - 1,
-                                column + 1
-                            )
-                        );
+                addLine(
+                    `ascii-junction-h-${rowIndex}-${column}`,
+                    point.x - radius,
+                    point.y,
+                    point.x + radius,
+                    point.y,
+                    1.7
+                );
 
-                    elements.push(
-                        <Line
-                            key={`ascii-h-${rowIndex}-${column}`}
-                            x1={left.x}
-                            y1={point.y}
-                            x2={right.x}
-                            y2={point.y}
-                            stroke="#111827"
-                            strokeWidth={1.5}
-                        />
+                addLine(
+                    `ascii-junction-v-${rowIndex}-${column}`,
+                    point.x,
+                    point.y - radius,
+                    point.x,
+                    point.y + radius,
+                    1.7
+                );
+            }
+        }
+    );
+
+    /*
+     * Arrows.
+     *
+     * Render the shaft as a vector and the
+     * arrowhead as two short vectors.
+     */
+    rows.forEach(
+        (row, rowIndex) => {
+            for (
+                let column = 0;
+                column < columnCount;
+                column += 1
+            ) {
+                const char =
+                    getChar(
+                        rowIndex,
+                        column
                     );
 
+                if (
+                    !arrowChars.has(
+                        char
+                    )
+                ) {
                     continue;
                 }
 
-                if (
-                    isVertical(char)
-                ) {
-                    const top =
-                        getPoint(
-                            Math.max(
-                                0,
-                                rowIndex - 1
-                            ),
-                            column
-                        );
-
-                    const bottom =
-                        getPoint(
-                            Math.min(
-                                rowCount - 1,
-                                rowIndex + 1
-                            ),
-                            column
-                        );
-
-                    elements.push(
-                        <Line
-                            key={`ascii-v-${rowIndex}-${column}`}
-                            x1={point.x}
-                            y1={top.y}
-                            x2={point.x}
-                            y2={bottom.y}
-                            stroke="#111827"
-                            strokeWidth={1.5}
-                        />
+                const point =
+                    getPoint(
+                        rowIndex,
+                        column
                     );
 
+                const size =
+                    Math.min(
+                        cellWidth,
+                        cellHeight
+                    ) * 0.45;
+
+                if (char === "→") {
+                    addLine(
+                        `arrow-right-${rowIndex}-${column}`,
+                        point.x - size,
+                        point.y,
+                        point.x + size,
+                        point.y
+                    );
+
+                    addLine(
+                        `arrow-right-a-${rowIndex}-${column}`,
+                        point.x + size,
+                        point.y,
+                        point.x + size - 4,
+                        point.y - 4
+                    );
+
+                    addLine(
+                        `arrow-right-b-${rowIndex}-${column}`,
+                        point.x + size,
+                        point.y,
+                        point.x + size - 4,
+                        point.y + 4
+                    );
+                }
+
+                if (char === "←") {
+                    addLine(
+                        `arrow-left-${rowIndex}-${column}`,
+                        point.x - size,
+                        point.y,
+                        point.x + size,
+                        point.y
+                    );
+
+                    addLine(
+                        `arrow-left-a-${rowIndex}-${column}`,
+                        point.x - size,
+                        point.y,
+                        point.x - size + 4,
+                        point.y - 4
+                    );
+
+                    addLine(
+                        `arrow-left-b-${rowIndex}-${column}`,
+                        point.x - size,
+                        point.y,
+                        point.x - size + 4,
+                        point.y + 4
+                    );
+                }
+
+                if (char === "↑") {
+                    addLine(
+                        `arrow-up-${rowIndex}-${column}`,
+                        point.x,
+                        point.y + size,
+                        point.x,
+                        point.y - size
+                    );
+
+                    addLine(
+                        `arrow-up-a-${rowIndex}-${column}`,
+                        point.x,
+                        point.y - size,
+                        point.x - 4,
+                        point.y - size + 4
+                    );
+
+                    addLine(
+                        `arrow-up-b-${rowIndex}-${column}`,
+                        point.x,
+                        point.y - size,
+                        point.x + 4,
+                        point.y - size + 4
+                    );
+                }
+
+                if (char === "↓") {
+                    addLine(
+                        `arrow-down-${rowIndex}-${column}`,
+                        point.x,
+                        point.y - size,
+                        point.x,
+                        point.y + size
+                    );
+
+                    addLine(
+                        `arrow-down-a-${rowIndex}-${column}`,
+                        point.x,
+                        point.y + size,
+                        point.x - 4,
+                        point.y + size - 4
+                    );
+
+                    addLine(
+                        `arrow-down-b-${rowIndex}-${column}`,
+                        point.x,
+                        point.y + size,
+                        point.x + 4,
+                        point.y + size - 4
+                    );
+                }
+            }
+        }
+    );
+
+    /*
+     * Labels.
+     *
+     * Only render non-geometry characters.
+     * This preserves A, B, C, O, P, Q, dimensions,
+     * angle names, etc.
+     */
+    rows.forEach(
+        (row, rowIndex) => {
+            for (
+                let column = 0;
+                column < row.length;
+                column += 1
+            ) {
+                const char =
+                    getChar(
+                        rowIndex,
+                        column
+                    );
+
+                if (
+                    !char ||
+                    char.trim() === "" ||
+                    isGeometryChar(char)
+                ) {
                     continue;
                 }
 
-                if (
-                    isDiagonalDown(char)
-                ) {
-                    const start =
-                        getPoint(
-                            Math.max(
-                                0,
-                                rowIndex - 1
-                            ),
-                            Math.max(
-                                0,
-                                column - 1
-                            )
-                        );
-
-                    const end =
-                        getPoint(
-                            Math.min(
-                                rowCount - 1,
-                                rowIndex + 1
-                            ),
-                            Math.min(
-                                columns - 1,
-                                column + 1
-                            )
-                        );
-
-                    elements.push(
-                        <Line
-                            key={`ascii-d-${rowIndex}-${column}`}
-                            x1={start.x}
-                            y1={start.y}
-                            x2={end.x}
-                            y2={end.y}
-                            stroke="#111827"
-                            strokeWidth={1.5}
-                        />
+                const point =
+                    getPoint(
+                        rowIndex,
+                        column
                     );
 
-                    continue;
-                }
-
-                if (
-                    isDiagonalUp(char)
-                ) {
-                    const start =
-                        getPoint(
-                            Math.min(
-                                rowCount - 1,
-                                rowIndex + 1
-                            ),
-                            Math.max(
-                                0,
-                                column - 1
-                            )
-                        );
-
-                    const end =
-                        getPoint(
-                            Math.max(
-                                0,
-                                rowIndex - 1
-                            ),
-                            Math.min(
-                                columns - 1,
-                                column + 1
-                            )
-                        );
-
-                    elements.push(
-                        <Line
-                            key={`ascii-u-${rowIndex}-${column}`}
-                            x1={start.x}
-                            y1={start.y}
-                            x2={end.x}
-                            y2={end.y}
-                            stroke="#111827"
-                            strokeWidth={1.5}
-                        />
-                    );
-
-                    continue;
-                }
-
-                /*
-                 * Any remaining non-space character is treated
-                 * as a diagram label.
-                 */
                 elements.push(
                     <Text
                         key={`ascii-label-${rowIndex}-${column}`}
                         x={
-                            point.x -
-                            3
+                            point.x - 3
                         }
                         y={
-                            point.y +
-                            3
+                            point.y + 3
                         }
                         fontSize={9}
                         fill="#111827"
@@ -1519,7 +1900,6 @@ function ASCIIDiagram({
         </Svg>
     );
 }
-
 /* ======================================================
    MAIN DIAGRAM COMPONENT
    ====================================================== */
