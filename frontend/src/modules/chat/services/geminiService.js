@@ -285,7 +285,9 @@ export async function generateResponse(
 
   memory = null,
 
-  memoryMessage = null
+  memoryMessage = null,
+
+  mode = null
 
 ) {
 
@@ -426,6 +428,8 @@ export async function generateResponse(
               userId,
 
               memory,
+
+              mode,
 
             }),
 

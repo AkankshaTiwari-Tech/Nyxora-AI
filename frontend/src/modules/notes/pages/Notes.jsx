@@ -1288,6 +1288,282 @@ Make it clear and student friendly.
 
 
 // ======================================================
+// MARKDOWN TABLE HELPERS
+// Keeps normal Notes content unchanged while rendering
+// Markdown tables as actual tables.
+// Every cell still uses InlineText, so the same LaTeX
+// renderer is used inside table cells.
+// ======================================================
+
+function splitMarkdownTableRow(
+  line
+) {
+
+  let value =
+    String(line || "")
+      .trim();
+
+  if (
+    value.startsWith("|")
+  ) {
+    value =
+      value.slice(1);
+  }
+
+  if (
+    value.endsWith("|")
+  ) {
+    value =
+      value.slice(
+        0,
+        -1
+      );
+  }
+
+  return value
+    .split("|")
+    .map(
+      cell =>
+        cell.trim()
+    );
+}
+
+
+function isMarkdownTableSeparator(
+  line
+) {
+
+  const cells =
+    splitMarkdownTableRow(
+      line
+    );
+
+  if (
+    cells.length < 2
+  ) {
+    return false;
+  }
+
+  return cells.every(
+    cell =>
+      /^:?-{3,}:?$/.test(
+        cell
+      )
+  );
+}
+
+
+function isMarkdownTableHeader(
+  lines,
+  index
+) {
+
+  const current =
+    String(
+      lines[index] || ""
+    ).trim();
+
+  const next =
+    String(
+      lines[index + 1] || ""
+    ).trim();
+
+  return (
+    current.startsWith("|") &&
+    current.endsWith("|") &&
+    isMarkdownTableSeparator(
+      next
+    )
+  );
+}
+
+
+function renderMarkdownTable(
+  rows,
+  key
+) {
+
+  if (
+    !rows.length
+  ) {
+    return null;
+  }
+
+  const header =
+    rows[0] || [];
+
+  const body =
+    rows.slice(1);
+
+  return (
+
+    <div
+      key={key}
+      className="
+        my-5
+        w-full
+        overflow-x-auto
+        rounded-xl
+        border
+        border-white/[0.10]
+      "
+    >
+
+      <table
+        className="
+          w-full
+          min-w-[520px]
+          border-collapse
+          text-left
+          text-[14px]
+          leading-6
+        "
+      >
+
+        <thead>
+
+          <tr
+            className="
+              bg-violet-500/[0.08]
+            "
+          >
+
+            {
+              header.map(
+                (
+                  cell,
+                  cellIndex
+                ) => (
+
+                  <th
+                    key={
+                      key +
+                      "-head-" +
+                      cellIndex
+                    }
+                    className="
+                      border-b
+                      border-white/[0.10]
+                      px-4
+                      py-3
+                      font-semibold
+                      text-white
+                    "
+                  >
+
+                    <InlineText
+                      text={cell}
+                    />
+
+                  </th>
+
+                )
+              )
+            }
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          {
+            body.map(
+              (
+                row,
+                rowIndex
+              ) => {
+
+                const columnCount =
+                  header.length;
+
+                const cells = [
+                  ...row
+                ];
+
+                while (
+                  cells.length <
+                  columnCount
+                ) {
+                  cells.push("");
+                }
+
+                return (
+
+                  <tr
+                    key={
+                      key +
+                      "-row-" +
+                      rowIndex
+                    }
+                    className="
+                      border-b
+                      border-white/[0.07]
+                      last:border-b-0
+                    "
+                  >
+
+                    {
+                      cells
+                        .slice(
+                          0,
+                          columnCount
+                        )
+                        .map(
+                          (
+                            cell,
+                            cellIndex
+                          ) => (
+
+                            <td
+                              key={
+                                key +
+                                "-cell-" +
+                                rowIndex +
+                                "-" +
+                                cellIndex
+                              }
+                              className="
+                                border-r
+                                border-white/[0.07]
+                                px-4
+                                py-3
+                                align-top
+                                text-slate-300
+                                last:border-r-0
+                              "
+                            >
+
+                              <InlineText
+                                text={cell}
+                              />
+
+                            </td>
+
+                          )
+                        )
+                    }
+
+                  </tr>
+
+                );
+
+              }
+            )
+          }
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  );
+}
+
+
+// ======================================================
 // NOTES CONTENT
 // Lightweight Markdown-style renderer
 // No extra package required.
@@ -1301,6 +1577,93 @@ function NotesContent({
     String(content || "")
       .replace(/\r/g, "")
       .split("\n");
+
+  const tableRows =
+    new Set();
+
+  const tableStarts =
+    new Map();
+
+  for (
+    let i = 0;
+    i < lines.length - 1;
+    i++
+  ) {
+
+    if (
+      isMarkdownTableHeader(
+        lines,
+        i
+      )
+    ) {
+
+      const rows = [];
+
+      let j = i;
+
+      while (
+        j < lines.length
+      ) {
+
+        const current =
+          String(
+            lines[j] || ""
+          ).trim();
+
+        if (
+          !current.startsWith("|") ||
+          !current.endsWith("|")
+        ) {
+          break;
+        }
+
+        if (
+          j === i + 1 &&
+          isMarkdownTableSeparator(
+            current
+          )
+        ) {
+          j++;
+          continue;
+        }
+
+        if (
+          j !== i + 1 &&
+          isMarkdownTableSeparator(
+            current
+          )
+        ) {
+          j++;
+          continue;
+        }
+
+        rows.push(
+          splitMarkdownTableRow(
+            current
+          )
+        );
+
+        tableRows.add(j);
+
+        j++;
+      }
+
+      if (
+        rows.length >= 1
+      ) {
+        tableStarts.set(
+          i,
+          rows
+        );
+      }
+
+      i =
+        Math.max(
+          i,
+          j - 1
+        );
+    }
+  }
 
 
   return (
@@ -1318,6 +1681,39 @@ function NotesContent({
 
           const trimmed =
             line.trim();
+
+
+          // MARKDOWN TABLE
+
+          if (
+            tableStarts.has(
+              index
+            )
+          ) {
+
+            return renderMarkdownTable(
+              tableStarts.get(
+                index
+              ),
+              "notes-table-" +
+                index
+            );
+
+          }
+
+
+          // SKIP TABLE ROWS ALREADY
+          // RENDERED BY THE TABLE BLOCK
+
+          if (
+            tableRows.has(
+              index
+            )
+          ) {
+
+            return null;
+
+          }
 
 
           // EMPTY LINE
@@ -1639,6 +2035,542 @@ function NotesContent({
 
 
 // ======================================================
+// ANSWER KEY LATEX RENDERER
+// Uses the SAME LaTeX conversion logic as the Answer Key.
+// ======================================================
+
+function replaceBalancedLatexCommand(
+  value,
+  command,
+  replacer
+) {
+  const prefix = "\\" + command;
+  let result = String(value || "");
+  let searchFrom = 0;
+
+  while (true) {
+    const start = result.indexOf(prefix, searchFrom);
+
+    if (start < 0) {
+      break;
+    }
+
+    const openBrace = result.indexOf(
+      "{",
+      start + prefix.length
+    );
+
+    if (openBrace < 0) {
+      break;
+    }
+
+    let depth = 0;
+    let closeBrace = -1;
+
+    for (
+      let i = openBrace;
+      i < result.length;
+      i++
+    ) {
+      if (result[i] === "{") {
+        depth++;
+      } else if (result[i] === "}") {
+        depth--;
+
+        if (depth === 0) {
+          closeBrace = i;
+          break;
+        }
+      }
+    }
+
+    if (closeBrace < 0) {
+      break;
+    }
+
+    const content = result.slice(
+      openBrace + 1,
+      closeBrace
+    );
+
+    if (
+      command === "frac" ||
+      command === "dfrac"
+    ) {
+      let denominatorStart =
+        closeBrace + 1;
+
+      while (
+        denominatorStart < result.length &&
+        /\s/.test(
+          result[denominatorStart]
+        )
+      ) {
+        denominatorStart++;
+      }
+
+      if (
+        result[denominatorStart] !== "{"
+      ) {
+        searchFrom =
+          closeBrace + 1;
+        continue;
+      }
+
+      let denominatorDepth = 0;
+      let denominatorEnd = -1;
+
+      for (
+        let i = denominatorStart;
+        i < result.length;
+        i++
+      ) {
+        if (
+          result[i] === "{"
+        ) {
+          denominatorDepth++;
+        } else if (
+          result[i] === "}"
+        ) {
+          denominatorDepth--;
+
+          if (
+            denominatorDepth === 0
+          ) {
+            denominatorEnd = i;
+            break;
+          }
+        }
+      }
+
+      if (
+        denominatorEnd < 0
+      ) {
+        break;
+      }
+
+      const denominator =
+        result.slice(
+          denominatorStart + 1,
+          denominatorEnd
+        );
+
+      const replacement =
+        replacer(
+          content,
+          denominator
+        );
+
+      result =
+        result.slice(
+          0,
+          start
+        ) +
+        replacement +
+        result.slice(
+          denominatorEnd + 1
+        );
+
+      searchFrom =
+        start +
+        replacement.length;
+
+      continue;
+    }
+
+    const replacement =
+      replacer(content);
+
+    result =
+      result.slice(
+        0,
+        start
+      ) +
+      replacement +
+      result.slice(
+        closeBrace + 1
+      );
+
+    searchFrom =
+      start +
+      replacement.length;
+  }
+
+  return result;
+}
+
+
+function cleanAnswerKeyText(
+  text = ""
+) {
+
+  let value =
+    String(text || "");
+
+  // Normalize escaped LaTeX commands.
+  // This keeps the same Answer Key LaTeX conversion
+  // while allowing Notes text such as \\pi / \\theta.
+  value =
+    value.replace(/\\\\+/g, "\\");
+
+  // Remove markdown
+  value =
+    value
+      .replace(/\*\*/g, "")
+      .replace(/\`/g, "");
+
+  // --------------------------------------------------
+  // FRACTIONS
+  // --------------------------------------------------
+
+  value =
+    replaceBalancedLatexCommand(
+      value,
+      "frac",
+      (numerator, denominator) =>
+        `${numerator}/${denominator}`
+    );
+
+  value =
+    replaceBalancedLatexCommand(
+      value,
+      "dfrac",
+      (numerator, denominator) =>
+        `${numerator}/${denominator}`
+    );
+
+  // --------------------------------------------------
+  // SQUARE ROOTS
+  // --------------------------------------------------
+
+  value =
+    replaceBalancedLatexCommand(
+      value,
+      "sqrt",
+      content =>
+        `√(${content})`
+    );
+
+  // --------------------------------------------------
+  // COMMON LATEX COMMANDS
+  // --------------------------------------------------
+
+  value =
+    value
+      .replace(/\implies/g, "⇒")
+      .replace(/\Rightarrow/g, "⇒")
+      .replace(/\Longrightarrow/g, "⇒")
+      .replace(/\\therefore/g, "∴")
+      .replace(/\\because/g, "∵")
+      .replace(/\\rightarrow/g, "→")
+      .replace(/\\to/g, "→")
+      .replace(/\\triangle/g, "△ ")
+      .replace(/\\Delta/g, "Δ")
+      .replace(/\\angle/g, "∠")
+      .replace(/\\alpha/g, "α")
+      .replace(/\\beta/g, "β")
+      .replace(/\\gamma/g, "γ")
+      .replace(/\\delta/g, "δ")
+      .replace(/\\epsilon/g, "ε")
+      .replace(/\\theta/g, "θ")
+      .replace(/\\lambda/g, "λ")
+      .replace(/\\mu/g, "μ")
+      .replace(/\\pi/g, "π")
+      .replace(/\\rho/g, "ρ")
+      .replace(/\\sigma/g, "σ")
+      .replace(/\\phi/g, "φ")
+      .replace(/\\psi/g, "ψ")
+      .replace(/\\omega/g, "ω")
+      .replace(/\\Gamma/g, "Γ")
+      .replace(/\\Delta/g, "Δ")
+      .replace(/\\Theta/g, "Θ")
+      .replace(/\\Lambda/g, "Λ")
+      .replace(/\\Pi/g, "Π")
+      .replace(/\\Sigma/g, "Σ")
+      .replace(/\\Phi/g, "Φ")
+      .replace(/\\Psi/g, "Ψ")
+      .replace(/\\Omega/g, "Ω")
+      .replace(/\\cong/g, "≅")
+      .replace(/\\approx/g, "≈")
+      .replace(/\\times/g, "×")
+      .replace(/\\cdot/g, "·")
+      .replace(/\\div/g, "÷")
+      .replace(/\\pm/g, "±")
+      .replace(/\\leq/g, "≤")
+      .replace(/\\le/g, "≤")
+      .replace(/\\geq/g, "≥")
+      .replace(/\\ge/g, "≥")
+      .replace(/\\neq/g, "≠")
+      .replace(/\\sim/g, "∼")
+      .replace(/\\parallel/g, " || ")
+      .replace(/\\parallel/g, " || ")
+      .replace(/\\perpendicular/g, "⊥")
+      .replace(/\\perp/g, "⊥")
+      .replace(/\\in/g, "∈")
+      .replace(/\\notin/g, "∉");
+
+  // --------------------------------------------------
+  // TRIGONOMETRY
+  // --------------------------------------------------
+
+  value =
+    value
+      .replace(/\\tan\b/g, "tan")
+      .replace(/\\theta/g, "θ")
+      .replace(/\\sin\b/g, "sin")
+      .replace(/\\cos\b/g, "cos")
+      .replace(/\\cot\b/g, "cot")
+      .replace(/\\sec\b/g, "sec")
+      .replace(/\\csc\b/g, "csc");
+
+  // --------------------------------------------------
+  // TEXT COMMANDS
+  // --------------------------------------------------
+
+  value =
+    value
+      .replace(
+        /\\text{([^{}]*)}/g,
+        "$1"
+      )
+      .replace(
+        /\\mathrm{([^{}]*)}/g,
+        "$1"
+      )
+      .replace(
+        /\\mathbf{([^{}]*)}/g,
+        "$1"
+      )
+      .replace(
+        /\\textbf{([^{}]*)}/g,
+        "$1"
+      )
+      .replace(
+        /\\textit{([^{}]*)}/g,
+        "$1"
+      );
+
+  // --------------------------------------------------
+  // ANGLES / POWERS
+  // --------------------------------------------------
+
+  value =
+    value
+      .replace(
+        /^{([^{}]+)}/g,
+        "^$1"
+      )
+      .replace(
+        /\^\\circ/g,
+        "°"
+      )
+      .replace(
+        /\^o\b/g,
+        "°"
+      )
+      .replace(
+        /\\circ/g,
+        "°"
+      );
+
+  // --------------------------------------------------
+  // LATEX DELIMITERS
+  // --------------------------------------------------
+
+  value =
+    value
+      .replace(/\\left/g, "")
+      .replace(/\\right/g, "")
+      .replace(/\\\(/g, "")
+      .replace(/\\\)/g, "")
+      .replace(/\\\[/g, "")
+      .replace(/\\\]/g, "")
+      .replace(/\$\$/g, "")
+      .replace(/\$/g, "")
+      .replace(/\\,/g, " ")
+      .replace(/\\_/g, "_")
+      .replace(/\\ /g, " ");
+
+  // --------------------------------------------------
+  // CLEAN SPACING
+  // --------------------------------------------------
+
+  value =
+    value
+      .replace(
+        /[ \t]+/g,
+        " "
+      )
+      .replace(
+        /[ \t]*\r?\n[ \t]*/g,
+        "\n"
+      )
+      .trim();
+
+  return value;
+}
+
+
+function renderMixedMathText(
+  text = ""
+) {
+
+  const value =
+    String(text || "");
+
+  const mathSymbols =
+    /[△⊥∥α-ωΑ-ΩθπμσφψΔΓΣΩ∠∼≅≈≠≤≥±×÷·√∞∴∵→⇒←↔∈∉°]/u;
+
+  const parts =
+    value.split(
+      /(r_[A-Za-z0-9]+(?:^[A-Za-z0-9]+)?|[A-Za-z]^[A-Za-z0-9]+|[A-Za-z]_[A-Za-z0-9]+|[△⊥∥α-ωΑ-ΩθπμσφψΔΓΣΩ∠∼≅≈≠≤≥±×÷·√∞∴∵→⇒←↔∈∉°])/u
+    );
+
+  return parts.map(
+    (part, index) => {
+
+      if (!part) {
+        return null;
+      }
+
+      const subSupMatch =
+        part.match(
+          /^([A-Za-z])_([A-Za-z0-9]+)\^([A-Za-z0-9]+)$/
+        );
+
+      if (subSupMatch) {
+        return (
+          <span
+            key={
+              "mixed-math-" +
+              index
+            }
+          >
+
+            <span>
+              {subSupMatch[1]}
+            </span>
+
+            <sub
+              style={{
+                fontSize:"0.65em",
+                lineHeight:0,
+                verticalAlign:"sub"
+              }}
+            >
+              {subSupMatch[2]}
+            </sub>
+
+            <sup
+              style={{
+                fontSize:"0.65em",
+                lineHeight:0,
+                verticalAlign:"super"
+              }}
+            >
+              {subSupMatch[3]}
+            </sup>
+
+          </span>
+        );
+      }
+
+      const subMatch =
+        part.match(
+          /^([A-Za-z])_([A-Za-z0-9]+)$/
+        );
+
+      if (subMatch) {
+        return (
+          <span
+            key={
+              "mixed-math-" +
+              index
+            }
+          >
+
+            <span>
+              {subMatch[1]}
+            </span>
+
+            <sub
+              style={{
+                fontSize:"0.65em",
+                lineHeight:0,
+                verticalAlign:"sub"
+              }}
+            >
+              {subMatch[2]}
+            </sub>
+
+          </span>
+        );
+      }
+
+      const supMatch =
+        part.match(
+          /^([A-Za-z])\^([A-Za-z0-9]+)$/
+        );
+
+      if (supMatch) {
+        return (
+          <span
+            key={
+              "mixed-math-" +
+              index
+            }
+          >
+
+            <span>
+              {supMatch[1]}
+            </span>
+
+            <sup
+              style={{
+                fontSize:"0.65em",
+                lineHeight:0,
+                verticalAlign:"super"
+              }}
+            >
+              {supMatch[2]}
+            </sup>
+
+          </span>
+        );
+      }
+
+      let fontFamily =
+        "Noto Sans, sans-serif";
+
+      if (
+        /[\u0900-\u097F]/u.test(
+          part
+        )
+      ) {
+        fontFamily =
+          "Noto Sans Devanagari, sans-serif";
+      }
+
+      return (
+        <span
+          key={
+            "mixed-math-" +
+            index
+          }
+          style={{
+            fontFamily
+          }}
+        >
+          {part}
+        </span>
+      );
+    }
+  );
+}
+
+
+
+// ======================================================
 // INLINE MARKDOWN
 // Handles **bold** without extra dependencies.
 // ======================================================
@@ -1652,7 +2584,6 @@ function InlineText({
       .split(
         /(\*\*.*?\*\*)/g
       );
-
 
   return (
 
@@ -1680,28 +2611,36 @@ function InlineText({
                   text-white
                 "
               >
-                {part.slice(
-                  2,
-                  -2
-                )}
+                {
+                  renderMixedMathText(
+                    cleanAnswerKeyText(
+                      part.slice(
+                        2,
+                        -2
+                      )
+                    )
+                  )
+                }
               </strong>
 
             );
-
           }
-
 
           return (
             <span key={index}>
-              {part}
+              {
+                renderMixedMathText(
+                  cleanAnswerKeyText(
+                    part
+                  )
+                )
+              }
             </span>
           );
-
         }
       )}
 
     </>
 
   );
-
 }

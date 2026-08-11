@@ -365,6 +365,8 @@ export async function chatWithAI(
 
       userId,
 
+      mode,
+
     } = req.body;
 
 
@@ -624,7 +626,9 @@ export async function chatWithAI(
             ? history
             : [],
 
-          userMemory
+          userMemory,
+
+          mode
 
         )
     ) {

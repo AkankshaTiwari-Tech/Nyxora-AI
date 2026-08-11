@@ -1900,6 +1900,1065 @@ function ASCIIDiagram({
         </Svg>
     );
 }
+
+/* ======================================================
+   UNIVERSAL VECTOR SCENE
+   ====================================================== */
+
+function normalizeSceneStyle(style = {}) {
+    return {
+        stroke: style?.stroke || "#111827",
+        fill:
+            style?.fill === undefined ||
+            style?.fill === null ||
+            style?.fill === ""
+                ? "none"
+                : style.fill,
+        strokeWidth: Math.max(
+            0.1,
+            finite(style?.strokeWidth, 1.5)
+        ),
+        opacity: Math.min(
+            1,
+            Math.max(
+                0,
+                finite(style?.opacity, 1)
+            )
+        ),
+    };
+}
+
+function scenePoint(
+    point = {},
+    minX,
+    maxX,
+    minY,
+    maxY,
+    width,
+    height,
+    padding
+) {
+    return mapDiagramPoint(
+        point,
+        minX,
+        maxX,
+        minY,
+        maxY,
+        width,
+        height,
+        padding
+    );
+}
+
+function renderSceneArrow(
+    x1,
+    y1,
+    x2,
+    y2,
+    style = {},
+    endArrow = true,
+    key = "scene-arrow"
+) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const length = Math.sqrt(dx * dx + dy * dy);
+
+    if (!length) {
+        return null;
+    }
+
+    const ux = dx / length;
+    const uy = dy / length;
+    const size = 7;
+    const px = -uy;
+    const py = ux;
+    const s = normalizeSceneStyle(style);
+
+    return (
+        <React.Fragment key={key}>
+            <Line
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                stroke={s.stroke}
+                strokeWidth={s.strokeWidth}
+                opacity={s.opacity}
+            />
+
+            {endArrow && (
+                <>
+                    <Line
+                        x1={x2}
+                        y1={y2}
+                        x2={
+                            x2 -
+                            ux * size +
+                            px * size * 0.55
+                        }
+                        y2={
+                            y2 -
+                            uy * size +
+                            py * size * 0.55
+                        }
+                        stroke={s.stroke}
+                        strokeWidth={s.strokeWidth}
+                        opacity={s.opacity}
+                    />
+
+                    <Line
+                        x1={x2}
+                        y1={y2}
+                        x2={
+                            x2 -
+                            ux * size -
+                            px * size * 0.55
+                        }
+                        y2={
+                            y2 -
+                            uy * size -
+                            py * size * 0.55
+                        }
+                        stroke={s.stroke}
+                        strokeWidth={s.strokeWidth}
+                        opacity={s.opacity}
+                    />
+                </>
+            )}
+        </React.Fragment>
+    );
+}
+
+function buildSceneCurvePath({
+    equation,
+    xRange,
+    yRange,
+    width,
+    height,
+    padding,
+    samples = 240,
+}) {
+    const fn = createEquationFunction(equation);
+
+    if (!fn) {
+        return "";
+    }
+
+    const [minX, maxX] = xRange;
+    const [minY, maxY] = yRange;
+
+    let path = "";
+    let drawing = false;
+
+    for (let i = 0; i <= samples; i += 1) {
+        const x =
+            minX +
+            ((maxX - minX) * i) /
+                samples;
+
+        let y;
+
+        try {
+            y = Number(fn(x));
+        } catch {
+            y = NaN;
+        }
+
+        if (
+            !Number.isFinite(y) ||
+            y < minY - (maxY - minY) * 2 ||
+            y > maxY + (maxY - minY) * 2
+        ) {
+            drawing = false;
+            continue;
+        }
+
+        const px = mapX(
+            x,
+            minX,
+            maxX,
+            width,
+            padding
+        );
+
+        const py = mapY(
+            y,
+            minY,
+            maxY,
+            height,
+            padding
+        );
+
+        path += drawing
+            ? ` L ${px} ${py}`
+            : `M ${px} ${py}`;
+
+        drawing = true;
+    }
+
+    return path;
+}
+
+function buildSceneArcPath({
+    cx,
+    cy,
+    radius,
+    startAngle,
+    endAngle,
+    minX,
+    maxX,
+    minY,
+    maxY,
+    width,
+    height,
+    padding,
+}) {
+    const steps = Math.max(
+        12,
+        Math.ceil(
+            Math.abs(
+                endAngle - startAngle
+            ) / 8
+        )
+    );
+
+    const points = [];
+
+    for (
+        let i = 0;
+        i <= steps;
+        i += 1
+    ) {
+        const angle =
+            startAngle +
+            ((endAngle - startAngle) *
+                i) /
+                steps;
+
+        const radians =
+            (angle * Math.PI) / 180;
+
+        points.push(
+            scenePoint(
+                {
+                    x:
+                        cx +
+                        radius *
+                            Math.cos(
+                                radians
+                            ),
+                    y:
+                        cy +
+                        radius *
+                            Math.sin(
+                                radians
+                            ),
+                },
+                minX,
+                maxX,
+                minY,
+                maxY,
+                width,
+                height,
+                padding
+            )
+        );
+    }
+
+    if (!points.length) {
+        return "";
+    }
+
+    return (
+        `M ${points[0].x} ${points[0].y} ` +
+        points
+            .slice(1)
+            .map(
+                point =>
+                    `L ${point.x} ${point.y}`
+            )
+            .join(" ")
+    );
+}
+
+function UniversalVectorScene({
+    width = 515,
+    height = 300,
+    xRange = [-10, 10],
+    yRange = [-10, 10],
+    showGrid = false,
+    showAxes = false,
+    showLabels = true,
+    background = "transparent",
+
+    lines = [],
+    arrows = [],
+    circles = [],
+    ellipses = [],
+    rectangles = [],
+    polygons = [],
+    paths = [],
+    arcs = [],
+    curves = [],
+    points = [],
+    labels = [],
+    dimensions = [],
+}) {
+    const safeWidth =
+        safeDimension(width, 515);
+
+    const safeHeight =
+        safeDimension(height, 300);
+
+    const padding = 20;
+
+    const [minX, maxX] =
+        safeRange(
+            xRange,
+            -10,
+            10
+        );
+
+    const [minY, maxY] =
+        safeRange(
+            yRange,
+            -10,
+            10
+        );
+
+    const elements = [];
+
+    const mapPoint = point =>
+        scenePoint(
+            point,
+            minX,
+            maxX,
+            minY,
+            maxY,
+            safeWidth,
+            safeHeight,
+            padding
+        );
+
+    const addGrid = () => {
+        if (!showGrid) {
+            return;
+        }
+
+        for (
+            let x = Math.ceil(minX);
+            x <= Math.floor(maxX);
+            x += 1
+        ) {
+            const px = mapX(
+                x,
+                minX,
+                maxX,
+                safeWidth,
+                padding
+            );
+
+            elements.push(
+                <Line
+                    key={`scene-grid-x-${x}`}
+                    x1={px}
+                    y1={padding}
+                    x2={px}
+                    y2={
+                        safeHeight -
+                        padding
+                    }
+                    stroke="#E5E7EB"
+                    strokeWidth={0.5}
+                />
+            );
+        }
+
+        for (
+            let y = Math.ceil(minY);
+            y <= Math.floor(maxY);
+            y += 1
+        ) {
+            const py = mapY(
+                y,
+                minY,
+                maxY,
+                safeHeight,
+                padding
+            );
+
+            elements.push(
+                <Line
+                    key={`scene-grid-y-${y}`}
+                    x1={padding}
+                    y1={py}
+                    x2={
+                        safeWidth -
+                        padding
+                    }
+                    y2={py}
+                    stroke="#E5E7EB"
+                    strokeWidth={0.5}
+                />
+            );
+        }
+    };
+
+    addGrid();
+
+    if (showAxes) {
+        const axisY =
+            minY <= 0 &&
+            maxY >= 0
+                ? mapY(
+                      0,
+                      minY,
+                      maxY,
+                      safeHeight,
+                      padding
+                  )
+                : safeHeight -
+                  padding;
+
+        const axisX =
+            minX <= 0 &&
+            maxX >= 0
+                ? mapX(
+                      0,
+                      minX,
+                      maxX,
+                      safeWidth,
+                      padding
+                  )
+                : padding;
+
+        elements.push(
+            <Line
+                key="scene-axis-x"
+                x1={padding}
+                y1={axisY}
+                x2={
+                    safeWidth -
+                    padding
+                }
+                y2={axisY}
+                stroke="#111827"
+                strokeWidth={1}
+            />
+        );
+
+        elements.push(
+            <Line
+                key="scene-axis-y"
+                x1={axisX}
+                y1={
+                    safeHeight -
+                    padding
+                }
+                x2={axisX}
+                y2={padding}
+                stroke="#111827"
+                strokeWidth={1}
+            />
+        );
+    }
+
+    lines.forEach(
+        (line, index) => {
+            const a = mapPoint({
+                x: finite(line?.x1),
+                y: finite(line?.y1),
+            });
+
+            const b = mapPoint({
+                x: finite(line?.x2),
+                y: finite(line?.y2),
+            });
+
+            const style =
+                normalizeSceneStyle(
+                    line?.style
+                );
+
+            elements.push(
+                <Line
+                    key={`scene-line-${index}`}
+                    x1={a.x}
+                    y1={a.y}
+                    x2={b.x}
+                    y2={b.y}
+                    stroke={style.stroke}
+                    strokeWidth={
+                        style.strokeWidth
+                    }
+                    opacity={style.opacity}
+                />
+            );
+        }
+    );
+
+    arrows.forEach(
+        (arrow, index) => {
+            const a = mapPoint({
+                x: finite(arrow?.x1),
+                y: finite(arrow?.y1),
+            });
+
+            const b = mapPoint({
+                x: finite(arrow?.x2),
+                y: finite(arrow?.y2),
+            });
+
+            elements.push(
+                renderSceneArrow(
+                    a.x,
+                    a.y,
+                    b.x,
+                    b.y,
+                    arrow?.style,
+                    arrow?.endArrow !== false,
+                    `scene-arrow-${index}`
+                )
+            );
+        }
+    );
+
+    circles.forEach(
+        (circle, index) => {
+            const center =
+                mapPoint({
+                    x: finite(
+                        circle?.cx
+                    ),
+                    y: finite(
+                        circle?.cy
+                    ),
+                });
+
+            const radiusX =
+                (finite(
+                    circle?.r,
+                    1
+                ) /
+                    (maxX - minX)) *
+                (safeWidth -
+                    padding * 2);
+
+            const radiusY =
+                (finite(
+                    circle?.r,
+                    1
+                ) /
+                    (maxY - minY)) *
+                (safeHeight -
+                    padding * 2);
+
+            const style =
+                normalizeSceneStyle(
+                    circle?.style
+                );
+
+            elements.push(
+                <Circle
+                    key={`scene-circle-${index}`}
+                    cx={center.x}
+                    cy={center.y}
+                    r={Math.max(
+                        1,
+                        Math.min(
+                            radiusX,
+                            radiusY
+                        )
+                    )}
+                    fill={style.fill}
+                    stroke={style.stroke}
+                    strokeWidth={
+                        style.strokeWidth
+                    }
+                    opacity={style.opacity}
+                />
+            );
+        }
+    );
+
+    ellipses.forEach(
+        (ellipse, index) => {
+            const center =
+                mapPoint({
+                    x: finite(
+                        ellipse?.cx
+                    ),
+                    y: finite(
+                        ellipse?.cy
+                    ),
+                });
+
+            const rx =
+                (finite(
+                    ellipse?.rx,
+                    1
+                ) /
+                    (maxX - minX)) *
+                (safeWidth -
+                    padding * 2);
+
+            const ry =
+                (finite(
+                    ellipse?.ry,
+                    1
+                ) /
+                    (maxY - minY)) *
+                (safeHeight -
+                    padding * 2);
+
+            const style =
+                normalizeSceneStyle(
+                    ellipse?.style
+                );
+
+            /*
+             * React-PDF SVG does not need a
+             * separate ellipse component here.
+             * A cubic path gives reliable PDF output.
+             */
+            const k = 0.5522848;
+
+            const d = [
+                `M ${center.x - rx} ${center.y}`,
+                `C ${center.x - rx} ${
+                    center.y -
+                    ry * k
+                } ${center.x -
+                    rx * k} ${
+                    center.y - ry
+                } ${center.x} ${
+                    center.y - ry
+                }`,
+                `C ${center.x +
+                    rx * k} ${
+                    center.y - ry
+                } ${center.x + rx} ${
+                    center.y -
+                    ry * k
+                } ${center.x + rx} ${
+                    center.y
+                }`,
+                `C ${center.x + rx} ${
+                    center.y +
+                    ry * k
+                } ${center.x +
+                    rx * k} ${
+                    center.y + ry
+                } ${center.x} ${
+                    center.y + ry
+                }`,
+                `C ${center.x -
+                    rx * k} ${
+                    center.y + ry
+                } ${center.x - rx} ${
+                    center.y +
+                    ry * k
+                } ${center.x - rx} ${
+                    center.y
+                }`,
+                "Z",
+            ].join(" ");
+
+            elements.push(
+                <Path
+                    key={`scene-ellipse-${index}`}
+                    d={d}
+                    fill={style.fill}
+                    stroke={style.stroke}
+                    strokeWidth={
+                        style.strokeWidth
+                    }
+                    opacity={style.opacity}
+                />
+            );
+        }
+    );
+
+    rectangles.forEach(
+        (rectangle, index) => {
+            const topLeft =
+                mapPoint({
+                    x: finite(
+                        rectangle?.x
+                    ),
+                    y: finite(
+                        rectangle?.y
+                    ),
+                });
+
+            const bottomRight =
+                mapPoint({
+                    x:
+                        finite(
+                            rectangle?.x
+                        ) +
+                        finite(
+                            rectangle?.width,
+                            1
+                        ),
+                    y:
+                        finite(
+                            rectangle?.y
+                        ) -
+                        finite(
+                            rectangle?.height,
+                            1
+                        ),
+                });
+
+            const style =
+                normalizeSceneStyle(
+                    rectangle?.style
+                );
+
+            elements.push(
+                <Path
+                    key={`scene-rect-${index}`}
+                    d={[
+                        `M ${topLeft.x} ${topLeft.y}`,
+                        `L ${bottomRight.x} ${topLeft.y}`,
+                        `L ${bottomRight.x} ${bottomRight.y}`,
+                        `L ${topLeft.x} ${bottomRight.y}`,
+                        "Z",
+                    ].join(" ")}
+                    fill={style.fill}
+                    stroke={style.stroke}
+                    strokeWidth={
+                        style.strokeWidth
+                    }
+                    opacity={style.opacity}
+                />
+            );
+        }
+    );
+
+    polygons.forEach(
+        (polygon, index) => {
+            if (
+                !Array.isArray(
+                    polygon?.points
+                ) ||
+                polygon.points.length <
+                    2
+            ) {
+                return;
+            }
+
+            const mapped =
+                polygon.points.map(
+                    mapPoint
+                );
+
+            const d = [
+                `M ${mapped[0].x} ${mapped[0].y}`,
+                ...mapped
+                    .slice(1)
+                    .map(
+                        point =>
+                            `L ${point.x} ${point.y}`
+                    ),
+                ...(polygon.closed !== false
+                    ? ["Z"]
+                    : []),
+            ].join(" ");
+
+            const style =
+                normalizeSceneStyle(
+                    polygon?.style
+                );
+
+            elements.push(
+                <Path
+                    key={`scene-polygon-${index}`}
+                    d={d}
+                    fill={style.fill}
+                    stroke={style.stroke}
+                    strokeWidth={
+                        style.strokeWidth
+                    }
+                    opacity={style.opacity}
+                />
+            );
+        }
+    );
+
+    paths.forEach(
+        (path, index) => {
+            if (!path?.d) {
+                return;
+            }
+
+            const style =
+                normalizeSceneStyle(
+                    path?.style
+                );
+
+            elements.push(
+                <Path
+                    key={`scene-path-${index}`}
+                    d={path.d}
+                    fill={style.fill}
+                    stroke={style.stroke}
+                    strokeWidth={
+                        style.strokeWidth
+                    }
+                    opacity={style.opacity}
+                />
+            );
+        }
+    );
+
+    arcs.forEach(
+        (arc, index) => {
+            const d =
+                buildSceneArcPath({
+                    cx: finite(
+                        arc?.cx
+                    ),
+                    cy: finite(
+                        arc?.cy
+                    ),
+                    radius: Math.max(
+                        0.1,
+                        finite(
+                            arc?.radius,
+                            1
+                        )
+                    ),
+                    startAngle: finite(
+                        arc?.startAngle
+                    ),
+                    endAngle: finite(
+                        arc?.endAngle
+                    ),
+                    minX,
+                    maxX,
+                    minY,
+                    maxY,
+                    width: safeWidth,
+                    height: safeHeight,
+                    padding,
+                });
+
+            const style =
+                normalizeSceneStyle(
+                    arc?.style
+                );
+
+            if (d) {
+                elements.push(
+                    <Path
+                        key={`scene-arc-${index}`}
+                        d={d}
+                        fill="none"
+                        stroke={style.stroke}
+                        strokeWidth={
+                            style.strokeWidth
+                        }
+                        opacity={style.opacity}
+                    />
+                );
+            }
+        }
+    );
+
+    curves.forEach(
+        (curve, index) => {
+            const d =
+                buildSceneCurvePath({
+                    equation:
+                        curve?.equation,
+                    xRange:
+                        safeRange(
+                            curve?.xRange,
+                            minX,
+                            maxX
+                        ),
+                    yRange:
+                        safeRange(
+                            curve?.yRange,
+                            minY,
+                            maxY
+                        ),
+                    width: safeWidth,
+                    height: safeHeight,
+                    padding,
+                });
+
+            const style =
+                normalizeSceneStyle(
+                    curve?.style
+                );
+
+            if (d) {
+                elements.push(
+                    <Path
+                        key={`scene-curve-${index}`}
+                        d={d}
+                        fill="none"
+                        stroke={style.stroke}
+                        strokeWidth={
+                            style.strokeWidth
+                        }
+                        opacity={style.opacity}
+                    />
+                );
+            }
+        }
+    );
+
+    points.forEach(
+        (point, index) => {
+            const mapped =
+                mapPoint(point);
+
+            elements.push(
+                <Circle
+                    key={`scene-point-${index}`}
+                    cx={mapped.x}
+                    cy={mapped.y}
+                    r={3}
+                    fill="#111827"
+                />
+            );
+        }
+    );
+
+    if (showLabels) {
+        labels.forEach(
+            (label, index) => {
+                if (
+                    !label?.text
+                ) {
+                    return;
+                }
+
+                const mapped =
+                    mapPoint(label);
+
+                const style =
+                    normalizeSceneStyle(
+                        label?.style
+                    );
+
+                elements.push(
+                    <Text
+                        key={`scene-label-${index}`}
+                        x={mapped.x}
+                        y={mapped.y}
+                        fontSize={Math.max(
+                            1,
+                            finite(
+                                label?.fontSize,
+                                10
+                            )
+                        )}
+                        fill={style.stroke}
+                        opacity={style.opacity}
+                    >
+                        {String(
+                            label.text
+                        )}
+                    </Text>
+                );
+            }
+        );
+    }
+
+    dimensions.forEach(
+        (dimension, index) => {
+            const a = mapPoint({
+                x: finite(
+                    dimension?.x1
+                ),
+                y: finite(
+                    dimension?.y1
+                ),
+            });
+
+            const b = mapPoint({
+                x: finite(
+                    dimension?.x2
+                ),
+                y: finite(
+                    dimension?.y2
+                ),
+            });
+
+            elements.push(
+                renderSceneArrow(
+                    a.x,
+                    a.y,
+                    b.x,
+                    b.y,
+                    dimension?.style,
+                    true,
+                    `scene-dimension-${index}`
+                )
+            );
+
+            if (
+                dimension?.label
+            ) {
+                elements.push(
+                    <Text
+                        key={`scene-dimension-label-${index}`}
+                        x={
+                            (a.x + b.x) /
+                            2
+                        }
+                        y={
+                            (a.y + b.y) /
+                                2 -
+                            finite(
+                                dimension?.offset,
+                                8
+                            )
+                        }
+                        fontSize={9}
+                        fill="#111827"
+                    >
+                        {
+                            dimension.label
+                        }
+                    </Text>
+                );
+            }
+        }
+    );
+
+    return (
+        <Svg
+            width={safeWidth}
+            height={safeHeight}
+            viewBox={`0 0 ${safeWidth} ${safeHeight}`}
+        >
+            {background &&
+                background !==
+                    "transparent" && (
+                    <Path
+                        d={[
+                            `M 0 0`,
+                            `L ${safeWidth} 0`,
+                            `L ${safeWidth} ${safeHeight}`,
+                            `L 0 ${safeHeight}`,
+                            "Z",
+                        ].join(" ")}
+                        fill={background}
+                    />
+                )}
+
+            {elements}
+        </Svg>
+    );
+}
+
+
 /* ======================================================
    MAIN DIAGRAM COMPONENT
    ====================================================== */
@@ -1908,6 +2967,25 @@ export default function MathDiagram({
     type = "coordinatePlane",
     ...props
 }) {
+    /*
+     * Universal vector scenes are the preferred
+     * representation for new diagrams.
+     */
+    if (
+        type === "scene" ||
+        type === "vector" ||
+        type === "custom" ||
+        type === "graph" ||
+        type === "flowchart" ||
+        type === "circuit"
+    ) {
+        return (
+            <UniversalVectorScene
+                {...props}
+            />
+        );
+    }
+
     if (type === "functionGraph") {
         return (
             <FunctionGraph

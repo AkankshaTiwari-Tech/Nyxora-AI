@@ -962,7 +962,6 @@ async function streamFromModel(
 
   const contents = [];
 
-
   // ====================================================
   // CURRENT CHAT HISTORY
   // ====================================================
@@ -971,7 +970,6 @@ async function streamFromModel(
     contents,
     history
   );
-
 
   // ====================================================
   // MEMORY CONTEXT
@@ -982,18 +980,14 @@ async function streamFromModel(
       memory
     );
 
-
   const contextBlock =
     memoryContext
-
       ? `
 Supporting context:
 
 ${memoryContext}
 `
-
       : "";
-
 
   // ====================================================
   // ATTACHMENT
@@ -1004,22 +998,325 @@ ${memoryContext}
       attachment
     );
 
-
   const attachmentInstruction =
     createAttachmentInstruction(
       safeAttachment
     );
 
+  // ====================================================
+  // UNIVERSAL DIAGRAM RULES
+  //
+  // Applies to every AI mode.
+  // ====================================================
+
+  const universalDiagramRules = `
+==================================================
+UNIVERSAL NYXORA DIAGRAM SYSTEM
+==================================================
+
+This rule applies to EVERY response mode.
+
+If the user explicitly requests a diagram, figure,
+graph, illustration, labelled figure, construction,
+visual representation or similar visual:
+
+CREATE THE REQUESTED DIAGRAM.
+
+If the requested content genuinely requires a visual
+representation:
+
+CREATE THE REQUIRED DIAGRAM.
+
+This applies to:
+
+- normal chat
+- tests
+- homework
+- doubt solving
+- notes
+- PDFs
+- reports
+- worksheets
+- explanations
+- mathematical problems
+- science problems
+- any future AI mode
+
+If no diagram is requested and no diagram is genuinely
+needed, do NOT create one.
+
+==================================================
+NO TEXT DRAWINGS
+==================================================
+
+NEVER create diagrams using text characters.
+
+NEVER use:
+
+ASCII drawings
+slash/backslash drawings
+vertical-bar drawings
+underscore drawings
+repeated hyphens
+repeated spaces
+Unicode box drawing
+Unicode geometry drawings
+Markdown drawings
+Mermaid
+SVG
+image URLs
+base64 images
+
+NEVER put a drawing inside the question text.
+
+NEVER put a drawing inside an answer or solution.
+
+==================================================
+STRUCTURED VISUAL DATA
+==================================================
+
+When a diagram is required, describe it separately
+from the normal response using structured JSON.
+
+Use:
+
+{
+  "number": QUESTION_NUMBER,
+  "diagram": {
+    "type": "scene",
+    "points": [],
+    "lines": [],
+    "arrows": [],
+    "circles": [],
+    "ellipses": [],
+    "rectangles": [],
+    "polygons": [],
+    "paths": [],
+    "arcs": [],
+    "curves": [],
+    "labels": [],
+    "dimensions": []
+  }
+}
+
+The renderer creates the actual visual diagram.
+
+==================================================
+QUESTION OWNERSHIP
+==================================================
+
+When the content contains numbered questions, the
+diagram number MUST exactly match the question that
+owns the diagram.
+
+Example:
+
+{
+  "number": 5,
+  "diagram": {
+    "type": "scene"
+  }
+}
+
+NEVER:
+
+- assign diagrams sequentially
+- assign diagrams by position
+- shift question numbers
+- guess question numbers
+- use answer-key order
+- attach an answer-key diagram to another question
+- use an unnumbered diagram as a fallback
+
+The question number is the ONLY ownership identifier.
+
+==================================================
+VECTOR DATA
+==================================================
+
+Coordinates MUST be numeric.
+
+Point:
+
+{
+  "x": 0,
+  "y": 0,
+  "label": "O"
+}
+
+Line:
+
+{
+  "x1": 0,
+  "y1": 0,
+  "x2": 8,
+  "y2": 0
+}
+
+Circle:
+
+{
+  "cx": 0,
+  "cy": 0,
+  "r": 5
+}
+
+Rectangle:
+
+{
+  "x": 0,
+  "y": 0,
+  "width": 8,
+  "height": 5
+}
+
+Polygon:
+
+{
+  "points": [
+    {
+      "x": 0,
+      "y": 0
+    },
+    {
+      "x": 8,
+      "y": 0
+    },
+    {
+      "x": 4,
+      "y": 5
+    }
+  ]
+}
+
+Label:
+
+{
+  "x": 0,
+  "y": 0,
+  "text": "O"
+}
+
+Dimension:
+
+{
+  "x1": 0,
+  "y1": 0,
+  "x2": 8,
+  "y2": 0,
+  "text": "8 cm"
+}
+
+==================================================
+MATHEMATICS
+==================================================
+
+Support diagrams for:
+
+- triangles
+- circles
+- tangents
+- angles
+- rectangles
+- squares
+- polygons
+- constructions
+- coordinate geometry
+- function graphs
+- curves
+- vectors
+- number lines
+- transformations
+- loci
+- towers
+- heights and distances
+- trigonometry
+- calculus
+- analytic geometry
+- statistical graphs
+- probability diagrams
+- geometric configurations
+- any other mathematical visual
+
+Represent the actual configuration using vector
+primitives.
+
+==================================================
+OTHER SUBJECTS
+==================================================
+
+The diagram system is NOT limited to school mathematics.
+
+When appropriate, support structured visuals for:
+
+- physics
+- chemistry
+- biology
+- geography
+- computer science
+- engineering
+- educational explanations
+
+Do not invent a visual representation that cannot be
+represented accurately.
+
+==================================================
+ANSWER KEY
+==================================================
+
+The answer key MUST NOT contain ASCII diagrams.
+
+If a solution requires a diagram, provide structured
+diagram metadata separately.
+
+NEVER take a diagram from an answer-key solution and
+attach it to a question.
+
+NEVER match diagrams by their position.
+
+NEVER match diagrams sequentially.
+
+==================================================
+FINAL SELF-CHECK
+==================================================
+
+Before returning the response:
+
+1. Check whether a diagram was explicitly requested.
+2. Check whether a diagram is genuinely required.
+3. If yes, create structured diagram metadata.
+4. Use type "scene".
+5. Use the exact question number when applicable.
+6. Use numeric coordinates.
+7. Never generate ASCII.
+8. Never generate SVG.
+9. Never generate Mermaid.
+10. Never generate image URLs.
+11. Never generate base64 images.
+12. Never assign diagrams sequentially.
+13. Never use answer-key position as ownership.
+14. Never put drawings inside question text.
+15. Preserve the diagram metadata for the PDF renderer.
+
+The AI provides the structured visual description.
+
+The Nyxora renderer creates the actual visual.
+
+==================================================
+END UNIVERSAL NYXORA DIAGRAM SYSTEM
+==================================================
+`;
 
   // ====================================================
   // CURRENT USER MESSAGE
   // ====================================================
 
   const parts = [
-
     {
       text: `
 ${SYSTEM_PROMPT}
+
+${universalDiagramRules}
 
 ${contextBlock}
 
@@ -1038,69 +1335,47 @@ Current user message:
 ${prompt}
       `.trim(),
     },
-
   ];
-
 
   // ====================================================
   // GENERIC INLINE ATTACHMENT
-  //
-  // Google GenAI accepts inlineData parts with MIME type.
-  //
-  // Images:
-  // image/png
-  // image/jpeg
-  // image/webp
-  //
-  // PDF:
-  // application/pdf
   // ====================================================
 
   if (safeAttachment) {
 
     parts.push({
-
       inlineData: {
-
         data:
           safeAttachment.data,
 
         mimeType:
-          safeAttachment
-            .mimeType,
-
+          safeAttachment.mimeType,
       },
-
     });
 
   }
 
+  // ====================================================
+  // FINAL USER CONTENT
+  // ====================================================
 
   contents.push({
-
-    role:
-      "user",
+    role: "user",
 
     parts,
-
   });
-
 
   // ====================================================
   // START STREAM
   // ====================================================
 
-  return await ai.models
-    .generateContentStream({
+  return await ai.models.generateContentStream({
+    model,
 
-      model,
-
-      contents,
-
-    });
+    contents,
+  });
 
 }
-
 
 // ======================================================
 // GENERATE AI RESPONSE STREAM

@@ -35,6 +35,11 @@ import PDFQuestion
 from "./PDFQuestion";
 
 
+import MathDiagram
+
+from "../diagrams/MathDiagram";
+
+
 function cleanText(text = ""){
 
 
@@ -1492,92 +1497,148 @@ marginBottom:3
 
 
 
-function cleanNoteText(text = ""){
+function cleanNoteText(
+  text = ""
+) {
 
-return text
+  let value =
+    String(text || "");
 
-.replace(/\*\*/g,"")
+  value =
+    value
+      .replace(/\*\*/g, "")
+      .replace(/`/g, "");
 
-.replace(/`/g,"")
+  // FRACTIONS
+  value =
+    replaceBalancedLatexCommand(
+      value,
+      "frac",
+      (numerator, denominator) =>
+        `${numerator}/${denominator}`
+    );
 
-.replace(/\\text\{([^{}]+)\}/g,"$1")
+  value =
+    replaceBalancedLatexCommand(
+      value,
+      "dfrac",
+      (numerator, denominator) =>
+        `${numerator}/${denominator}`
+    );
 
-.replace(/\\mathrm\{([^{}]+)\}/g,"$1")
+  // SQUARE ROOTS
+  value =
+    replaceBalancedLatexCommand(
+      value,
+      "sqrt",
+      content =>
+        `√(${content})`
+    );
 
-.replace(/\\mathbf\{([^{}]+)\}/g,"$1")
+  // SAME LATEX SYMBOL CONVERSIONS AS ANSWER KEY
+  value =
+    value
+      .replace(/\\implies/g, "⇒")
+      .replace(/\\Rightarrow/g, "⇒")
+      .replace(/\\Longrightarrow/g, "⇒")
+      .replace(/\\therefore/g, "∴")
+      .replace(/\\because/g, "∵")
+      .replace(/\\rightarrow/g, "→")
+      .replace(/\\to/g, "→")
+      .replace(/\\triangle/g, "△ ")
+      .replace(/\\Delta/g, "Δ")
+      .replace(/\\angle/g, "∠")
+      .replace(/\\alpha/g, "α")
+      .replace(/\\beta/g, "β")
+      .replace(/\\gamma/g, "γ")
+      .replace(/\\delta/g, "δ")
+      .replace(/\\epsilon/g, "ε")
+      .replace(/\\theta/g, "θ")
+      .replace(/\\lambda/g, "λ")
+      .replace(/\\mu/g, "μ")
+      .replace(/\\pi/g, "π")
+      .replace(/\\rho/g, "ρ")
+      .replace(/\\sigma/g, "σ")
+      .replace(/\\phi/g, "φ")
+      .replace(/\\psi/g, "ψ")
+      .replace(/\\omega/g, "ω")
+      .replace(/\\Gamma/g, "Γ")
+      .replace(/\\Theta/g, "Θ")
+      .replace(/\\Lambda/g, "Λ")
+      .replace(/\\Pi/g, "Π")
+      .replace(/\\Sigma/g, "Σ")
+      .replace(/\\Phi/g, "Φ")
+      .replace(/\\Psi/g, "Ψ")
+      .replace(/\\Omega/g, "Ω")
+      .replace(/\\cong/g, "≅")
+      .replace(/\\approx/g, "≈")
+      .replace(/\\times/g, "×")
+      .replace(/\\cdot/g, "·")
+      .replace(/\\div/g, "÷")
+      .replace(/\\pm/g, "±")
+      .replace(/\\leq/g, "≤")
+      .replace(/\\le/g, "≤")
+      .replace(/\\geq/g, "≥")
+      .replace(/\\ge/g, "≥")
+      .replace(/\\neq/g, "≠")
+      .replace(/\\sim/g, "∼")
+      .replace(/\\parallel/g, " || ")
+      .replace(/\\perpendicular/g, "⊥")
+      .replace(/\\perp/g, "⊥")
+      .replace(/\\in/g, "∈")
+      .replace(/\\notin/g, "∉");
 
-.replace(/\\textbf\{([^{}]+)\}/g,"$1")
+  // TRIGONOMETRY
+  value =
+    value
+      .replace(/\\tan\b/g, "tan")
+      .replace(/\\sin\b/g, "sin")
+      .replace(/\\cos\b/g, "cos")
+      .replace(/\\cot\b/g, "cot")
+      .replace(/\\sec\b/g, "sec")
+      .replace(/\\csc\b/g, "csc");
 
-.replace(/\\textit\{([^{}]+)\}/g,"$1")
+  // TEXT COMMANDS
+  value =
+    value
+      .replace(/\\text\{([^{}]*)\}/g, "$1")
+      .replace(/\\mathrm\{([^{}]*)\}/g, "$1")
+      .replace(/\\mathbf\{([^{}]*)\}/g, "$1")
+      .replace(/\\textbf\{([^{}]*)\}/g, "$1")
+      .replace(/\\textit\{([^{}]*)\}/g, "$1");
 
-.replace(/\*\/?text\{([^{}]+)\}/g,"$1")
+  // POWERS / ANGLES
+  value =
+    value
+      .replace(/^{([^{}]+)}/g, "^$1")
+      .replace(/\^\\circ/g, "°")
+      .replace(/\^o\b/g, "°")
+      .replace(/\\circ/g, "°");
 
-.replace(/\\left/g,"")
+  // LATEX DELIMITERS
+  value =
+    value
+      .replace(/\\left/g, "")
+      .replace(/\\right/g, "")
+      .replace(/\\\(/g, "")
+      .replace(/\\\)/g, "")
+      .replace(/\\\[/g, "")
+      .replace(/\\\]/g, "")
+      .replace(/\$\$/g, "")
+      .replace(/\$/g, "")
+      .replace(/\\,/g, " ")
+      .replace(/\\_/g, "_")
+      .replace(/\\ /g, " ");
 
-.replace(/\\right/g,"")
+  // SPACING
+  value =
+    value
+      .replace(/[ \t]+/g, " ")
+      .replace(/[ \t]*\r?\n[ \t]*/g, "\n")
+      .trim();
 
-.replace(/\\,/g," ")
-
-.replace(/\\_/g,"_")
-
-.replace(/\\times/g,"×")
-
-.replace(/\\div/g,"÷")
-
-.replace(/\\cdot/g,"·")
-
-.replace(/\\circ/g,"°")
-
-.replace(/\\angle/g,"∠")
-
-
-.replace(/\\rightarrow/g,"→")
-
-.replace(/\\to/g,"→")
-
-.replace(/\\left/g,"")
-
-.replace(/\\right/g,"")
-
-.replace(/\\pm/g,"±")
-
-.replace(/\\leq/g,"≤")
-
-.replace(/\\le/g,"≤")
-
-.replace(/\\geq/g,"≥")
-
-.replace(/\\ge/g,"≥")
-
-.replace(/\\neq/g,"≠")
-
-.replace(/\\text\{([^{}]+)\}/g,"$1")
-
-.replace(/\\mathrm\{([^{}]+)\}/g,"$1")
-
-.replace(/\\mathbf\{([^{}]+)\}/g,"$1")
-
-.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g,"$1/$2")
-
-.replace(/\$\$/g,"")
-
-.replace(/\$/g,"")
-
-.replace(/\s*---\s*/g,"")
-
-.replace(/\*/g,"")
-
-.replace(/[\t\r\n]+/g," ")
-
-.replace(/\s{2,}/g," ")
-
-.replace(/^\s*[-–—]\s*$/g,"")
-
-.trim();
-
+  return value;
 }
-
-
 
 function isNoteHeading(line=""){
 
@@ -1643,16 +1704,15 @@ line
 
 
 
-function parseNotes(content=""){
+function parseNotes(content="", orderedDiagrams=[]){
 
-const lines = content
+const lines = String(content || "")
 
 .split("\n")
 
 .map(line=>line.trim())
 
 .filter(Boolean);
-
 
 
 const blocks = [];
@@ -1702,6 +1762,48 @@ let line = rawLine.trim();
 
 
 if(!line){
+
+return;
+
+}
+
+
+
+const diagramMatch = line.match(
+
+/^__NYXORA_DIAGRAM_(\d+)__$/
+
+);
+
+
+
+if(diagramMatch){
+
+flushBullets();
+
+const diagramIndex = Number(diagramMatch[1]);
+
+const diagramEntry = orderedDiagrams[diagramIndex];
+
+
+
+if(
+
+diagramEntry &&
+
+diagramEntry.diagram
+
+){
+
+blocks.push({
+
+type:"diagram",
+
+diagram:diagramEntry.diagram
+
+});
+
+}
 
 return;
 
@@ -1843,11 +1945,7 @@ return;
 
 
 
-if(currentBullets.length){
-
-currentBullets[currentBullets.length - 1] += " " + line;
-
-}else{
+if(line){
 
 currentBullets.push(line);
 
@@ -1876,6 +1974,44 @@ return(
 {
 
 blocks.map((block,index)=>{
+
+if(block.type==="diagram"){
+
+return(
+
+<View
+
+key={"note-diagram-"+index}
+
+style={{
+
+width:"100%",
+
+marginTop:8,
+
+marginBottom:10,
+
+alignItems:"center"
+
+}}
+
+wrap={false}
+
+>
+
+<MathDiagram
+
+{...(block.diagram || {})}
+
+/>
+
+</View>
+
+);
+
+}
+
+
 
 if(block.type==="subheading"){
 
@@ -2081,7 +2217,7 @@ flex:1
 
 >
 
-{item}
+{renderMixedMathText(item)}
 
 </Text>
 
@@ -3386,25 +3522,171 @@ option=>option.text
 
 
 
+function readBalancedJsonObject(text="", startIndex=0){
+
+if(text[startIndex] !== "{"){
+
+return null;
+
+}
+
+
+
+let depth = 0;
+
+let inString = false;
+
+let escaped = false;
+
+
+
+for(let index=startIndex; index<text.length; index += 1){
+
+const char = text[index];
+
+
+
+if(inString){
+
+if(escaped){
+
+escaped = false;
+
+continue;
+
+}
+
+
+
+if(char === "\\"){
+
+escaped = true;
+
+continue;
+
+}
+
+
+
+if(char === '"'){
+
+inString = false;
+
+}
+
+
+
+continue;
+
+}
+
+
+
+if(char === '"'){
+
+inString = true;
+
+continue;
+
+}
+
+
+
+if(char === "{"){
+
+depth += 1;
+
+continue;
+
+}
+
+
+
+if(char === "}"){
+
+depth -= 1;
+
+
+
+if(depth === 0){
+
+return {
+
+startIndex,
+
+endIndex:index + 1
+
+};
+
+}
+
+}
+
+}
+
+
+
+return null;
+
+}
+
+
+
 function extractMathDiagramData(content=""){
 
 const diagramsByNumber = {};
 
 const unnumberedDiagrams = [];
 
+const orderedDiagrams = [];
+
 const source = String(content || "");
 
-const blocks = [
-  ...source.matchAll(
-    /```(?:json|javascript|js)?\s*([\s\S]*?)```/gi
-  )
-].map(match => match[1]);
+let cleanedContent = source;
 
-// Also try the complete response when the AI returns
-// vector diagram JSON without a fenced code block.
-if (blocks.length === 0) {
-  blocks.push(source.trim());
+
+
+const addDiagram = (diagram, number) => {
+
+if(!diagram || typeof diagram !== "object"){
+
+return;
+
 }
+
+
+
+const parsedNumber = Number(number);
+
+
+
+if(Number.isFinite(parsedNumber) && parsedNumber > 0){
+
+diagramsByNumber[parsedNumber] = diagram;
+
+}else{
+
+unnumberedDiagrams.push(diagram);
+
+}
+
+
+
+orderedDiagrams.push({
+
+number:
+
+Number.isFinite(parsedNumber) && parsedNumber > 0
+
+? parsedNumber
+
+: null,
+
+diagram
+
+});
+
+};
 
 
 
@@ -3412,99 +3694,241 @@ const collect = value => {
 
 if(!value || typeof value !== "object"){
 
-return;
+return 0;
 
 }
+
+
+
+let count = 0;
 
 
 
 if(value.diagram && typeof value.diagram === "object"){
-  const number = Number(
-    value.number ??
-    value.questionNumber ??
-    value.questionNo ??
-    value.qNumber
-  );
 
-  if(Number.isFinite(number) && number > 0){
-    diagramsByNumber[number] = value.diagram;
-  }else{
-    unnumberedDiagrams.push(value.diagram);
-  }
-}
+addDiagram(
 
-/*
- * Support direct vector diagram objects.
- * Example:
- * {
- *   "number": 1,
- *   "type": "geometry",
- *   "points": [...],
- *   "lines": [...],
- *   "labels": [...]
- * }
- */
+value.diagram,
+
+value.number ??
+
+value.questionNumber ??
+
+value.questionNo ??
+
+value.qNumber
+
+);
+
+count += 1;
+
+}else{
+
 const hasVectorDiagramData =
-  !value.diagram &&
-  (
-    Array.isArray(value.points) ||
-    Array.isArray(value.lines) ||
-    Array.isArray(value.segments) ||
-    Array.isArray(value.vectors) ||
-    Array.isArray(value.labels)
-  );
+
+Array.isArray(value.points) ||
+
+Array.isArray(value.lines) ||
+
+Array.isArray(value.segments) ||
+
+Array.isArray(value.vectors) ||
+
+Array.isArray(value.labels);
+
+
 
 if(hasVectorDiagramData){
 
-  const number = Number(
-    value.number ??
-    value.questionNumber ??
-    value.questionNo ??
-    value.qNumber
-  );
+const number =
 
-  const diagram = {
-    ...value
-  };
+value.number ??
 
-  delete diagram.number;
-  delete diagram.questionNumber;
-  delete diagram.questionNo;
-  delete diagram.qNumber;
+value.questionNumber ??
 
-  if(Number.isFinite(number) && number > 0){
-    diagramsByNumber[number] = diagram;
-  }else{
-    unnumberedDiagrams.push(diagram);
-  }
-}
+value.questionNo ??
 
-
-if(Array.isArray(value)){
-
-value.forEach(collect);
-
-return;
-
-}
+value.qNumber;
 
 
 
-Object.values(value).forEach(collect);
+const diagram = {
+
+...value
 
 };
 
 
 
-blocks.forEach(block=>{
+delete diagram.number;
+
+delete diagram.questionNumber;
+
+delete diagram.questionNo;
+
+delete diagram.qNumber;
+
+
+
+addDiagram(diagram, number);
+
+count += 1;
+
+}
+
+}
+
+
+
+if(Array.isArray(value)){
+
+value.forEach(item=>{
+
+count += collect(item);
+
+});
+
+
+
+return count;
+
+}
+
+
+
+Object.entries(value).forEach(([key, item])=>{
+
+if(key === "diagram"){
+
+return;
+
+}
+
+
+
+count += collect(item);
+
+});
+
+
+
+return count;
+
+};
+
+
+
+const replaceWithPlaceholders = (
+
+text,
+
+startIndex,
+
+endIndex,
+
+startOrder,
+
+count
+
+) => {
+
+const placeholders = [];
+
+
+
+for(let index=0; index<count; index += 1){
+
+placeholders.push(
+
+`__NYXORA_DIAGRAM_${
+
+startOrder + index
+
+}__`
+
+);
+
+}
+
+
+
+return (
+
+text.slice(0,startIndex) +
+
+placeholders.join("\n") +
+
+text.slice(endIndex)
+
+);
+
+};
+
+
+
+/*
+
+ * ---------------------------------------------------------
+ * 1. Remove fenced diagram JSON from visible PDF content.
+ * ---------------------------------------------------------
+ */
+
+const fencedMatches = [
+
+...source.matchAll(
+
+/```(?:json|javascript|js)?\s*([\s\S]*?)```/gi
+
+)
+
+];
+
+
+
+const fencedDiagramReplacements = [];
+
+
+
+fencedMatches.forEach(match=>{
+
+const block = match[1];
+
+
 
 try{
 
-collect(JSON.parse(block.trim()));
+const parsed = JSON.parse(block.trim());
+
+const beforeCount = orderedDiagrams.length;
+
+const foundCount = collect(parsed);
+
+
+
+if(foundCount > 0 && orderedDiagrams.length > beforeCount){
+
+fencedDiagramReplacements.push({
+
+startIndex:match.index,
+
+endIndex:
+
+match.index + match[0].length,
+
+startOrder:beforeCount,
+
+count:foundCount
+
+});
+
+}
 
 }catch(error){
 
-return;
+/*
+
+ * Leave non-JSON fenced content untouched.
+ */
 
 }
 
@@ -3512,11 +3936,342 @@ return;
 
 
 
+fencedDiagramReplacements
+
+.slice()
+
+.reverse()
+
+.forEach(replacement=>{
+
+cleanedContent =
+
+replaceWithPlaceholders(
+
+cleanedContent,
+
+replacement.startIndex,
+
+replacement.endIndex,
+
+replacement.startOrder,
+
+replacement.count
+
+);
+
+});
+
+
+
+/*
+
+ * ---------------------------------------------------------
+ * 2. Support a response that is itself a diagram JSON
+ *    object/array.
+ * ---------------------------------------------------------
+ */
+
+const trimmedSource = source.trim();
+
+
+
+if(
+
+trimmedSource.startsWith("{") ||
+
+trimmedSource.startsWith("[")
+
+){
+
+try{
+
+const parsed = JSON.parse(trimmedSource);
+
+const beforeCount = orderedDiagrams.length;
+
+const foundCount = collect(parsed);
+
+
+
+if(foundCount > 0 && orderedDiagrams.length > beforeCount){
+
+const leadingWhitespaceLength =
+
+source.indexOf(trimmedSource);
+
+
+
+cleanedContent =
+
+replaceWithPlaceholders(
+
+cleanedContent,
+
+leadingWhitespaceLength,
+
+leadingWhitespaceLength + trimmedSource.length,
+
+beforeCount,
+
+foundCount
+
+);
+
+}
+
+}catch(error){
+
+/*
+
+ * Continue with inline scanning when the complete
+ * response is not valid JSON.
+ */
+
+}
+
+}
+
+
+
+/*
+
+ * ---------------------------------------------------------
+ * 3. Remove standalone json({...}) / {..."diagram"...}
+ *    objects that are not fenced.
+ * ---------------------------------------------------------
+ */
+
+let scanIndex = 0;
+
+
+
+while(scanIndex < cleanedContent.length){
+
+const wrapperMatch =
+
+/json\s*\(\s*\{/gi.exec(
+
+cleanedContent.slice(scanIndex)
+
+);
+
+
+
+const rawMatch =
+
+/\{\s*"(?:number|questionNumber|questionNo|qNumber|diagram)"\s*:/gi.exec(
+
+cleanedContent.slice(scanIndex)
+
+);
+
+
+
+let candidate = null;
+
+
+
+if(wrapperMatch){
+
+candidate = {
+
+startIndex:
+
+scanIndex + wrapperMatch.index,
+
+objectStart:
+
+scanIndex +
+
+wrapperMatch.index +
+
+wrapperMatch[0].lastIndexOf("{"),
+
+wrapper:true
+
+};
+
+}
+
+
+
+if(rawMatch){
+
+const rawCandidate = {
+
+startIndex:
+
+scanIndex + rawMatch.index,
+
+objectStart:
+
+scanIndex + rawMatch.index,
+
+wrapper:false
+
+};
+
+
+
+if(
+
+!candidate ||
+
+rawCandidate.startIndex < candidate.startIndex
+
+){
+
+candidate = rawCandidate;
+
+}
+
+}
+
+
+
+if(!candidate){
+
+break;
+
+}
+
+
+
+const balanced = readBalancedJsonObject(
+
+cleanedContent,
+
+candidate.objectStart
+
+);
+
+
+
+if(!balanced){
+
+break;
+
+}
+
+
+
+let endIndex = balanced.endIndex;
+
+
+
+if(candidate.wrapper){
+
+while(
+
+endIndex < cleanedContent.length &&
+
+/\s/.test(cleanedContent[endIndex])
+
+){
+
+endIndex += 1;
+
+}
+
+
+
+if(cleanedContent[endIndex] === ")"){
+
+endIndex += 1;
+
+}
+
+}
+
+
+
+const jsonText = cleanedContent.slice(
+
+candidate.objectStart,
+
+balanced.endIndex
+
+);
+
+
+
+try{
+
+const parsed = JSON.parse(jsonText);
+
+const beforeCount = orderedDiagrams.length;
+
+const foundCount = collect(parsed);
+
+const afterCount = orderedDiagrams.length;
+
+
+
+if(foundCount > 0 && afterCount > beforeCount){
+
+cleanedContent =
+
+replaceWithPlaceholders(
+
+cleanedContent,
+
+candidate.startIndex,
+
+endIndex,
+
+beforeCount,
+
+foundCount
+
+);
+
+
+
+scanIndex =
+
+candidate.startIndex +
+
+Math.max(1, foundCount * 20);
+
+continue;
+
+}
+
+}catch(error){
+
+/*
+
+ * Ignore malformed inline JSON and continue scanning.
+ */
+
+}
+
+
+
+scanIndex =
+
+Math.max(
+
+candidate.startIndex + 1,
+
+balanced.endIndex
+
+);
+
+}
+
+
+
 return {
 
 diagramsByNumber,
 
-unnumberedDiagrams
+unnumberedDiagrams,
+
+orderedDiagrams,
+
+cleanedContent
 
 };
 
@@ -3537,7 +4292,25 @@ console.log(
   content
 );
 
-const lines = content
+const sourceContent =
+
+String(
+
+mathDiagramData.cleanedContent || content || ""
+
+)
+
+.replace(
+
+/__NYXORA_DIAGRAM_\d+__/g,
+
+""
+
+);
+
+
+
+const lines = sourceContent
 
 .split("\n")
 
@@ -3551,7 +4324,7 @@ const sections = [];
 
 const answerSections = [];
 
-const isHindi = /उत्तर कुंजी|बहुविकल्पीय|खंड\s*["']?[कखगघ]/u.test(content);
+const isHindi = /उत्तर कुंजी|बहुविकल्पीय|खंड\s*["']?[कखगघ]/u.test(sourceContent);
 
 
 
@@ -4359,10 +5132,6 @@ pushCurrentAnswerSection();
 
 
 
-let fallbackDiagramIndex = 0;
-
-
-
 sections.forEach(section=>{
 
 (section.questions || []).forEach(question=>{
@@ -4381,35 +5150,19 @@ mathDiagramData.diagramsByNumber[questionNumber]
 question.diagram =
 mathDiagramData.diagramsByNumber[questionNumber];
 
-return;
-
-}
-
-
-
-if(
-!question.diagram &&
-mathDiagramData.unnumberedDiagrams[fallbackDiagramIndex]
-){
-
-question.diagram =
-mathDiagramData.unnumberedDiagrams[fallbackDiagramIndex];
-
-fallbackDiagramIndex += 1;
-
 }
 
 });
 
 });
-
-
 
 return {
 
 sections,
 
-answerSections
+answerSections,
+
+diagramData:mathDiagramData
 
 };
 
@@ -4499,7 +5252,13 @@ const noteBlocks = isNotes
 
 ?
 
-parseNotes(data.content || "")
+parseNotes(
+
+parsed.diagramData?.cleanedContent || data.content || "",
+
+parsed.diagramData?.orderedDiagrams || []
+
+)
 
 :
 
