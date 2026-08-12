@@ -632,68 +632,58 @@ const parts =
 
 
 function NumberBubble({
-
   number
-
 }){
 
-
+  const displayNumber =
+    number !== undefined &&
+    number !== null &&
+    String(number).trim() !== ""
+      ? String(number)
+      : "1";
 
   return (
-
     <View
-
       style={{
-
-        width:22,
-
+        width:34,
         height:22,
-
-        borderRadius:11,
-
-        backgroundColor:"#6D5DFB",
-
-        justifyContent:"center",
-
+        marginRight:8,
+        flexDirection:"row",
         alignItems:"center",
-
-        marginRight:8
-
+        flexShrink:0
       }}
-
     >
 
-
+      <View
+        style={{
+          width:3,
+          height:16,
+          borderRadius:2,
+          backgroundColor:"#6D5DFB",
+          marginRight:5,
+          flexShrink:0
+        }}
+      />
 
       <Text
-
         style={{
-
-          fontFamily:"NotoSansDevanagari",
-
-          color:"#FFFFFF",
-
-          fontSize:9,
-
-          fontWeight:700
-
+          width:20,
+          fontFamily:"NotoSans",
+          color:"#4F46E5",
+          fontSize:10,
+          fontWeight:"bold",
+          lineHeight:12,
+          textAlign:"center",
+          flexShrink:0
         }}
-
       >
-
-        {number}
-
+        {displayNumber}
       </Text>
 
-
-
     </View>
-
   );
 
 }
-
-
 
 function parseHindiInlineMCQ(text=""){
 
@@ -1055,7 +1045,10 @@ export default function PDFQuestion({
 
 }){
 
-
+const resolvedNumber =
+  Number(number) ||
+  Number(question?.number) ||
+  1;
 
   console.log(
 
@@ -1193,7 +1186,7 @@ export default function PDFQuestion({
 
       <View
 
-        style={{
+       style={{
 
           marginBottom:12,
 
@@ -1237,13 +1230,41 @@ export default function PDFQuestion({
 
 
 
-          <NumberBubble
+        <View
+  style={{
+    width:3,
+    height:16,
+    borderRadius:2,
+    backgroundColor:"#6D5DFB",
+    marginRight:5,
+    flexShrink:0
+  }}
+/>
 
-            number={number}
-
-          />
-
-
+<View
+  style={{
+    width:22,
+    height:22,
+    marginRight:8,
+    justifyContent:"center",
+    alignItems:"center",
+    flexShrink:0
+  }}
+>
+  <Text
+    style={{
+      fontFamily:"NotoSans",
+      fontSize:10,
+      fontWeight:"bold",
+      color:"#4F46E5",
+      lineHeight:12,
+      textAlign:"center",
+      flexShrink:0
+    }}
+  >
+    {resolvedNumber}
+  </Text>
+</View>
 
           <Text
 
@@ -1320,7 +1341,8 @@ export default function PDFQuestion({
   return (
 
     <View
-
+      
+        
       style={{
 
         marginBottom:12
@@ -1346,14 +1368,41 @@ export default function PDFQuestion({
       >
 
 
+<View
+  style={{
+    width:3,
+    height:16,
+    borderRadius:2,
+    backgroundColor:"#6D5DFB",
+    marginRight:5,
+    flexShrink:0
+  }}
+/>
 
-        <NumberBubble
-
-          number={number}
-
-        />
-
-
+<View
+  style={{
+    width:22,
+    height:22,
+    marginRight:8,
+    justifyContent:"center",
+    alignItems:"center",
+    flexShrink:0
+  }}
+>
+  <Text
+    style={{
+      fontFamily:"NotoSans",
+      fontSize:10,
+      fontWeight:"bold",
+      color:"#4F46E5",
+      lineHeight:12,
+      textAlign:"center",
+      flexShrink:0
+    }}
+  >
+    {resolvedNumber}
+  </Text>
+</View>
 
         <Text
 
@@ -1418,30 +1467,36 @@ export default function PDFQuestion({
         (
 
           <View
+    style={{
+        width:"100%",
+        marginTop:4,
+        marginBottom:6,
+        alignItems:"center",
+        justifyContent:"center"
+    }}
+>
+    <MathDiagram
+        {...question.diagram}
 
-            wrap={false}
+        width={
+            Number(question.diagram?.width) > 0
+                ? Math.min(
+                    Number(question.diagram.width),
+                    500
+                )
+                : 500
+        }
 
-            style={{
-
-              width:"100%",
-
-              marginTop:10,
-
-              marginBottom:8,
-
-              alignItems:"center"
-
-            }}
-
-          >
-
-            <MathDiagram
-
-              {...question.diagram}
-
-            />
-
-          </View>
+        height={
+            Number(question.diagram?.height) > 0
+                ? Math.min(
+                    Number(question.diagram.height),
+                    240
+                )
+                : 240
+        }
+    />
+</View>
 
         )
 

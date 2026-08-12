@@ -353,9 +353,78 @@ Supported vector primitives:
 - arcs
 - curves
 - labels
-- dimensions
+
+IMPORTANT MATHS DIAGRAM RULE:
+
+Do NOT use the "dimensions" primitive for Maths diagrams.
+
+The "dimensions" array must always remain empty:
+
+"dimensions": []
+
+Do NOT generate:
+- measurement numbers
+- measurement labels
+- "5"
+- "10"
+- "5 cm"
+- "10 cm"
+- length dimension arrows
+- height dimension arrows
+- width dimension arrows
+- dimension lines
+- automatic unit annotations
+
+If a numerical value is explicitly part of the mathematical problem,
+keep it in the question/content rather than converting it into a
+diagram dimension.
+
+Mathematical expressions that are explicitly required as part of
+the diagram may still be represented as labels, for example:
+
+- "AB = ?"
+- "x = 5"
+- "2x + 3"
+
+These are mathematical expressions, not automatic dimensions.
 
 A single scene may contain any combination of these primitives.
+==================================================
+FINAL MATHS DIAGRAM DIMENSION CHECK
+==================================================
+
+Before returning a Maths diagram, verify:
+
+"dimensions": []
+
+The dimensions array MUST be empty.
+
+If any dimension object was generated, remove it.
+
+Remove any automatically generated:
+- measurement number
+- measurement unit
+- length annotation
+- height annotation
+- width annotation
+- dimension line
+- dimension arrow
+- "cm"
+- "m"
+- "mm"
+- standalone measurement numbers
+
+Do NOT remove mathematical expressions that are explicitly part
+of the problem, such as:
+
+"AB = ?"
+"x = 5"
+"2x + 3"
+
+Those are mathematical labels, not automatic dimensions.
+
+The geometry itself must remain unchanged.
+==================================================
 
 ==================================================
 VECTOR COORDINATES
@@ -538,68 +607,203 @@ Use curves for mathematical graphs and other genuinely curved
 visuals.
 
 ==================================================
-ANGLE MARKING RULE — DISABLED
+ANGLE GENERATION: COMPLETELY DISABLED
 ==================================================
 
-DO NOT GENERATE ANY ANGLE MARKINGS IN DIAGRAMS.
+DO NOT GENERATE ANGLE MARKINGS IN THE DIAGRAM JSON.
 
-Never generate:
+This is a strict rule.
 
-- angle arcs
-- angle sectors
-- angle wedges
-- angle markers
-- right-angle boxes
-- angle-value labels such as 30°, 45°, 60°, 80°, 90°
-- standalone angle text
-- semantic "angles" objects
-- diagrams with type "angle"
-- arcs whose purpose is to indicate an angle
+If the question contains an angle, the angle may appear in
+the QUESTION TEXT, but it must NOT be represented visually
+inside the diagram.
 
-If the question contains an angle such as:
-
-∠APB = 80°
-∠BAT = 60°
-∠ABC = 45°
-
-the angle information must remain ONLY in the question text.
-
-The diagram should contain the relevant geometry
-(points, vertices, lines, circles, etc.) but MUST NOT
-draw the angle marking or angle value.
-
-IMPORTANT:
-
-Do not try to represent an angle using:
-- an "arc"
-- a "label"
-- an "angle" object
-- a "dimension"
-- a curved path
-
-Angles are mathematical information in the question,
-not visual markings in the generated diagram.
-
-Example:
+For example:
 
 Question:
-"Given ∠APB = 80°, find ..."
+"Given ∠BAT = 60°, find the value of x."
 
-Diagram:
+The diagram may contain:
 
-KEEP:
 A
-P
 B
-PA
-PB
+T
+AB
+AT
+other required geometry
 
-REMOVE:
-80°
+But the diagram MUST NOT contain:
+
+60°
+∠BAT
 angle arc
 angle wedge
+angle sector
 angle marker
+right-angle box
+curved angle indicator
+any visual indication of the angle
 
+==================================================
+FORBIDDEN ANGLE OUTPUT
+==================================================
+
+NEVER generate any of the following:
+
+1. "angles" array
+
+Example FORBIDDEN:
+
+"angles": [
+    {
+        "vertex": "A",
+        "side1": "AB",
+        "side2": "AT",
+        "value": "60°"
+    }
+]
+
+2. An object with:
+
+"type": "angle"
+
+3. An angle arc.
+
+Example FORBIDDEN:
+
+"arcs": [
+    {
+        ...
+    }
+]
+
+when the arc represents an angle.
+
+4. A standalone angle-value label.
+
+Example FORBIDDEN:
+
+"labels": [
+    {
+        "text": "60°"
+    }
+]
+
+5. A right-angle marker.
+
+6. An angle wedge or sector whose purpose is to mark
+   an angle.
+
+7. Any text such as:
+
+"30°"
+"45°"
+"60°"
+"80°"
+"90°"
+"∠A"
+"∠ABC"
+"∠APB"
+
+inside the diagram.
+
+==================================================
+IMPORTANT: DO NOT HIDE ANGLES IN OTHER PRIMITIVES
+==================================================
+
+Do NOT bypass this rule by representing an angle using:
+
+- "arc"
+- "path"
+- "curve"
+- "polygon"
+- "sector"
+- "label"
+- "dimension"
+- "custom"
+- "type": "angle"
+- "angles"
+
+If a primitive is being used specifically to visually mark
+an angle, DO NOT generate that primitive.
+
+==================================================
+ANGLE INFORMATION STAYS IN QUESTION TEXT
+==================================================
+
+If the mathematical question says:
+
+∠APB = 80°
+
+keep:
+
+"∠APB = 80°"
+
+in the question text.
+
+Do NOT copy "80°" into the diagram.
+
+If the question says:
+
+AB ⟂ BC
+
+keep that information in the question text.
+
+Do NOT generate a right-angle square or angle marker in the diagram.
+
+==================================================
+DIAGRAM PURPOSE
+==================================================
+
+The diagram should show ONLY the underlying geometry required
+to understand the problem.
+
+For an angle question, show the relevant:
+
+- points
+- vertices
+- lines
+- circles
+- triangles
+- other required geometry
+
+but NOT the angle marking itself.
+
+==================================================
+FINAL ANGLE CHECK
+==================================================
+
+Before returning the diagram JSON, perform this check:
+
+Does the diagram contain an "angles" property?
+
+→ If YES, remove it.
+
+Does the diagram contain an object with:
+
+"type": "angle"
+
+→ If YES, remove it.
+
+Does the diagram contain an arc whose purpose is to mark an angle?
+
+→ If YES, remove it.
+
+Does the diagram contain a standalone angle value such as
+30°, 45°, 60°, 80° or 90°?
+
+→ If YES, remove it.
+
+Does the diagram contain a right-angle marker?
+
+→ If YES, remove it.
+
+Does any label contain an angle expression such as ∠ABC?
+
+→ If YES, remove it.
+
+Only after all of these checks pass should the diagram JSON
+be returned.
 ==================================================
 
 ==================================================

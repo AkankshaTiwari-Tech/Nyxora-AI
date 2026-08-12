@@ -31,8 +31,7 @@ export const MATH_DIAGRAM_TYPES = {
     RECTANGLE: "rectangle",
     SQUARE: "square",
     CIRCLE: "circle",
-    ANGLE: "angle",
-
+   
     // Generic vector primitives
     VECTOR: "vector",
     POLYGON: "polygon",
@@ -1116,16 +1115,7 @@ function normalizeSceneElements(
                 diagram.labels
             ),
 
-        angles:
-            Array.isArray(
-                diagram.angles
-            )
-                ? diagram.angles.map(
-                    normalizeAngle
-                )
-                : [],
-
-        dimensions:
+               dimensions:
             Array.isArray(
                 diagram.dimensions
             )
@@ -1451,19 +1441,7 @@ For a label describing a line:
   }
 }
 
-For an angle, use a semantic angle object instead of a free-floating
-text label whenever the angle has mathematical meaning:
 
-{
-  "id": "angle-1",
-  "vertex": "A",
-  "side1": "AB",
-  "side2": "AC",
-  "value": "45°",
-  "arcRadius": 0.8,
-  "showArc": true,
-  "showValue": true
-}
 
 Rules for semantic geometry:
 
@@ -1635,18 +1613,8 @@ An angle is NOT an ordinary text label.
 Whenever an angle is mathematically represented in the diagram,
 generate a structured angle object.
 
-Example:
 
-{
-  "id": "angle-A",
-  "vertex": "A",
-  "side1": "AB",
-  "side2": "AC",
-  "value": "45°",
-  "arcRadius": 0.6,
-  "showArc": true,
-  "showValue": true
-}
+
 
 The renderer must determine the angle arc from:
 
@@ -1670,24 +1638,6 @@ side2 = AC
 
 the 45° arc must be drawn immediately around A between AB
 and AC, and "45°" must appear next to that arc.
-
-==================================================
-ANGLE VALIDATION
-==================================================
-
-Before returning the diagram:
-
-- Verify that the vertex exists.
-- Verify that side1 exists.
-- Verify that side2 exists.
-- Verify that both sides actually connect to the vertex.
-- Verify that the angle arc lies between those two sides.
-- Verify that the angle value is placed beside that arc.
-- Never place the angle value at an unrelated coordinate.
-- Never create an angle arc around a different vertex.
-
-If an angle cannot be represented using the referenced geometry,
-fix the geometry/relationship before returning the JSON.
 
 ==================================================
 POINT LABEL RULE
@@ -1797,21 +1747,9 @@ Example:
         "label": "C"
       }
     ],
-    "angles": [
-      {
-        "id": "angle-B",
-        "vertex": "B",
-        "side1": "BA",
-        "side2": "BC",
-        "value": "45°",
-        "arcRadius": 45,
-        "showArc": true,
-        "showValue": true
-      }
-    ],
+    
     "arcs": [],
-    "labels": [
-      {
+"labels": [
         "x": 90,
         "y": 245,
         "text": "B",
@@ -1915,31 +1853,6 @@ For a tangent-contact point, the point must mathematically lie
 on both the circle circumference and the tangent line.
 Do not represent a known tangent-contact point as an unrelated
 free point.
-
-ANGLE SEMANTIC VALIDATION:
-
-Whenever the question refers to a specific angle, the angle object
-must identify the actual vertex and the actual two sides forming it.
-
-For example, if the question states:
-
-∠APB = 80°
-
-use:
-{
-  "vertex": "P",
-  "side1": "PA",
-  "side2": "PB",
-  "value": "80°",
-  "showArc": true,
-  "showValue": true
-}
-
-Do NOT substitute another ray such as PO.
-
-The renderer must calculate the angle marking from the referenced
-vertex and sides. Do not use arbitrary x/y coordinates for an
-angle that has mathematical meaning.
 
 CENTER AND CONTACT VALIDATION:
 

@@ -18,80 +18,191 @@ import pdfTheme
 
 from "../styles/pdfTheme";
 
-
-
-
-
-
-
 function SectionHeader({
 
     title
 
 }){
 
+    return (
+
+        <View
+
+            style={{
+
+                width:"100%",
+
+                marginTop:2,
+
+                marginBottom:12,
+
+                paddingBottom:9,
+
+            }}
+
+            wrap={false}
+
+        >
+
+            {/* SECTION LABEL */}
+
+            <View
+
+                style={{
+
+                    flexDirection:"row",
+
+                    alignItems:"center",
+
+                    marginBottom:5,
+
+                }}
+
+            >
+
+                <View
+
+                    style={{
+
+                        width:4,
+
+                        height:4,
+
+                        borderRadius:2,
+
+                        backgroundColor:"#8B7CF6",
+
+                        marginRight:5,
+
+                    }}
+
+                />
+
+                <Text
+
+                    style={{
+
+                        fontFamily:"NotoSansDevanagari",
+
+                        fontSize:7.5,
+
+                        fontWeight:"bold",
+
+                        color:"#6D5DFB",
+
+                        letterSpacing:1.5,
+
+                    }}
+
+                >
+
+                    SECTION
+
+                </Text>
+
+            </View>
 
 
-return (
+            {/* MAIN SECTION TITLE */}
 
-<View
+            <Text
 
-style={{
+                style={{
 
-    backgroundColor:"#F5F3FF",
+                    fontFamily:"NotoSansDevanagari",
 
-    borderWidth:1,
+                    fontSize:15.5,
 
-    borderColor:"#D8CCFF",
+                    fontWeight:"bold",
 
-    borderRadius:14,
+                    color:"#24203B",
 
-    paddingHorizontal:14,
+                    lineHeight:1.38,
 
-    paddingVertical:8,
+                    textAlign:"left",
 
-    marginBottom:12,
+                }}
 
-    width:"100%"
+            >
 
-}}
+                {title}
 
->
-
-
-
-<Text
-
-style={{
-
-    fontFamily:"NotoSansDevanagari",
-
-    color:"#4F46E5",
-
-    fontSize:14,
-
-    fontWeight:700
-
-}}
-
->
-
-{title}
-
-</Text>
+            </Text>
 
 
+            {/* PREMIUM DIVIDER */}
 
-</View>
+            <View
 
-);
+                style={{
+
+                    flexDirection:"row",
+
+                    alignItems:"center",
+
+                    marginTop:8,
+
+                }}
+
+            >
+
+                <View
+
+                    style={{
+
+                        width:52,
+
+                        height:3,
+
+                        backgroundColor:"#6D5DFB",
+
+                        borderRadius:2,
+
+                    }}
+
+                />
+
+                <View
+
+                    style={{
+
+                        width:7,
+
+                        height:7,
+
+                        borderRadius:4,
+
+                        backgroundColor:"#A99CFB",
+
+                        marginLeft:5,
+
+                        marginRight:6,
+
+                    }}
+
+                />
+
+                <View
+
+                    style={{
+
+                        flex:1,
+
+                        height:1,
+
+                        backgroundColor:"#E3DFF0",
+
+                    }}
+
+                />
+
+            </View>
+
+        </View>
+
+    );
 
 }
-
-
-
-
-
 
 
 export default function PDFSection({
@@ -109,13 +220,9 @@ export default function PDFSection({
 return (
 
 <View
-
-style={{
-
-    marginBottom:18
-
-}}
-
+    style={{
+        marginBottom:18
+    }}
 >
 
 
@@ -152,7 +259,7 @@ title={section.title}
 
 key={index}
 
-number={question.number || index + 1}
+number={index + 1}
 
 question={question}
 

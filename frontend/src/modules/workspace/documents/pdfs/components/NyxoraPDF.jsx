@@ -39,6 +39,8 @@ import MathDiagram
 
 from "../diagrams/MathDiagram";
 
+import NotesTable
+from "../notes/NotesTable";
 
 function cleanText(text = ""){
 
@@ -137,157 +139,192 @@ return text.match(
 }
 
 
-
-
-
 function AnswerKeyBadge({title}){
 
+    return(
+
+        <View
+            style={{
+                width:"100%",
+                marginTop:2,
+                marginBottom:14,
+                paddingBottom:10,
+            }}
+            wrap={false}
+        >
+
+            {/* SECTION LABEL */}
+
+            <View
+                style={{
+                    flexDirection:"row",
+                    alignItems:"center",
+                    marginBottom:5,
+                }}
+            >
+
+                <View
+                    style={{
+                        width:4,
+                        height:4,
+                        borderRadius:2,
+                        backgroundColor:"#8B7CF6",
+                        marginRight:5,
+                    }}
+                />
+
+                <Text
+                    style={{
+                        fontFamily:"NotoSansDevanagari",
+                        fontSize:7.5,
+                        fontWeight:"bold",
+                        color:"#6D5DFB",
+                        letterSpacing:1.5,
+                    }}
+                >
+                    ANSWER KEY
+                </Text>
+
+            </View>
 
 
-return(
+            {/* MAIN HEADING */}
+
+            <Text
+                style={{
+                    fontFamily:"NotoSansDevanagari",
+                    fontSize:15.5,
+                    fontWeight:"bold",
+                    color:"#24203B",
+                    lineHeight:1.38,
+                    textAlign:"left",
+                }}
+            >
+                {title}
+            </Text>
 
 
+            {/* PREMIUM DIVIDER */}
 
-<View
+            <View
+                style={{
+                    flexDirection:"row",
+                    alignItems:"center",
+                    marginTop:8,
+                }}
+            >
 
-style={{
+                <View
+                    style={{
+                        width:52,
+                        height:3,
+                        backgroundColor:"#6D5DFB",
+                        borderRadius:2,
+                    }}
+                />
 
+                <View
+                    style={{
+                        width:7,
+                        height:7,
+                        borderRadius:4,
+                        backgroundColor:"#A99CFB",
+                        marginLeft:5,
+                        marginRight:6,
+                    }}
+                />
 
+                <View
+                    style={{
+                        flex:1,
+                        height:1,
+                        backgroundColor:"#E3DFF0",
+                    }}
+                />
 
-marginTop:25,
+            </View>
 
+        </View>
 
-
-marginBottom:15,
-
-
-
-paddingVertical:8,
-
-
-
-paddingHorizontal:14,
-
-
-
-borderRadius:12,
-
-
-
-backgroundColor:"#F5F1FF",
-
-
-
-border:"1 solid #D8CCFF"
-
-
-
-}}
-
->
-
-
-
-<Text
-
-style={{
-
-
-
-fontSize:11,
-
-
-
-fontWeight:"bold",
-
-
-
-color:"#6D5DFB"
-
-
-
-}}
-
->
-
-
-
-{title}
-
-
-
-</Text>
-
-
-
-</View>
-
-
-
-);
-
-
+    );
 
 }
 
 
 function AnswerKeySectionBubble({title}){
 
-return(
+    return(
 
-<View
+        <View
+            style={{
+                width:"100%",
+                marginTop:12,
+                marginBottom:10,
+                paddingBottom:8,
+            }}
+            wrap={false}
+            minPresenceAhead={120}
+        >
 
-style={{
+            {/* MAIN HEADING */}
 
-alignSelf:"flex-start",
+            <Text
+                style={{
+                    fontFamily:"NotoSansDevanagari",
+                    fontSize:15.5,
+                    fontWeight:"bold",
+                    color:"#24203B",
+                    lineHeight:1.38,
+                    textAlign:"left",
+                }}
+            >
+                {cleanText(title)}
+            </Text>
 
-backgroundColor:"#F5F1FF",
 
-borderWidth:1,
+            {/* PREMIUM DIVIDER */}
 
-borderColor:"#D8CCFF",
+            <View
+                style={{
+                    flexDirection:"row",
+                    alignItems:"center",
+                    marginTop:8,
+                }}
+            >
 
-borderRadius:11,
+                <View
+                    style={{
+                        width:52,
+                        height:3,
+                        backgroundColor:"#6D5DFB",
+                        borderRadius:2,
+                    }}
+                />
 
-paddingVertical:6,
+                <View
+                    style={{
+                        width:7,
+                        height:7,
+                        borderRadius:4,
+                        backgroundColor:"#A99CFB",
+                        marginLeft:5,
+                        marginRight:6,
+                    }}
+                />
 
-paddingHorizontal:10,
+                <View
+                    style={{
+                        flex:1,
+                        height:1,
+                        backgroundColor:"#E3DFF0",
+                    }}
+                />
 
-marginTop:4,
+            </View>
 
-marginBottom:8
+        </View>
 
-}}
-
-wrap={false}
-
-minPresenceAhead={120}
-
->
-
-<Text
-
-style={{
-
-fontFamily:"NotoSansDevanagari",
-
-fontSize:10,
-
-fontWeight:"bold",
-
-color:"#4F46E5"
-
-}}
-
->
-
-{cleanText(title)}
-
-</Text>
-
-</View>
-
-);
+    );
 
 }
 
@@ -295,59 +332,112 @@ color:"#4F46E5"
 
 function AnswerKeyLabelBubble({text}){
 
-return(
+    return(
 
-<View
+        <View
+            style={{
+                width:"100%",
+                marginTop:12,
+                marginBottom:8,
+                paddingBottom:6,
+            }}
+            wrap={false}
+        >
 
-style={{
+            {/* SUBSECTION LABEL */}
 
-alignSelf:"flex-start",
+            <View
+                style={{
+                    flexDirection:"row",
+                    alignItems:"center",
+                    marginBottom:4,
+                }}
+            >
 
-backgroundColor:"#F8F5FF",
+                <View
+                    style={{
+                        width:3.5,
+                        height:3.5,
+                        borderRadius:2,
+                        backgroundColor:"#9B8CF7",
+                        marginRight:5,
+                    }}
+                />
 
-borderWidth:1,
+                <Text
+                    style={{
+                        fontFamily:"NotoSansDevanagari",
+                        fontSize:6.8,
+                        fontWeight:"bold",
+                        color:"#8174D4",
+                        letterSpacing:1.2,
+                    }}
+                >
+                    SUBSECTION
+                </Text>
 
-borderColor:"#E0D7FF",
+            </View>
 
-borderRadius:8,
 
-paddingVertical:4,
+            {/* SUBHEADING */}
 
-paddingHorizontal:8,
+            <Text
+                style={{
+                    fontFamily:"NotoSansDevanagari",
+                    fontSize:11.5,
+                    fontWeight:"bold",
+                    color:"#373052",
+                    lineHeight:1.35,
+                    textAlign:"left",
+                }}
+            >
+                {renderMixedMathText(cleanText(text))}
+            </Text>
 
-marginTop:5,
 
-marginBottom:4
+            {/* PREMIUM DIVIDER */}
 
-}}
+            <View
+                style={{
+                    flexDirection:"row",
+                    alignItems:"center",
+                    marginTop:6,
+                }}
+            >
 
-wrap={false}
+                <View
+                    style={{
+                        width:30,
+                        height:2,
+                        backgroundColor:"#8172F2",
+                        borderRadius:2,
+                    }}
+                />
 
->
+                <View
+                    style={{
+                        width:5,
+                        height:5,
+                        borderRadius:3,
+                        backgroundColor:"#B0A5FA",
+                        marginLeft:4,
+                        marginRight:5,
+                    }}
+                />
 
-<Text
+                <View
+                    style={{
+                        flex:1,
+                        height:1,
+                        backgroundColor:"#E9E5F2",
+                    }}
+                />
 
-style={{
+            </View>
 
-fontFamily:"NotoSansDevanagari",
+        </View>
 
-fontSize:8.5,
-
-fontWeight:"bold",
-
-color:"#5B4DE8"
-
-}}
-
->
-
-{cleanText(text)}
-
-</Text>
-
-</View>
-
-);
+    );
 
 }
 
@@ -1139,15 +1229,17 @@ matches[index + 1].index
 rest.length;
 
 parts.push({
+    label:entry.label,
 
-label:entry.label,
-
-content:cleanAnswerKeyText(
-
-rest.slice(contentStart,contentEnd)
-
-)
-
+    content:
+        cleanAnswerKeyText(
+            rest.slice(contentStart,contentEnd)
+        )
+        .replace(
+            /^\s*\*+\s*$/gm,
+            ""
+        )
+        .trim()
 });
 
 });
@@ -1217,7 +1309,7 @@ marginBottom:7
 >
 
 <View
-
+wrap={false}
 style={{
 
 flexDirection:"row",
@@ -1410,7 +1502,7 @@ part.content
 
 ?
 
-": " + part.content
+": " + part.content.replace(/^\*+\s*/u, "").trim()
 
 :
 
@@ -1702,7 +1794,42 @@ line
 
 }
 
+function parseNoteTable(line = "") {
 
+    const value = String(line || "").trim();
+
+    if (!value.includes("|")) {
+        return null;
+    }
+
+    const cells = value
+        .split("|")
+        .map(cell => cleanNoteText(cell.trim()))
+        .filter(Boolean);
+
+    if (cells.length < 2) {
+        return null;
+    }
+
+    // Ignore Markdown separator rows such as:
+    // |---|---|---|
+    const isSeparatorRow =
+        cells.every(
+            cell => /^:?-{2,}:?$/.test(cell)
+        );
+
+    if (isSeparatorRow) {
+        return {
+            separator: true,
+            cells
+        };
+    }
+
+    return {
+        separator: false,
+        cells
+    };
+}
 
 function parseNotes(content="", orderedDiagrams=[]){
 
@@ -1755,17 +1882,17 @@ currentBullets=[];
 
 
 
-lines.forEach(rawLine=>{
+for(let lineIndex = 0; lineIndex < lines.length; lineIndex++){
 
-let line = rawLine.trim();
+    const rawLine = lines[lineIndex];
 
+    let line = rawLine.trim();
 
+    if(!line){
 
-if(!line){
+        continue;
 
-return;
-
-}
+    }
 
 
 
@@ -1805,7 +1932,7 @@ diagram:diagramEntry.diagram
 
 }
 
-return;
+continue;
 
 }
 
@@ -1817,7 +1944,7 @@ if(
 
 ){
 
-return;
+continue;
 
 }
 
@@ -1835,7 +1962,7 @@ text:getNoteHeading(line)
 
 });
 
-return;
+continue;
 
 }
 
@@ -1853,11 +1980,62 @@ text:getNoteSubheading(line)
 
 });
 
-return;
+continue;
 
 }
 
+const tableStart = parseNoteTable(line);
 
+if(
+    tableStart &&
+    !tableStart.separator
+){
+
+    flushBullets();
+
+    const headers =
+        tableStart.cells.slice(0, 4);
+
+    const rows = [];
+
+    let rowIndex = lineIndex + 1;
+
+    while(
+        rowIndex < lines.length
+        
+    ){
+
+        const parsedRow =
+            parseNoteTable(
+                lines[rowIndex]
+            );
+
+        if(!parsedRow){
+            break;
+        }
+
+        if(parsedRow.separator){
+            rowIndex++;
+            continue;
+        }
+
+        rows.push(
+            parsedRow.cells.slice(0, 4)
+        );
+
+        rowIndex++;
+    }
+
+    blocks.push({
+        type:"table",
+        headers,
+        rows
+    });
+
+    lineIndex = rowIndex - 1;
+
+    continue;
+}
 
 const inlineSubheading = line.match(
 
@@ -1907,7 +2085,7 @@ items:[inlineText]
 
 
 
-return;
+continue;
 
 }
 
@@ -1923,7 +2101,7 @@ line = cleanNoteText(line);
 
 if(!line){
 
-return;
+continue;
 
 }
 
@@ -1939,7 +2117,7 @@ currentBullets.push(line);
 
 }
 
-return;
+continue;
 
 }
 
@@ -1951,7 +2129,7 @@ currentBullets.push(line);
 
 }
 
-});
+};
 
 
 
@@ -1993,6 +2171,8 @@ marginBottom:10,
 
 alignItems:"center"
 
+
+
 }}
 
 wrap={false}
@@ -2011,67 +2191,161 @@ wrap={false}
 
 }
 
+if(block.type==="table"){
+    return(
+        <NotesTable
+            key={"note-table-"+index}
+            title={block.title || ""}
+            headers={block.headers || []}
+            rows={block.rows || []}
+        />
+    );
+}
 
 
 if(block.type==="subheading"){
 
-return(
+    return(
 
-<View
+        <View
+            key={"note-subheading-"+index}
 
-key={"note-subheading-"+index}
+            style={{
+                width:"100%",
 
-style={{
+                marginTop:12,
 
-alignSelf:"flex-start",
+                marginBottom:8,
 
-backgroundColor:"#F5F1FF",
+                paddingBottom:6,
+            }}
 
-borderWidth:1,
+            wrap={false}
+        >
 
-borderColor:"#D8CCFF",
+            {/* SUBSECTION LABEL */}
 
-borderRadius:10,
+            <View
+                style={{
+                    flexDirection:"row",
 
-paddingHorizontal:10,
+                    alignItems:"center",
 
-paddingVertical:5,
+                    marginBottom:4,
+                }}
+            >
 
-marginTop:6,
+                <View
+                    style={{
+                        width:3.5,
 
-marginBottom:6,
+                        height:3.5,
 
-maxWidth:"100%"
+                        borderRadius:2,
 
-}}
+                        backgroundColor:"#9B8CF7",
 
-wrap={false}
+                        marginRight:5,
+                    }}
+                />
 
->
+                <Text
+                    style={{
+                        fontFamily:
+                            "NotoSansDevanagari",
 
-<Text
+                        fontSize:6.8,
 
-style={{
+                        fontWeight:"bold",
 
-fontFamily:"NotoSansDevanagari",
+                        color:"#8174D4",
 
-color:"#4F46E5",
+                        letterSpacing:1.2,
+                    }}
+                >
+                    SUBSECTION
+                </Text>
 
-fontSize:10,
+            </View>
 
-fontWeight:"bold"
 
-}}
+            {/* SUBHEADING */}
 
->
+            <Text
+                style={{
+                    fontFamily:
+                        "NotoSansDevanagari",
 
-{block.text}
+                    fontSize:11.5,
 
-</Text>
+                    fontWeight:"bold",
 
-</View>
+                    color:"#373052",
 
-);
+                    lineHeight:1.35,
+
+                    textAlign:"left",
+                }}
+            >
+                {block.text}
+            </Text>
+
+
+            {/* PREMIUM DIVIDER */}
+
+            <View
+                style={{
+                    flexDirection:"row",
+
+                    alignItems:"center",
+
+                    marginTop:6,
+                }}
+            >
+
+                <View
+                    style={{
+                        width:30,
+
+                        height:2,
+
+                        backgroundColor:"#8172F2",
+
+                        borderRadius:2,
+                    }}
+                />
+
+                <View
+                    style={{
+                        width:5,
+
+                        height:5,
+
+                        borderRadius:3,
+
+                        backgroundColor:"#B0A5FA",
+
+                        marginLeft:4,
+
+                        marginRight:5,
+                    }}
+                />
+
+                <View
+                    style={{
+                        flex:1,
+
+                        height:1,
+
+                        backgroundColor:"#E9E5F2",
+                    }}
+                />
+
+            </View>
+
+        </View>
+
+    );
 
 }
 
@@ -2079,61 +2353,147 @@ fontWeight:"bold"
 
 if(block.type==="heading"){
 
-return(
+    return(
 
-<View
+        <View
+            key={"note-heading-"+index}
 
-key={"note-heading-"+index}
+            style={{
+                width:"100%",
 
-style={{
+                marginTop:index===0?2:20,
 
-backgroundColor:"#F5F1FF",
+                marginBottom:14,
 
-borderWidth:1,
+                paddingBottom:10,
+            }}
 
-borderColor:"#D8CCFF",
+            wrap={false}
+        >
 
-borderRadius:14,
+            {/* SECTION LABEL */}
 
-paddingHorizontal:14,
+            <View
+                style={{
+                    flexDirection:"row",
 
-paddingVertical:8,
+                    alignItems:"center",
 
-marginTop:index===0?0:14,
+                    marginBottom:5,
+                }}
+            >
 
-marginBottom:8,
+                <View
+                    style={{
+                        width:4,
 
-width:"100%"
+                        height:4,
 
-}}
+                        borderRadius:2,
 
-wrap={false}
+                        backgroundColor:"#8B7CF6",
 
->
+                        marginRight:5,
+                    }}
+                />
 
-<Text
+                <Text
+                    style={{
+                        fontFamily:
+                            "NotoSansDevanagari",
 
-style={{
+                        fontSize:7.5,
 
-fontFamily:"NotoSansDevanagari",
+                        fontWeight:"bold",
 
-color:"#4F46E5",
+                        color:"#6D5DFB",
 
-fontSize:12,
+                        letterSpacing:1.5,
+                    }}
+                >
+                    SECTION
+                </Text>
 
-fontWeight:"bold"
+            </View>
 
-}}
 
->
+            {/* MAIN HEADING */}
 
-{block.text}
+            <Text
+                style={{
+                    fontFamily:
+                        "NotoSansDevanagari",
 
-</Text>
+                    fontSize:15.5,
 
-</View>
+                    fontWeight:"bold",
 
-);
+                    color:"#24203B",
+
+                    lineHeight:1.38,
+
+                    textAlign:"left",
+                }}
+            >
+                {block.text}
+            </Text>
+
+
+            {/* PREMIUM DIVIDER */}
+
+            <View
+                style={{
+                    flexDirection:"row",
+
+                    alignItems:"center",
+
+                    marginTop:8,
+                }}
+            >
+
+                <View
+                    style={{
+                        width:52,
+
+                        height:3,
+
+                        backgroundColor:"#6D5DFB",
+
+                        borderRadius:2,
+                    }}
+                />
+
+                <View
+                    style={{
+                        width:7,
+
+                        height:7,
+
+                        borderRadius:4,
+
+                        backgroundColor:"#A99CFB",
+
+                        marginLeft:5,
+
+                        marginRight:6,
+                    }}
+                />
+
+                <View
+                    style={{
+                        flex:1,
+
+                        height:1,
+
+                        backgroundColor:"#E3DFF0",
+                    }}
+                />
+
+            </View>
+
+        </View>
+
+    );
 
 }
 
@@ -5247,24 +5607,148 @@ String(data.type || "")
 );
 
 
+const parsedNoteBlocks = isNotes
+
+    ?
+
+    parseNotes(
+
+        parsed.diagramData?.cleanedContent || data.content || "",
+
+        parsed.diagramData?.orderedDiagrams || []
+
+    )
+
+    :
+
+    [];
+
+    const quickRevisionRows = [];
+
+parsedNoteBlocks.forEach(block => {
+
+    if(
+        quickRevisionRows.length >= 6
+    ){
+        return;
+    }
+
+
+    if(
+        block?.type === "heading"
+    ){
+
+        const heading =
+            String(
+                block.text || ""
+            ).trim();
+
+
+        if(heading){
+
+            quickRevisionRows.push([
+
+                heading,
+
+                "Important concept to revise"
+
+            ]);
+
+        }
+
+    }
+
+
+    if(
+        block?.type === "bullets" &&
+        Array.isArray(block.items)
+    ){
+
+        block.items.forEach(item => {
+
+            if(
+                quickRevisionRows.length >= 6
+            ){
+                return;
+            }
+
+
+            const point =
+                String(
+                    item || ""
+                ).trim();
+
+
+            if(point){
+
+                quickRevisionRows.push([
+
+                    point,
+
+                    "Key point"
+
+                ]);
+
+            }
+
+        });
+
+    }
+
+});
+
+
+if(
+    quickRevisionRows.length === 0
+){
+
+    quickRevisionRows.push([
+
+        "Key Concepts",
+
+        "Review the important points from the notes"
+
+    ]);
+
+}
+
+
+const quickRevisionTable = isNotes
+    ? {
+
+        type:"table",
+
+        title:"Quick Revision",
+
+        headers:[
+            "Topic / Point",
+            "Quick Revision"
+        ],
+
+        rows:quickRevisionRows
+
+    }
+
+    :
+
+    null;
+
+
 
 const noteBlocks = isNotes
 
 ?
 
-parseNotes(
+[
 
-parsed.diagramData?.cleanedContent || data.content || "",
+    ...parsedNoteBlocks,
+    quickRevisionTable
 
-parsed.diagramData?.orderedDiagrams || []
-
-)
+]
 
 :
 
 [];
-
-
 
 const noteChapterHeading =
 
@@ -5342,6 +5826,7 @@ String(block.text || "").trim()
 
 "";
 
+const finalNoteBlocks = noteBlocks;
 
 
 const metadataClass =
@@ -5749,7 +6234,7 @@ data={normalizedMetadata}
 
 <NotesContent
 
-blocks={noteBlocks}
+blocks={finalNoteBlocks}
 
 />
 

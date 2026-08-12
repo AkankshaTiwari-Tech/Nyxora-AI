@@ -227,7 +227,7 @@ Make it clear and student friendly.
             "AI Generated Notes",
 
           type:
-            "Study Material",
+            "Notes",
 
           subject:
             form.subject,
@@ -287,7 +287,7 @@ Make it clear and student friendly.
             "Study Material",
 
           type:
-            "Study Material",
+            "Notes",
 
           subject:
             form.subject,

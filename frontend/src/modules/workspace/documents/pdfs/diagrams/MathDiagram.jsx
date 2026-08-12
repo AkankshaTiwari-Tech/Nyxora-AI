@@ -2354,6 +2354,113 @@ function normalizeDiagramLabelText(text = "") {
     return "";
 }
 
+
+function shouldSuppressUniversalLabel(label, text = "") {
+    const value = String(text || "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    if (!value) {
+        return true;
+    }
+
+    const attachedType = String(
+        label?.attachedTo?.type ??
+        label?.type ??
+        label?.kind ??
+        label?.role ??
+        label?.category ??
+        ""
+    ).toLowerCase();
+
+    const metadata = [
+        label?.id,
+        label?.name,
+        label?.key,
+        label?.attachedTo?.id,
+        label?.attachedTo?.name,
+    ]
+        .filter(
+            item =>
+                item !== undefined &&
+                item !== null
+        )
+        .map(item => String(item).toLowerCase())
+        .join(" ");
+
+    /*
+     * Renderer policy:
+     * - Never render angle values/names.
+     * - Never render angle/dimension metadata.
+     * - Never render measurement values such as "5 cm".
+     * - Never render standalone numeric dimension values.
+     *
+     * Point identifiers such as A, B, C remain unaffected.
+     */
+    const isAngleLabel =
+        attachedType.includes("angle") ||
+        metadata.includes("angle") ||
+        /^\s*(?:∠|angle\b)/iu.test(value) ||
+        /^\s*\d+(?:\.\d+)?\s*°\s*$/u.test(value);
+
+    if (isAngleLabel) {
+        return true;
+    }
+
+    const isDimensionLabel =
+        attachedType.includes("dimension") ||
+        attachedType.includes("measurement") ||
+        attachedType.includes("measure") ||
+        metadata.includes("dimension") ||
+        metadata.includes("measurement") ||
+        /\b(?:dimension|measurement)\b/iu.test(value);
+
+    if (isDimensionLabel) {
+        return true;
+    }
+
+    /*
+     * Explicitly suppress common measurement labels.
+     * This covers values such as:
+     *   5 cm
+     *   12.5 cm
+     *   5cm
+     */
+    if (
+        /^\s*(?:\d+(?:\.\d+)?)\s*cm\s*$/iu.test(
+            value
+        )
+    ) {
+        return true;
+    }
+
+    /*
+     * Suppress dimension-style equations/annotations:
+     *   AB = 5 cm
+     *   5 cm
+     *   12
+     *
+     * Single alphabetic point labels are intentionally kept.
+     */
+    if (
+        /\b\d+(?:\.\d+)?\s*cm\b/iu.test(
+            value
+        )
+    ) {
+        return true;
+    }
+
+    if (
+        /^\s*\d+(?:\.\d+)?\s*$/u.test(
+            value
+        )
+    ) {
+        return true;
+    }
+
+    return false;
+}
+
 function pointIdentifier(point, index) {
     if (!point) {
         return String(index);
@@ -3899,60 +4006,13 @@ function UniversalVectorScene({
         }
     );
 
-    arcs.forEach(
-        (arc, index) => {
-            const d =
-                buildSceneArcPath({
-                    cx: finite(
-                        arc?.cx
-                    ),
-                    cy: finite(
-                        arc?.cy
-                    ),
-                    radius: Math.max(
-                        0.1,
-                        finite(
-                            arc?.radius,
-                            1
-                        )
-                    ),
-                    startAngle: finite(
-                        arc?.startAngle
-                    ),
-                    endAngle: finite(
-                        arc?.endAngle
-                    ),
-                    minX,
-                    maxX,
-                    minY,
-                    maxY,
-                    width: safeWidth,
-                    height: safeHeight,
-                    padding,
-                });
-
-            const style =
-                normalizeSceneStyle(
-                    arc?.style
-                );
-
-            if (d) {
-                elements.push(
-                    <Path
-                        key={`scene-arc-${index}`}
-                        d={d}
-                        fill="none"
-                        stroke={style.stroke}
-                        strokeWidth={
-                            style.strokeWidth
-                        }
-                        opacity={style.opacity}
-                    />
-                );
-            }
-        }
-    );
-
+    /*
+     * JSON renderer policy:
+     * Do not render explicit arc objects.
+     *
+     * This prevents AI-generated angle arcs/marks from appearing
+     * even when the JSON scene still contains an `arcs` array.
+     */
     curves.forEach(
         (curve, index) => {
             const d =
@@ -4037,7 +4097,12 @@ function UniversalVectorScene({
                  * Empty descriptive labels are deliberately
                  * suppressed. Geometry itself remains untouched.
                  */
-                if (!normalizedText) {
+                if (
+                    shouldSuppressUniversalLabel(
+                        label,
+                        normalizedText
+                    )
+                ) {
                     return;
                 }
 
@@ -4083,22 +4148,10 @@ function UniversalVectorScene({
                 }
 
                 /*
-                 * Standalone angle labels must not be allowed
-                 * to use arbitrary AI x/y coordinates when the
-                 * semantic angle renderer already owns them.
+                 * Angle, measurement, and dimension labels have
+                 * already been filtered by the renderer policy above.
+                 * Only genuine diagram identifiers/labels continue.
                  */
-                const isAngleValue =
-                    /^\s*\d+(?:\.\d+)?\s*°\s*$/u.test(
-                        normalizedText
-                    );
-
-                if (
-                    isAngleValue &&
-                    angles.length > 0 &&
-                    !attachedTo
-                ) {
-                    return;
-                }
 
                 if (!mapped) {
                     if (
@@ -4142,67 +4195,9 @@ function UniversalVectorScene({
         );
     }
 
-    dimensions.forEach(
-        (dimension, index) => {
-            const a = mapPoint({
-                x: finite(
-                    dimension?.x1
-                ),
-                y: finite(
-                    dimension?.y1
-                ),
-            });
-
-            const b = mapPoint({
-                x: finite(
-                    dimension?.x2
-                ),
-                y: finite(
-                    dimension?.y2
-                ),
-            });
-
-            elements.push(
-                renderSceneArrow(
-                    a.x,
-                    a.y,
-                    b.x,
-                    b.y,
-                    dimension?.style,
-                    true,
-                    `scene-dimension-${index}`
-                )
-            );
-
-            if (
-                dimension?.label
-            ) {
-                elements.push(
-                    <Text
-                        key={`scene-dimension-label-${index}`}
-                        x={
-                            (a.x + b.x) /
-                            2
-                        }
-                        y={
-                            (a.y + b.y) /
-                                2 -
-                            finite(
-                                dimension?.offset,
-                                8
-                            )
-                        }
-                        fontSize={9}
-                        fill="#111827"
-                    >
-                        {
-                            dimension.label
-                        }
-                    </Text>
-                );
-            }
-        }
-    );
+    // Maths diagrams do not render automatic dimensions.
+// Measurement arrows, dimension lines, and dimension labels
+// are intentionally disabled.
 
     return (
         <Svg
