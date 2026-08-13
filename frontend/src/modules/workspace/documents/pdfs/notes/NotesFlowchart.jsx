@@ -61,7 +61,6 @@ function SectionLabel({
     return (
 
         <View
-            wrap={false}
             style={{
                 flexDirection:"row",
                 alignItems:"center",
@@ -81,6 +80,7 @@ function SectionLabel({
 
             <Text
                 style={{
+                    fontFamily:"Helvetica",
                     fontSize:7.5,
                     fontWeight:"bold",
                     color:"#6D5DFB",
@@ -88,7 +88,7 @@ function SectionLabel({
                     lineHeight:9
                 }}
             >
-                {children}
+                {String(children || "")}
             </Text>
 
         </View>
@@ -156,6 +156,17 @@ function AccentLine({
 }
 
 
+function getFlowFont(text=""){
+
+    return /[\u0900-\u097F]/u.test(
+        String(text || "")
+    )
+        ? "NotoSansDevanagari"
+        : "Helvetica";
+
+}
+
+
 /*
     FLOW STEP
 
@@ -170,6 +181,8 @@ function FlowStep({
     text,
     color
 }){
+
+    const displayText = String(text || "").trim();
 
     const width = 168;
 
@@ -189,22 +202,28 @@ function FlowStep({
                 alignItems:"center",
                 paddingLeft:12,
                 paddingRight:12,
-                zIndex:10
+                paddingTop:8,
+                paddingBottom:7,
+                backgroundColor:"#FCFCFE",
+                borderWidth:1,
+                borderColor:"#E1E4ED",
+                borderRadius:9
             }}
         >
 
             <Text
                 style={{
-                    fontSize:10.5,
+                    fontFamily:getFlowFont(text),
+                    fontSize:9.5,
                     fontWeight:"bold",
                     color:"#252A35",
-                    lineHeight:13,
+                    lineHeight:12.5,
                     textAlign:"center",
                     width:width - 24,
-                    maxWidth:width - 24
+                    alignSelf:"center"
                 }}
             >
-                {String(text || "").trim()}
+                {displayText}
             </Text>
 
             <AccentLine
@@ -595,8 +614,8 @@ export default function NotesFlowchart({
 
     const rowGap =
         safeSteps.length >= 5
-            ? 70
-            : 78;
+            ? 82
+            : 88;
 
     const resultGap = 48;
 
@@ -653,7 +672,7 @@ export default function NotesFlowchart({
             wrap={false}
             style={{
                 width:"100%",
-                marginTop:8,
+                marginTop:2,
                 marginBottom:12
             }}
         >
@@ -668,9 +687,9 @@ export default function NotesFlowchart({
 
 
             <Text
-                wrap={false}
                 style={{
-                    marginTop:4,
+                    fontFamily:getFlowFont(title),
+                    marginTop:3,
                     fontSize:15,
                     fontWeight:"bold",
                     color:"#24203B",
@@ -691,8 +710,8 @@ export default function NotesFlowchart({
                     width:"100%",
                     flexDirection:"row",
                     alignItems:"center",
-                    marginTop:8,
-                    marginBottom:10
+                    marginTop:6,
+                    marginBottom:8
                 }}
             >
 
@@ -765,6 +784,62 @@ export default function NotesFlowchart({
                     />
 
 
+                    {/* FLOW ARROWHEADS */}
+
+                    {[
+                        spineStartY,
+                        ...positions.map(
+                            position => position.y
+                        )
+                    ].map(
+                        (
+                            pointY,
+                            index
+                        ) => {
+
+                            const nextY =
+                                index <
+                                positions.length
+                                    ?
+                                    positions[index]?.y
+                                    :
+                                    resultY;
+
+                            if(
+                                typeof nextY !== "number"
+                            ){
+                                return null;
+                            }
+
+                            const arrowY =
+                                pointY +
+                                (
+                                    nextY -
+                                    pointY
+                                ) / 2;
+
+                            return (
+                                <Path
+                                    key={
+                                        `arrow-${index}`
+                                    }
+                                    d={
+                                        `M ${spineX - 4} ${arrowY - 3}
+                                         L ${spineX} ${arrowY + 3}
+                                         L ${spineX + 4} ${arrowY - 3}`
+                                    }
+                                    fill="none"
+                                    stroke="#64748B"
+                                    strokeWidth={1.8}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                            );
+
+                        }
+                    )}
+
+
                     {/* START NODE */}
 
                     <Circle
@@ -831,21 +906,28 @@ export default function NotesFlowchart({
                 {/* ========================= */}
 
                 <View
-                    wrap={false}
                     style={{
                         position:"absolute",
-                        left:
-                            spineX - 82,
-                        top:
-                            spineStartY - 6,
-                        width:70,
-                        height:14
+                        left:spineX - 78,
+                        top:spineStartY - 8,
+                        width:66,
+                        height:18,
+                        justifyContent:"center"
                     }}
                 >
 
-                    <SectionLabel>
+                    <Text
+                        style={{
+                            fontFamily:"Helvetica",
+                            fontSize:7.5,
+                            fontWeight:"bold",
+                            color:"#6D5DFB",
+                            letterSpacing:1.4,
+                            lineHeight:9
+                        }}
+                    >
                         START
-                    </SectionLabel>
+                    </Text>
 
                 </View>
 
@@ -922,21 +1004,28 @@ export default function NotesFlowchart({
                 {/* ========================= */}
 
                 <View
-                    wrap={false}
                     style={{
                         position:"absolute",
-                        left:
-                            spineX + 14,
-                        top:
-                            resultY - 6,
-                        width:110,
-                        height:14
+                        left:spineX + 14,
+                        top:resultY - 8,
+                        width:122,
+                        height:18,
+                        justifyContent:"center"
                     }}
                 >
 
-                    <SectionLabel>
+                    <Text
+                        style={{
+                            fontFamily:"Helvetica",
+                            fontSize:7.5,
+                            fontWeight:"bold",
+                            color:"#6D5DFB",
+                            letterSpacing:1.2,
+                            lineHeight:9
+                        }}
+                    >
                         END / RESULT
-                    </SectionLabel>
+                    </Text>
 
                 </View>
 

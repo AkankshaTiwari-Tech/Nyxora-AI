@@ -12,6 +12,9 @@ from "../renderer/MathExpression";
 import MathDiagram
 from "../diagrams/MathDiagram";
 
+import NotesTable
+from "../notes/NotesTable";
+
 import pdfTheme
 from "../styles/pdfTheme";
 
@@ -1027,6 +1030,127 @@ function HindiMCQOptions({
 
 
 
+
+function ProgrammingAnswerBadge(){
+
+  return (
+
+    <View
+      style={{
+        width:"100%",
+        marginTop:10,
+        marginBottom:8,
+        paddingBottom:6
+      }}
+      wrap={false}
+    >
+
+      <View
+        style={{
+          flexDirection:"row",
+          alignItems:"center",
+          marginBottom:4
+        }}
+      >
+
+        <View
+          style={{
+            width:3.5,
+            height:3.5,
+            borderRadius:2,
+            backgroundColor:"#9B8CF7",
+            marginRight:5
+          }}
+        />
+
+        <Text
+          style={{
+            fontFamily:"NotoSansDevanagari",
+            fontSize:6.8,
+            fontWeight:"bold",
+            color:"#8174D4",
+            letterSpacing:1.2
+          }}
+        >
+          ANSWER
+        </Text>
+
+      </View>
+
+      <View
+        style={{
+          flexDirection:"row",
+          alignItems:"center",
+          marginTop:3
+        }}
+      >
+
+        <View
+          style={{
+            width:30,
+            height:2,
+            backgroundColor:"#8172F2",
+            borderRadius:2
+          }}
+        />
+
+        <View
+          style={{
+            width:5,
+            height:5,
+            borderRadius:3,
+            backgroundColor:"#B0A5FA",
+            marginLeft:4,
+            marginRight:5
+          }}
+        />
+
+        <View
+          style={{
+            flex:1,
+            height:1,
+            backgroundColor:"#E9E5F2"
+          }}
+        />
+
+      </View>
+
+    </View>
+
+  );
+
+}
+
+
+
+function splitProgrammingAnswerPoints(
+  text=""
+){
+
+  return String(text || "")
+    .split(/\r?\n/)
+    .map(
+      line =>
+        cleanAnswerKeyText(
+          String(line || "")
+            .replace(
+              /^\s*(?:[-*•]|\d+[.)])\s+/,
+              ""
+            )
+        )
+        .trim()
+    )
+    .filter(
+      line =>
+        line &&
+        !/^[._*=-]+$/.test(line)
+    );
+
+}
+
+
+
+
 export default function PDFQuestion({
 
 
@@ -1450,21 +1574,150 @@ const resolvedNumber =
 
 
 
+
         </Text>
-
-
-
-      </View>
-
-
+        </View>
 
       {
-
-        !isInstruction &&
-
-        question.diagram &&
-
+        question.isProgrammingTest === true &&
         (
+          Boolean(
+            String(
+              question.answerText || ""
+            ).trim()
+          ) ||
+          (
+            Array.isArray(
+              question.blocks
+            ) &&
+            question.blocks.some(
+              block =>
+                block &&
+                block.type === "table"
+            )
+          )
+        ) &&
+        (
+          <View
+            style={{
+              width:"100%",
+              paddingLeft:30,
+              paddingRight:2,
+              marginBottom:5
+            }}
+          >
+
+            <ProgrammingAnswerBadge />
+
+            {
+              splitProgrammingAnswerPoints(
+                question.answerText || ""
+              ).map(
+                (point, pointIndex) => (
+
+                  <View
+                    key={
+                      "programming-answer-point-" +
+                      pointIndex
+                    }
+                    style={{
+                      width:"100%",
+                      flexDirection:"row",
+                      alignItems:"flex-start",
+                      marginBottom:6
+                    }}
+                  >
+
+                    <Text
+                      style={{
+                        fontFamily:"NotoSans",
+                        fontSize:9.5,
+                        lineHeight:1.45,
+                        color:"#6D5DFB",
+                        width:14,
+                        marginTop:1
+                      }}
+                    >
+                      {"•"}
+                    </Text>
+
+                    <Text
+                      style={{
+                        flex:1,
+                        fontFamily:"NotoSansDevanagari",
+                        fontSize:9.8,
+                        lineHeight:1.45,
+                        color:"#111827"
+                      }}
+                    >
+                      {
+                        renderMixedMathText(
+                          cleanAnswerKeyText(
+                            point
+                          )
+                        )
+                      }
+                    </Text>
+
+                  </View>
+
+                )
+              )
+            }
+
+          </View>
+        )
+      }
+
+      {Array.isArray(question.blocks) &&
+  question.blocks.map((block, index) => {
+
+    if (block.type === "table") {
+      return (
+        <NotesTable
+          key={"table-" + index}
+          title={block.title || ""}
+          headers={Array.isArray(block.headers) ? block.headers : []}
+          rows={Array.isArray(block.rows) ? block.rows : []}
+        />
+      );
+    }
+
+    if (block.type !== "code") return null;
+
+    return (
+      <View
+        key={"code-" + index}
+        style={{
+          backgroundColor:"#F7F7FA",
+          border:"1 solid #D7D7E8",
+          borderRadius:8,
+          padding:10,
+          marginTop:8,
+          marginBottom:10
+        }}
+      >
+        <Text
+          style={{
+            fontFamily:"NotoSans",
+            fontSize:9,
+            lineHeight:1.45,
+            color:"#111827"
+          }}
+          preserveWhitespace
+        >
+          {block.content}
+        </Text>
+      </View>
+    );
+
+  })}
+    
+    {
+  !isInstruction &&
+  question.diagram &&
+
+    (
 
           <View
     style={{

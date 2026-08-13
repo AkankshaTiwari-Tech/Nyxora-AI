@@ -42,6 +42,9 @@ from "../diagrams/MathDiagram";
 import NotesTable
 from "../notes/NotesTable";
 
+import NotesFlowchart
+from "../notes/NotesFlowchart";
+
 function cleanText(text = ""){
 
 
@@ -2518,68 +2521,39 @@ marginBottom:4
 block.items.map((item,itemIndex)=>(
 
 <View
-
-key={"note-item-"+index+"-"+itemIndex}
-
-style={{
-
-flexDirection:"row",
-
-alignItems:"flex-start",
-
-marginBottom:5,
-
-paddingLeft:2
-
-}}
-
+  key={"note-item-"+index+"-"+itemIndex}
+  style={{
+    flexDirection:"row",
+    alignItems:"flex-start",
+    marginBottom:5,
+    paddingLeft:2
+  }}
 >
 
-<Text
+  <Text
+    style={{
+      fontFamily:"NotoSansDevanagari",
+      fontSize:18,
+      lineHeight:1.35,
+      color:"#6D5DFB",
+      width:18,
+      marginTop:1
+    }}
+  >
+    {"•"}
+  </Text>
 
-style={{
-
-fontFamily:"NotoSansDevanagari",
-
-fontSize:18,
-
-lineHeight:1.35,
-
-color:"#6D5DFB",
-
-width:18,
-
-marginTop:1
-
-}}
-
->
-
-{"•"}
-
-</Text>
-
-<Text
-
-style={{
-
-fontFamily:"NotoSansDevanagari",
-
-fontSize:10,
-
-lineHeight:1.35,
-
-color:"#111827",
-
-flex:1
-
-}}
-
->
-
-{renderMixedMathText(item)}
-
-</Text>
+  <Text
+    style={{
+      fontFamily:"NotoSansDevanagari",
+      fontSize:10,
+      lineHeight:1.35,
+      color:"#111827",
+      flex:1
+    }}
+  >
+    {renderMixedMathText(item)}
+  </Text>
 
 </View>
 
@@ -3048,21 +3022,14 @@ lineHeight:9
 
 
 <Text
-
-style={{
-
-fontFamily:"NotoSansDevanagari",
-
-fontSize:9.5,
-
-lineHeight:1.35,
-
-color:"#111827",
-
-flex:1
-
-}}
-
+  style={{
+    fontFamily:"NotoSansDevanagari",
+    fontSize:9,
+    lineHeight:1.45,
+    color:"#111827",
+    flex:1
+  }}
+  preserveWhitespace
 >
 
 {text}
@@ -4638,7 +4605,267 @@ cleanedContent
 }
 
 
-function parseContent(content=""){
+
+function isProgrammingMarkdownTableSeparator(line=""){
+
+    const value =
+        String(line || "")
+        .trim();
+
+    if(!value.includes("|")){
+        return false;
+    }
+
+    const cells =
+        value
+        .replace(/^\|/,"")
+        .replace(/\|$/,"")
+        .split("|")
+        .map(cell =>
+            String(cell || "").trim()
+        )
+        .filter(Boolean);
+
+    if(cells.length < 2){
+        return false;
+    }
+
+    return cells.every(
+        cell =>
+            /^[|:\-\s]+$/.test(cell) &&
+            /:/.test(cell)
+    );
+
+}
+
+
+
+function parseProgrammingMarkdownTable(
+    lines=[],
+    startIndex=0
+){
+
+    const headerLine =
+        String(
+            lines[startIndex] || ""
+        ).trim();
+
+    if(!headerLine.includes("|")){
+        return null;
+    }
+
+    const separatorIndex =
+        startIndex + 1;
+
+    if(
+        separatorIndex >=
+        lines.length
+    ){
+        return null;
+    }
+
+    if(
+        !isProgrammingMarkdownTableSeparator(
+            lines[separatorIndex]
+        )
+    ){
+        return null;
+    }
+
+    const splitCells = line =>
+        String(line || "")
+        .trim()
+        .replace(/^\|/,"")
+        .replace(/\|$/,"")
+        .split("|")
+        .map(
+            cell =>
+                cleanNoteText(
+                    cell.trim()
+                )
+        )
+        .filter(Boolean);
+
+    const headers =
+        splitCells(headerLine);
+
+    if(headers.length < 2){
+        return null;
+    }
+
+    const rows = [];
+
+    let rowIndex =
+        separatorIndex + 1;
+
+    while(
+        rowIndex <
+        lines.length
+    ){
+
+        const line =
+            String(
+                lines[rowIndex] || ""
+            ).trim();
+
+        if(
+            !line ||
+            !line.includes("|")
+        ){
+            break;
+        }
+
+        if(
+            isProgrammingMarkdownTableSeparator(
+                line
+            )
+        ){
+            rowIndex++;
+            continue;
+        }
+
+        const cells =
+            splitCells(line);
+
+        if(cells.length < 2){
+            break;
+        }
+
+        rows.push(
+            cells.slice(
+                0,
+                Math.max(
+                    2,
+                    headers.length
+                )
+            )
+        );
+
+        rowIndex++;
+    }
+
+    if(!rows.length){
+        return null;
+    }
+
+    return {
+        endIndex:rowIndex,
+        block:{
+            type:"table",
+            title:"",
+            headers:headers.slice(0,4),
+            rows:rows.map(
+                row =>
+                    row.slice(0,4)
+            )
+        }
+    };
+
+}
+
+
+
+function extractProgrammingAnswerContent(
+    answerText=""
+){
+
+    const sourceLines =
+        String(answerText || "")
+        .split(/\r?\n/)
+        .map(
+            line =>
+                String(line || "")
+                .trim()
+        )
+        .filter(Boolean);
+
+    const answerPoints = [];
+    const tableBlocks = [];
+
+    let lineIndex = 0;
+
+    while(
+        lineIndex <
+        sourceLines.length
+    ){
+
+        const table =
+            parseProgrammingMarkdownTable(
+                sourceLines,
+                lineIndex
+            );
+
+        if(table){
+
+            tableBlocks.push(
+                table.block
+            );
+
+            lineIndex =
+                table.endIndex;
+
+            continue;
+        }
+
+        const value =
+            cleanNoteText(
+                sourceLines[lineIndex]
+            )
+            .replace(
+                /^\s*(?:[-*•]|\d+[.)])\s+/,
+                ""
+            )
+            .trim();
+
+        if(
+            value &&
+            !/^[._*=-]+$/.test(value)
+        ){
+            answerPoints.push(value);
+        }
+
+        lineIndex++;
+    }
+
+    return {
+        answerText:
+            answerPoints.join("\n"),
+        tableBlocks
+    };
+
+}
+
+
+
+function splitProgrammingAnswerPoints(
+    text=""
+){
+
+    return String(text || "")
+        .split(/\r?\n/)
+        .map(
+            line =>
+                cleanAnswerKeyText(
+                    String(line || "")
+                    .replace(
+                        /^\s*(?:[-*•]|\d+[.)])\s+/,
+                        ""
+                    )
+                )
+                .trim()
+        )
+        .filter(
+            line =>
+                line &&
+                !/^[._*=-]+$/.test(line)
+        );
+
+}
+
+
+
+
+function parseContent(content="", options={}){
 
 const mathDiagramData =
 extractMathDiagramData(content);
@@ -4714,6 +4941,9 @@ let currentAnswerQuestion = null;
 
 let readingAnswerKey = false;
 
+let inCodeBlock = false;
+let codeLanguage = "";
+let codeLines = [];
 
 
 const pushCurrentSection = () => {
@@ -4756,7 +4986,45 @@ lines.forEach(rawLine=>{
 
 const clean = cleanText(rawLine);
 
+const fence = clean.match(/^```([a-zA-Z0-9#+-]*)$/);
 
+if (fence) {
+
+    if (!inCodeBlock) {
+
+        inCodeBlock = true;
+        codeLanguage = fence[1] || "text";
+        codeLines = [];
+
+    } else {
+
+        if (currentQuestion) {
+
+            if (!currentQuestion.blocks) {
+                currentQuestion.blocks = [];
+            }
+
+            currentQuestion.blocks.push({
+                type: "code",
+                language: codeLanguage,
+                content: codeLines.join("\n")
+            });
+
+        }
+
+        inCodeBlock = false;
+        codeLanguage = "";
+        codeLines = [];
+
+    }
+
+    return;
+}
+
+if (inCodeBlock) {
+    codeLines.push(rawLine);
+    return;
+}
 
 if(!clean){
 
@@ -4932,6 +5200,8 @@ text:clean
 
 options:[],
 
+blocks: [],
+
 number:
 
 number ||
@@ -5016,13 +5286,18 @@ return;
 
 
 
+const sectionHeading = clean.replace(
+    /^#{1,6}\s*/,
+    ""
+).trim();
+
 if(
 
-/^section\s+[a-d]/i.test(clean)
+/^section\s+(?:[a-d]|\d+)\b/i.test(sectionHeading)
 
 ||
 
-/^खंड\s*["']?[कखगघ]/u.test(clean)
+/^खंड\s*["']?[कखगघ](?:\s*\d+)?/u.test(sectionHeading)
 
 ){
 
@@ -5103,6 +5378,8 @@ currentSection.questions.push({
 text:instructionText,
 
 options:[],
+
+blocks: [],
 
 number:currentSection.questions.length + 1
 
@@ -5364,6 +5641,8 @@ text:clean
 
 options:[],
 
+blocks: [],
+
 number:
 
 number ||
@@ -5456,6 +5735,8 @@ text:clean.replace(
 
 options:[],
 
+blocks: [],
+
 number:
 
 currentSection.questions.length + 1
@@ -5472,15 +5753,18 @@ return;
 
 
 
-if(currentQuestion){
+if (currentQuestion) {
 
-currentQuestion.text +=
+    // Don't append fenced code lines to question text.
+    if (!inCodeBlock && clean) {
 
-" " + clean;
+        currentQuestion.text +=
+            (currentQuestion.text ? "\n" : "") +
+            clean;
+
+    }
 
 }
-
-
 
 });
 
@@ -5490,6 +5774,81 @@ pushCurrentSection();
 
 pushCurrentAnswerSection();
 
+
+
+
+if(
+    options.isProgrammingTest === true
+){
+
+    sections.forEach(section=>{
+
+        (section.questions || [])
+        .forEach(question=>{
+
+            const rawQuestionText =
+                String(
+                    question?.text || ""
+                );
+
+            const answerMatch =
+                rawQuestionText.match(
+                    /(?:^|\n)\s*(?:answer|solution)\s*:\s*/i
+                );
+
+            if(!answerMatch){
+                return;
+            }
+
+            const questionText =
+                rawQuestionText
+                .slice(
+                    0,
+                    answerMatch.index
+                )
+                .trim();
+
+            const rawAnswerText =
+                rawQuestionText
+                .slice(
+                    answerMatch.index +
+                    answerMatch[0].length
+                )
+                .trim();
+
+            const parsedAnswer =
+                extractProgrammingAnswerContent(
+                    rawAnswerText
+                );
+
+            const existingBlocks =
+                Array.isArray(
+                    question.blocks
+                )
+                ?
+                question.blocks
+                :
+                [];
+
+            question.text =
+                questionText;
+
+            question.answerText =
+                parsedAnswer.answerText;
+
+            question.blocks = [
+                ...existingBlocks,
+                ...parsedAnswer.tableBlocks
+            ];
+
+            question.isProgrammingTest =
+                true;
+
+        });
+
+    });
+
+}
 
 
 sections.forEach(section=>{
@@ -5544,7 +5903,33 @@ data = {}
 
 const parsed = parseContent(
 
+data.content || "",
+
+{
+
+isProgrammingTest:
+
+/test/i.test(
+
+String(
+
+data.type || ""
+
+)
+
+) &&
+
+/```/.test(
+
+String(
+
 data.content || ""
+
+)
+
+)
+
+}
 
 );
 
@@ -6235,6 +6620,30 @@ data={normalizedMetadata}
 <NotesContent
 
 blocks={finalNoteBlocks}
+
+/>
+
+<NotesFlowchart
+
+title={
+
+noteChapterHeading ||
+
+data.title ||
+
+"Flow Chart"
+
+}
+
+content={
+
+parsed.diagramData?.cleanedContent ||
+
+data.content ||
+
+""
+
+}
 
 />
 
