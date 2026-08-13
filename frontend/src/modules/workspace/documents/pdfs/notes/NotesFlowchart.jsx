@@ -2,10 +2,7 @@ import React from "react";
 
 import {
     View,
-    Text,
-    Svg,
-    Path,
-    Circle
+    Text
 } from "@react-pdf/renderer";
 
 
@@ -44,19 +41,18 @@ const FLOW_COLORS = [
 ];
 
 
-/*
-    SECTION LABEL
+function getFlowFont(text=""){
 
-    Same style as:
+    return /[\u0900-\u097F]/u.test(
+        String(text || "")
+    )
+        ? "NotoSansDevanagari"
+        : "Helvetica";
 
-    • TABLE
-    • QUICK REVISION
-    • FLOW CHART
-*/
+}
 
-function SectionLabel({
-    children
-}){
+
+function SectionLabel({children}){
 
     return (
 
@@ -98,33 +94,24 @@ function SectionLabel({
 }
 
 
-/*
-    QUICK REVISION STYLE ACCENT LINE
-
-    ━━━━━ ● ─────────────────
-*/
-
-function AccentLine({
-    color
-}){
+function AccentLine({color}){
 
     return (
 
         <View
-            wrap={false}
             style={{
                 width:"100%",
                 flexDirection:"row",
                 alignItems:"center",
                 height:7,
-                marginTop:8
+                marginTop:5
             }}
         >
 
             <View
                 style={{
-                    width:42,
-                    height:3,
+                    width:34,
+                    height:2.5,
                     borderRadius:2,
                     backgroundColor:color.main
                 }}
@@ -132,12 +119,12 @@ function AccentLine({
 
             <View
                 style={{
-                    width:7,
-                    height:7,
-                    borderRadius:4,
+                    width:6,
+                    height:6,
+                    borderRadius:3,
                     backgroundColor:color.main,
-                    marginLeft:5,
-                    marginRight:6
+                    marginLeft:4,
+                    marginRight:5
                 }}
             />
 
@@ -156,78 +143,91 @@ function AccentLine({
 }
 
 
-function getFlowFont(text=""){
+function FlowCard({text,color}){
 
-    return /[\u0900-\u097F]/u.test(
+    const rawText =
         String(text || "")
-    )
-        ? "NotoSansDevanagari"
-        : "Helvetica";
+            .replace(/\*\*/g, "")
+            .replace(/^[-*•]\s*/u, "")
+            .trim();
 
-}
+    const mainPointMatch =
+        rawText.match(
+            /^([^:：]{2,56})\s*[:：]/
+        );
 
-
-/*
-    FLOW STEP
-
-    No numbers.
-    No bubbles.
-    No square badges.
-*/
-
-function FlowStep({
-    x,
-    y,
-    text,
-    color
-}){
-
-    const displayText = String(text || "").trim();
-
-    const width = 168;
-
-    const height = 66;
-
+    const displayText =
+        mainPointMatch
+            ? mainPointMatch[1].trim()
+            : rawText;
 
     return (
 
         <View
             style={{
-                position:"absolute",
-                left:x,
-                top:y - (height / 2),
-                width:width,
-                height:height,
-                justifyContent:"center",
-                alignItems:"center",
-                paddingLeft:12,
-                paddingRight:12,
-                paddingTop:8,
-                paddingBottom:7,
-                backgroundColor:"#FCFCFE",
+                width:150,
+                minHeight:48,
+                paddingVertical:6,
+                paddingHorizontal:8,
                 borderWidth:1,
-                borderColor:"#E1E4ED",
-                borderRadius:9
+                borderColor:"#DDE1EA",
+                borderRadius:8,
+                backgroundColor:"#FCFCFE",
+                justifyContent:"center"
             }}
         >
 
             <Text
                 style={{
-                    fontFamily:getFlowFont(text),
-                    fontSize:9.5,
+                    fontFamily:getFlowFont(displayText),
+                    fontSize:8.2,
                     fontWeight:"bold",
                     color:"#252A35",
-                    lineHeight:12.5,
-                    textAlign:"center",
-                    width:width - 24,
-                    alignSelf:"center"
+                    lineHeight:9.5,
+                    textAlign:"center"
                 }}
             >
                 {displayText}
             </Text>
 
-            <AccentLine
-                color={color}
+        </View>
+
+    );
+
+}
+
+
+function Connector({side,color}){
+
+    return (
+
+        <View
+            style={{
+                width:42,
+                height:50,
+                justifyContent:"center",
+                alignItems:"center"
+            }}
+        >
+
+            <View
+                style={{
+                    width:"100%",
+                    height:1.5,
+                    backgroundColor:color.main
+                }}
+            />
+
+            <View
+                style={{
+                    position:"absolute",
+                    width:9,
+                    height:9,
+                    borderRadius:5,
+                    backgroundColor:"#FFFFFF",
+                    borderWidth:2,
+                    borderColor:color.main
+                }}
             />
 
         </View>
@@ -237,79 +237,44 @@ function FlowStep({
 }
 
 
-/*
-    CONNECTOR
-*/
-
-function StepConnector({
-    y,
-    side,
-    color
-}){
-
-    const spineX = 250;
-
-    const nodeRadius = 5;
-
-    const leftX = 28;
-
-    const rightX = 304;
-
-    const cardWidth = 168;
-
-
-    const cardEdge =
-        side === "right"
-            ? rightX
-            : leftX + cardWidth;
-
-
-    const start =
-        side === "right"
-            ?
-                spineX +
-                nodeRadius
-            :
-                cardEdge;
-
-
-    const end =
-        side === "right"
-            ?
-                cardEdge
-            :
-                spineX -
-                nodeRadius;
-
-
-    const left =
-        Math.min(
-            start,
-            end
-        );
-
-
-    const width =
-        Math.abs(
-            end -
-            start
-        );
-
+function CenterNode({color,last=false}){
 
     return (
 
         <View
-            wrap={false}
             style={{
-                position:"absolute",
-                left:left,
-                top:y - 1,
-                width:width,
-                height:2,
-                borderRadius:2,
-                backgroundColor:color.main
+                width:42,
+                height:60,
+                alignItems:"center",
+                justifyContent:"center",
+                position:"relative"
             }}
-        />
+        >
+
+            <View
+                style={{
+                    position:"absolute",
+                    top:0,
+                    bottom:last ? 30 : 0,
+                    width:2,
+                    backgroundColor:"#64748B",
+                    borderRadius:2
+                }}
+            />
+
+            <View
+                style={{
+                    width:9,
+                    height:9,
+                    borderRadius:5,
+                    backgroundColor:"#FFFFFF",
+                    borderWidth:2,
+                    borderColor:color.main,
+                    zIndex:2
+                }}
+            />
+
+        </View>
 
     );
 
@@ -326,29 +291,15 @@ export default function NotesFlowchart({
 
 }){
 
-    /*
-        ---------------------------------------
-        STEP EXTRACTION
-        ---------------------------------------
-    */
-
     let safeSteps = [];
 
 
-    /*
-        Extract readable text from a step.
-    */
-
-    const extractStepText = (
-        step
-    ) => {
+    const extractStepText = (step) => {
 
         if(
             typeof step === "string"
         ){
-
             return step.trim();
-
         }
 
 
@@ -363,7 +314,6 @@ export default function NotesFlowchart({
                         item.trim()
                 );
 
-
             return firstText
                 ? firstText.trim()
                 : "";
@@ -377,29 +327,17 @@ export default function NotesFlowchart({
         ){
 
             const possibleValues = [
-
                 step.text,
-
                 step.label,
-
                 step.title,
-
                 step.content,
-
                 step.description,
-
                 step.name,
-
                 step.step,
-
                 step.value,
-
                 step.topic,
-
                 step.heading
-
             ];
-
 
             const value =
                 possibleValues.find(
@@ -408,13 +346,9 @@ export default function NotesFlowchart({
                         item.trim()
                 );
 
-
             if(value){
-
                 return value.trim();
-
             }
-
 
             const firstString =
                 Object.values(step).find(
@@ -423,24 +357,16 @@ export default function NotesFlowchart({
                         value.trim()
                 );
 
-
             return firstString
                 ? firstString.trim()
                 : "";
 
         }
 
-
         return "";
 
     };
 
-
-    /*
-        ---------------------------------------
-        1. USE EXPLICIT FLOWCHART STEPS
-        ---------------------------------------
-    */
 
     if(
         Array.isArray(steps) &&
@@ -449,25 +375,11 @@ export default function NotesFlowchart({
 
         safeSteps =
             steps
-                .map(
-                    extractStepText
-                )
+                .map(extractStepText)
                 .filter(Boolean);
 
     }
 
-
-    /*
-        ---------------------------------------
-        2. FALLBACK TO ACTUAL SUPPLIED CONTENT
-        ---------------------------------------
-
-        If explicit steps are not supplied, use
-        headings and process bullets from the
-        real notes content.
-
-        No topic-specific data is hardcoded.
-    */
 
     if(
         safeSteps.length === 0 &&
@@ -485,7 +397,7 @@ export default function NotesFlowchart({
         let activeProcess = false;
 
         const processPattern =
-            /\b(process|steps?|stages?|cycle|flow|mechanism|procedure|working|how it works|क्रम|चरण|प्रक्रिया|प्रवाह|कार्यविधि)\b/i;
+            /\b(process|steps?|stages?|cycle|flow|mechanism|procedure|working|how it works|sequence|क्रम|चरण|प्रक्रिया|प्रवाह|कार्यविधि|क्रमबद्ध)\b/i;
 
         lines.forEach(line => {
 
@@ -509,6 +421,7 @@ export default function NotesFlowchart({
                     processPattern.test(heading);
 
                 return;
+
             }
 
             if(activeProcess){
@@ -535,15 +448,6 @@ export default function NotesFlowchart({
     }
 
 
-    /*
-        Remove the main document title from
-        the step list when it is also present
-        as the first heading.
-
-        This is generic and does NOT assume
-        any particular chapter/topic.
-    */
-
     if(
         safeSteps.length > 0 &&
         title
@@ -554,164 +458,71 @@ export default function NotesFlowchart({
                 .trim()
                 .toLowerCase();
 
-
         if(
-            String(
-                safeSteps[0]
-            )
+            String(safeSteps[0])
                 .trim()
                 .toLowerCase()
                 ===
             normalizedTitle
         ){
-
             safeSteps =
                 safeSteps.slice(1);
-
         }
 
     }
 
 
-    /*
-        Maximum six steps.
-    */
-
     safeSteps =
-        safeSteps.slice(0,6);
+        safeSteps
+            .filter(Boolean)
+            .slice(0,6);
 
 
-    /*
-        IMPORTANT:
-
-        If there is no actual flowchart data,
-        render NOTHING.
-
-        This prevents a generic flowchart
-        from appearing in unrelated PDFs.
-    */
-
-    if(
-        safeSteps.length === 0
-    ){
-
+    if(safeSteps.length === 0){
         return null;
-
     }
 
 
-    /*
-        ---------------------------------------
-        LAYOUT
-        ---------------------------------------
-    */
-
-    const width = 500;
-
-    const spineX = 250;
-
-    const topSpace = 30;
-
-    const rowGap =
-        safeSteps.length >= 5
-            ? 82
-            : 88;
-
-    const resultGap = 48;
-
-    const spineStartY = 10;
-
-
-    /*
-        STEP POSITIONS
-    */
-
-    const positions =
+    const rows =
         safeSteps.map(
-            (_,index) => {
-
-                return {
-
-                    y:
-                        topSpace +
-                        (
-                            index *
-                            rowGap
-                        ),
-
-                    side:
-                        index % 2 === 0
-                            ? "right"
-                            : "left"
-
-                };
-
-            }
+            (_,index) => index
         );
-
-
-    const lastY =
-        positions[
-            positions.length - 1
-        ].y;
-
-
-    const resultY =
-        lastY +
-        resultGap;
-
-
-    const chartHeight =
-        resultY +
-        30;
 
 
     return (
 
         <View
-            wrap={false}
             style={{
                 width:"100%",
-                marginTop:2,
-                marginBottom:12
+                marginTop:18,
+                marginBottom:16
             }}
         >
-
-            {/* ========================= */}
-            {/* FLOW CHART HEADER */}
-            {/* ========================= */}
 
             <SectionLabel>
                 FLOW CHART
             </SectionLabel>
 
-
             <Text
                 style={{
                     fontFamily:getFlowFont(title),
-                    marginTop:3,
                     fontSize:15,
                     fontWeight:"bold",
                     color:"#24203B",
-                    lineHeight:19
+                    lineHeight:19,
+                    marginTop:3
                 }}
             >
-                {title}
+                {String(title || "Flow Chart")}
             </Text>
 
-
-            {/* ========================= */}
-            {/* HEADER DIVIDER */}
-            {/* ========================= */}
-
             <View
-                wrap={false}
                 style={{
                     width:"100%",
                     flexDirection:"row",
                     alignItems:"center",
-                    marginTop:6,
-                    marginBottom:8
+                    marginTop:7,
+                    marginBottom:10
                 }}
             >
 
@@ -746,271 +557,19 @@ export default function NotesFlowchart({
             </View>
 
 
-            {/* ========================= */}
-            {/* ROADMAP */}
-            {/* ========================= */}
-
             <View
-                wrap={false}
                 style={{
-                    width:width,
-                    height:chartHeight,
-                    position:"relative",
-                    alignSelf:"center"
+                    alignItems:"center",
+                    width:"100%"
                 }}
             >
 
-                {/* ========================= */}
-                {/* CENTRAL PATH */}
-                {/* ========================= */}
-
-                <Svg
-                    width={width}
-                    height={chartHeight}
-                    viewBox={
-                        `0 0 ${width} ${chartHeight}`
-                    }
-                >
-
-                    <Path
-                        d={
-                            `M ${spineX} ${spineStartY}
-                             V ${resultY}`
-                        }
-                        fill="none"
-                        stroke="#64748B"
-                        strokeWidth={2.4}
-                        strokeLinecap="round"
-                    />
-
-
-                    {/* FLOW ARROWHEADS */}
-
-                    {[
-                        spineStartY,
-                        ...positions.map(
-                            position => position.y
-                        )
-                    ].map(
-                        (
-                            pointY,
-                            index
-                        ) => {
-
-                            const nextY =
-                                index <
-                                positions.length
-                                    ?
-                                    positions[index]?.y
-                                    :
-                                    resultY;
-
-                            if(
-                                typeof nextY !== "number"
-                            ){
-                                return null;
-                            }
-
-                            const arrowY =
-                                pointY +
-                                (
-                                    nextY -
-                                    pointY
-                                ) / 2;
-
-                            return (
-                                <Path
-                                    key={
-                                        `arrow-${index}`
-                                    }
-                                    d={
-                                        `M ${spineX - 4} ${arrowY - 3}
-                                         L ${spineX} ${arrowY + 3}
-                                         L ${spineX + 4} ${arrowY - 3}`
-                                    }
-                                    fill="none"
-                                    stroke="#64748B"
-                                    strokeWidth={1.8}
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                />
-                            );
-
-                        }
-                    )}
-
-
-                    {/* START NODE */}
-
-                    <Circle
-                        cx={spineX}
-                        cy={spineStartY}
-                        r={5}
-                        fill="#64748B"
-                    />
-
-
-                    {/* STEP NODES */}
-
-                    {positions.map(
-                        (
-                            position,
-                            index
-                        ) => {
-
-                            const color =
-                                FLOW_COLORS[
-                                    index %
-                                    FLOW_COLORS.length
-                                ];
-
-
-                            return (
-
-                                <Circle
-                                    key={
-                                        `node-${index}`
-                                    }
-                                    cx={spineX}
-                                    cy={
-                                        position.y
-                                    }
-                                    r={4.5}
-                                    fill="#FFFFFF"
-                                    stroke={
-                                        color.main
-                                    }
-                                    strokeWidth={2}
-                                />
-
-                            );
-
-                        }
-                    )}
-
-
-                    {/* END NODE */}
-
-                    <Circle
-                        cx={spineX}
-                        cy={resultY}
-                        r={5}
-                        fill="#64748B"
-                    />
-
-                </Svg>
-
-
-                {/* ========================= */}
-                {/* START */}
-                {/* ========================= */}
-
                 <View
                     style={{
-                        position:"absolute",
-                        left:spineX - 78,
-                        top:spineStartY - 8,
-                        width:66,
-                        height:18,
-                        justifyContent:"center"
-                    }}
-                >
-
-                    <Text
-                        style={{
-                            fontFamily:"Helvetica",
-                            fontSize:7.5,
-                            fontWeight:"bold",
-                            color:"#6D5DFB",
-                            letterSpacing:1.4,
-                            lineHeight:9
-                        }}
-                    >
-                        START
-                    </Text>
-
-                </View>
-
-
-                {/* ========================= */}
-                {/* STEPS */}
-                {/* ========================= */}
-
-                {positions.map(
-                    (
-                        position,
-                        index
-                    ) => {
-
-                        const color =
-                            FLOW_COLORS[
-                                index %
-                                FLOW_COLORS.length
-                            ];
-
-
-                        const x =
-                            position.side === "right"
-                                ? 304
-                                : 28;
-
-
-                        return (
-
-                            <React.Fragment
-                                key={
-                                    `step-${index}`
-                                }
-                            >
-
-                                <StepConnector
-                                    y={
-                                        position.y
-                                    }
-                                    side={
-                                        position.side
-                                    }
-                                    color={
-                                        color
-                                    }
-                                />
-
-
-                                <FlowStep
-                                    x={x}
-                                    y={
-                                        position.y
-                                    }
-                                    text={
-                                        safeSteps[
-                                            index
-                                        ]
-                                    }
-                                    color={
-                                        color
-                                    }
-                                />
-
-                            </React.Fragment>
-
-                        );
-
-                    }
-                )}
-
-
-                {/* ========================= */}
-                {/* END / RESULT */}
-                {/* ========================= */}
-
-                <View
-                    style={{
-                        position:"absolute",
-                        left:spineX + 14,
-                        top:resultY - 8,
-                        width:122,
-                        height:18,
-                        justifyContent:"center"
+                        flexDirection:"row",
+                        alignItems:"center",
+                        justifyContent:"center",
+                        marginBottom:2
                     }}
                 >
 
@@ -1021,7 +580,131 @@ export default function NotesFlowchart({
                             fontWeight:"bold",
                             color:"#6D5DFB",
                             letterSpacing:1.2,
-                            lineHeight:9
+                            marginRight:8
+                        }}
+                    >
+                        START
+                    </Text>
+
+                    <View
+                        style={{
+                            width:10,
+                            height:10,
+                            borderRadius:5,
+                            backgroundColor:"#64748B"
+                        }}
+                    />
+
+                </View>
+
+
+                {
+                    rows.map(index => {
+
+                        const color =
+                            FLOW_COLORS[
+                                index % FLOW_COLORS.length
+                            ];
+
+                        const isRight =
+                            index % 2 === 0;
+
+                        return (
+
+                            <View
+                                key={`flow-row-${index}`}
+                                style={{
+                                    width:"100%",
+                                    minHeight:54,
+                                    flexDirection:"row",
+                                    alignItems:"center",
+                                    justifyContent:"center"
+                                }}
+                            >
+
+                                <View
+                                    style={{
+                                        width:160,
+                                        alignItems:isRight
+                                            ? "flex-end"
+                                            : "flex-end",
+                                        justifyContent:"center"
+                                    }}
+                                >
+                                    {!isRight && (
+                                        <FlowCard
+                                            text={
+                                                safeSteps[index]
+                                            }
+                                            color={color}
+                                        />
+                                    )}
+                                </View>
+
+
+                                <Connector
+                                    side={
+                                        isRight
+                                            ? "right"
+                                            : "left"
+                                    }
+                                    color={color}
+                                />
+
+
+                                <View
+                                    style={{
+                                        width:160,
+                                        alignItems:isRight
+                                            ? "flex-start"
+                                            : "flex-start",
+                                        justifyContent:"center"
+                                    }}
+                                >
+                                    {isRight && (
+                                        <FlowCard
+                                            text={
+                                                safeSteps[index]
+                                            }
+                                            color={color}
+                                        />
+                                    )}
+                                </View>
+
+                            </View>
+
+                        );
+
+                    })
+                }
+
+
+                <View
+                    style={{
+                        flexDirection:"row",
+                        alignItems:"center",
+                        justifyContent:"center",
+                        marginTop:2
+                    }}
+                >
+
+                    <View
+                        style={{
+                            width:10,
+                            height:10,
+                            borderRadius:5,
+                            backgroundColor:"#64748B",
+                            marginRight:8
+                        }}
+                    />
+
+                    <Text
+                        style={{
+                            fontFamily:"Helvetica",
+                            fontSize:7.5,
+                            fontWeight:"bold",
+                            color:"#6D5DFB",
+                            letterSpacing:1.2
                         }}
                     >
                         END / RESULT

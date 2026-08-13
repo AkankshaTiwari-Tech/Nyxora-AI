@@ -394,7 +394,7 @@ function AnswerKeyLabelBubble({text}){
                     textAlign:"left",
                 }}
             >
-                {renderMixedMathText(cleanText(text))}
+                {cleanText(text)}
             </Text>
 
 
@@ -1232,17 +1232,15 @@ matches[index + 1].index
 rest.length;
 
 parts.push({
-    label:entry.label,
 
-    content:
-        cleanAnswerKeyText(
-            rest.slice(contentStart,contentEnd)
-        )
-        .replace(
-            /^\s*\*+\s*$/gm,
-            ""
-        )
-        .trim()
+label:entry.label,
+
+content:cleanAnswerKeyText(
+
+rest.slice(contentStart,contentEnd)
+
+)
+
 });
 
 });
@@ -1505,7 +1503,7 @@ part.content
 
 ?
 
-": " + part.content.replace(/^\*+\s*/u, "").trim()
+": " + part.content
 
 :
 
@@ -2146,7 +2144,397 @@ return blocks;
 
 
 
+function buildNotesFlowchartData(blocks=[]){
+
+const safeBlocks =
+Array.isArray(blocks)
+?
+blocks.filter(Boolean)
+:
+[];
+
+
+/*
+    --------------------------------------------------
+    1. USE EXPLICIT FLOWCHART DATA FIRST
+    --------------------------------------------------
+
+    If the AI already supplied a flowchart block,
+    preserve its steps and only use the template
+    renderer for presentation.
+*/
+
+const explicit =
+safeBlocks.find(
+block =>
+block?.type === "flowchart" &&
+Array.isArray(block.steps) &&
+block.steps.length > 0
+);
+
+
+if(explicit){
+
+const explicitSteps =
+explicit.steps
+.map(step => {
+
+if(typeof step === "string"){
+return step.trim();
+}
+
+if(step && typeof step === "object"){
+
+return String(
+step.text ??
+step.label ??
+step.title ??
+step.content ??
+step.description ??
+step.name ??
+step.step ??
+step.value ??
+""
+).trim();
+
+}
+
+return "";
+
+})
+.filter(Boolean)
+.slice(0,6);
+
+
+if(explicitSteps.length){
+
+return {
+
+title:
+String(
+explicit.title ||
+"Flow Chart"
+).trim(),
+
+steps:explicitSteps
+
+};
+
+}
+
+}
+
+
+/*
+    --------------------------------------------------
+    2. DERIVE A FLOWCHART FROM REAL NOTES CONTENT
+    --------------------------------------------------
+
+    The Notes PDF must contain a flowchart even when
+    the AI did not explicitly return one.
+
+    Priority:
+    A. First heading + its bullet points.
+    B. Process-like heading + its bullet points.
+    C. First useful bullet group.
+    D. Useful headings when bullets are unavailable.
+
+    No topic-specific data is hardcoded.
+*/
+
+const headings =
+safeBlocks
+.filter(
+block =>
+(
+block?.type === "heading" ||
+block?.type === "subheading"
+) &&
+String(block.text || "").trim()
+)
+.map(block =>
+String(block.text || "").trim()
+);
+
+
+const title =
+headings[0] ||
+"Flow Chart";
+
+
+const processPattern =
+/\b(process|steps?|stages?|cycle|flow|mechanism|procedure|working|how it works|sequence|क्रम|चरण|प्रक्रिया|प्रवाह|कार्यविधि|क्रमबद्ध)\b/i;
+
+
+const derivedSteps = [];
+
+
+/*
+    --------------------------------------------------
+    A. FIRST HEADING + FOLLOWING BULLETS
+    --------------------------------------------------
+*/
+
+let firstHeadingIndex = -1;
+
+for(
+let index = 0;
+index < safeBlocks.length;
+index += 1
+){
+
+const block = safeBlocks[index];
+
+if(
+(
+block?.type === "heading" ||
+block?.type === "subheading"
+) &&
+String(block.text || "").trim()
+){
+
+firstHeadingIndex = index;
+break;
+
+}
+
+}
+
+
+if(firstHeadingIndex >= 0){
+
+for(
+let index = firstHeadingIndex + 1;
+index < safeBlocks.length;
+index += 1
+){
+
+const block = safeBlocks[index];
+
+if(
+block?.type === "heading" ||
+block?.type === "subheading"
+){
+break;
+}
+
+if(
+block?.type === "bullets" &&
+Array.isArray(block.items)
+){
+
+block.items.forEach(item => {
+
+const value =
+String(item || "").trim();
+
+if(
+derivedSteps.length < 6 &&
+value
+){
+
+derivedSteps.push(value);
+
+}
+
+});
+
+}
+
+}
+
+}
+
+
+/*
+    --------------------------------------------------
+    B. PROCESS / STAGE HEADING + ITS BULLETS
+    --------------------------------------------------
+
+    If the first heading is not followed by useful
+    bullets, look for a heading that describes a
+    process or sequence.
+*/
+
+if(derivedSteps.length === 0){
+
+let processIndex = -1;
+
+for(
+let index = 0;
+index < safeBlocks.length;
+index += 1
+){
+
+const block = safeBlocks[index];
+
+if(
+(
+block?.type === "heading" ||
+block?.type === "subheading"
+) &&
+processPattern.test(
+String(block.text || "")
+)
+){
+
+processIndex = index;
+break;
+
+}
+
+}
+
+
+if(processIndex >= 0){
+
+for(
+let index = processIndex + 1;
+index < safeBlocks.length;
+index += 1
+){
+
+const block = safeBlocks[index];
+
+if(
+block?.type === "heading" ||
+block?.type === "subheading"
+){
+break;
+}
+
+if(
+block?.type === "bullets" &&
+Array.isArray(block.items)
+){
+
+block.items.forEach(item => {
+
+const value =
+String(item || "").trim();
+
+if(
+derivedSteps.length < 6 &&
+value
+){
+
+derivedSteps.push(value);
+
+}
+
+});
+
+}
+
+}
+
+}
+
+}
+
+
+/*
+    --------------------------------------------------
+    C. FALLBACK TO THE FIRST USEFUL BULLET GROUP
+    --------------------------------------------------
+*/
+
+if(derivedSteps.length === 0){
+
+for(
+const block of safeBlocks
+){
+
+if(
+block?.type === "bullets" &&
+Array.isArray(block.items)
+){
+
+block.items.forEach(item => {
+
+const value =
+String(item || "").trim();
+
+if(
+derivedSteps.length < 6 &&
+value
+){
+
+derivedSteps.push(value);
+
+}
+
+});
+
+}
+
+if(derivedSteps.length >= 6){
+break;
+}
+
+}
+
+}
+
+
+/*
+    --------------------------------------------------
+    D. FINAL FALLBACK: USE HEADINGS
+    --------------------------------------------------
+
+    This is only used when no meaningful bullet
+    points exist.
+*/
+
+if(derivedSteps.length === 0){
+
+headings
+.slice(1,7)
+.forEach(heading => {
+
+const value =
+String(heading || "").trim();
+
+if(
+value &&
+derivedSteps.length < 6
+){
+
+derivedSteps.push(value);
+
+}
+
+});
+
+}
+
+
+/*
+    --------------------------------------------------
+    RETURN
+    --------------------------------------------------
+*/
+
+return {
+
+title:
+String(
+title ||
+"Flow Chart"
+).trim(),
+
+steps:
+derivedSteps
+.filter(Boolean)
+.slice(0,6)
+
+};
+
+}
+
 function NotesContent({blocks=[]}){
+
+const flowchartData = buildNotesFlowchartData(blocks);
 
 return(
 
@@ -2191,6 +2579,26 @@ wrap={false}
 </View>
 
 );
+
+}
+
+if(block.type==="flowchart"){
+
+    if(flowchartData.steps.length === 0){
+        return null;
+    }
+
+    return(
+
+        <NotesFlowchart
+            key={"note-flowchart-"+index}
+
+            title={flowchartData.title}
+
+            steps={flowchartData.steps}
+        />
+
+    );
 
 }
 
@@ -2521,39 +2929,68 @@ marginBottom:4
 block.items.map((item,itemIndex)=>(
 
 <View
-  key={"note-item-"+index+"-"+itemIndex}
-  style={{
-    flexDirection:"row",
-    alignItems:"flex-start",
-    marginBottom:5,
-    paddingLeft:2
-  }}
+
+key={"note-item-"+index+"-"+itemIndex}
+
+style={{
+
+flexDirection:"row",
+
+alignItems:"flex-start",
+
+marginBottom:5,
+
+paddingLeft:2
+
+}}
+
 >
 
-  <Text
-    style={{
-      fontFamily:"NotoSansDevanagari",
-      fontSize:18,
-      lineHeight:1.35,
-      color:"#6D5DFB",
-      width:18,
-      marginTop:1
-    }}
-  >
-    {"•"}
-  </Text>
+<Text
 
-  <Text
-    style={{
-      fontFamily:"NotoSansDevanagari",
-      fontSize:10,
-      lineHeight:1.35,
-      color:"#111827",
-      flex:1
-    }}
-  >
-    {renderMixedMathText(item)}
-  </Text>
+style={{
+
+fontFamily:"NotoSansDevanagari",
+
+fontSize:18,
+
+lineHeight:1.35,
+
+color:"#6D5DFB",
+
+width:18,
+
+marginTop:1
+
+}}
+
+>
+
+{"•"}
+
+</Text>
+
+<Text
+
+style={{
+
+fontFamily:"NotoSansDevanagari",
+
+fontSize:10,
+
+lineHeight:1.35,
+
+color:"#111827",
+
+flex:1
+
+}}
+
+>
+
+{renderMixedMathText(item)}
+
+</Text>
 
 </View>
 
@@ -2568,7 +3005,6 @@ block.items.map((item,itemIndex)=>(
 })
 
 }
-
 </View>
 
 );
@@ -3022,14 +3458,21 @@ lineHeight:9
 
 
 <Text
-  style={{
-    fontFamily:"NotoSansDevanagari",
-    fontSize:9,
-    lineHeight:1.45,
-    color:"#111827",
-    flex:1
-  }}
-  preserveWhitespace
+
+style={{
+
+fontFamily:"NotoSansDevanagari",
+
+fontSize:9.5,
+
+lineHeight:1.35,
+
+color:"#111827",
+
+flex:1
+
+}}
+
 >
 
 {text}
@@ -4605,267 +5048,7 @@ cleanedContent
 }
 
 
-
-function isProgrammingMarkdownTableSeparator(line=""){
-
-    const value =
-        String(line || "")
-        .trim();
-
-    if(!value.includes("|")){
-        return false;
-    }
-
-    const cells =
-        value
-        .replace(/^\|/,"")
-        .replace(/\|$/,"")
-        .split("|")
-        .map(cell =>
-            String(cell || "").trim()
-        )
-        .filter(Boolean);
-
-    if(cells.length < 2){
-        return false;
-    }
-
-    return cells.every(
-        cell =>
-            /^[|:\-\s]+$/.test(cell) &&
-            /:/.test(cell)
-    );
-
-}
-
-
-
-function parseProgrammingMarkdownTable(
-    lines=[],
-    startIndex=0
-){
-
-    const headerLine =
-        String(
-            lines[startIndex] || ""
-        ).trim();
-
-    if(!headerLine.includes("|")){
-        return null;
-    }
-
-    const separatorIndex =
-        startIndex + 1;
-
-    if(
-        separatorIndex >=
-        lines.length
-    ){
-        return null;
-    }
-
-    if(
-        !isProgrammingMarkdownTableSeparator(
-            lines[separatorIndex]
-        )
-    ){
-        return null;
-    }
-
-    const splitCells = line =>
-        String(line || "")
-        .trim()
-        .replace(/^\|/,"")
-        .replace(/\|$/,"")
-        .split("|")
-        .map(
-            cell =>
-                cleanNoteText(
-                    cell.trim()
-                )
-        )
-        .filter(Boolean);
-
-    const headers =
-        splitCells(headerLine);
-
-    if(headers.length < 2){
-        return null;
-    }
-
-    const rows = [];
-
-    let rowIndex =
-        separatorIndex + 1;
-
-    while(
-        rowIndex <
-        lines.length
-    ){
-
-        const line =
-            String(
-                lines[rowIndex] || ""
-            ).trim();
-
-        if(
-            !line ||
-            !line.includes("|")
-        ){
-            break;
-        }
-
-        if(
-            isProgrammingMarkdownTableSeparator(
-                line
-            )
-        ){
-            rowIndex++;
-            continue;
-        }
-
-        const cells =
-            splitCells(line);
-
-        if(cells.length < 2){
-            break;
-        }
-
-        rows.push(
-            cells.slice(
-                0,
-                Math.max(
-                    2,
-                    headers.length
-                )
-            )
-        );
-
-        rowIndex++;
-    }
-
-    if(!rows.length){
-        return null;
-    }
-
-    return {
-        endIndex:rowIndex,
-        block:{
-            type:"table",
-            title:"",
-            headers:headers.slice(0,4),
-            rows:rows.map(
-                row =>
-                    row.slice(0,4)
-            )
-        }
-    };
-
-}
-
-
-
-function extractProgrammingAnswerContent(
-    answerText=""
-){
-
-    const sourceLines =
-        String(answerText || "")
-        .split(/\r?\n/)
-        .map(
-            line =>
-                String(line || "")
-                .trim()
-        )
-        .filter(Boolean);
-
-    const answerPoints = [];
-    const tableBlocks = [];
-
-    let lineIndex = 0;
-
-    while(
-        lineIndex <
-        sourceLines.length
-    ){
-
-        const table =
-            parseProgrammingMarkdownTable(
-                sourceLines,
-                lineIndex
-            );
-
-        if(table){
-
-            tableBlocks.push(
-                table.block
-            );
-
-            lineIndex =
-                table.endIndex;
-
-            continue;
-        }
-
-        const value =
-            cleanNoteText(
-                sourceLines[lineIndex]
-            )
-            .replace(
-                /^\s*(?:[-*•]|\d+[.)])\s+/,
-                ""
-            )
-            .trim();
-
-        if(
-            value &&
-            !/^[._*=-]+$/.test(value)
-        ){
-            answerPoints.push(value);
-        }
-
-        lineIndex++;
-    }
-
-    return {
-        answerText:
-            answerPoints.join("\n"),
-        tableBlocks
-    };
-
-}
-
-
-
-function splitProgrammingAnswerPoints(
-    text=""
-){
-
-    return String(text || "")
-        .split(/\r?\n/)
-        .map(
-            line =>
-                cleanAnswerKeyText(
-                    String(line || "")
-                    .replace(
-                        /^\s*(?:[-*•]|\d+[.)])\s+/,
-                        ""
-                    )
-                )
-                .trim()
-        )
-        .filter(
-            line =>
-                line &&
-                !/^[._*=-]+$/.test(line)
-        );
-
-}
-
-
-
-
-function parseContent(content="", options={}){
+function parseContent(content=""){
 
 const mathDiagramData =
 extractMathDiagramData(content);
@@ -4941,9 +5124,6 @@ let currentAnswerQuestion = null;
 
 let readingAnswerKey = false;
 
-let inCodeBlock = false;
-let codeLanguage = "";
-let codeLines = [];
 
 
 const pushCurrentSection = () => {
@@ -4986,45 +5166,7 @@ lines.forEach(rawLine=>{
 
 const clean = cleanText(rawLine);
 
-const fence = clean.match(/^```([a-zA-Z0-9#+-]*)$/);
 
-if (fence) {
-
-    if (!inCodeBlock) {
-
-        inCodeBlock = true;
-        codeLanguage = fence[1] || "text";
-        codeLines = [];
-
-    } else {
-
-        if (currentQuestion) {
-
-            if (!currentQuestion.blocks) {
-                currentQuestion.blocks = [];
-            }
-
-            currentQuestion.blocks.push({
-                type: "code",
-                language: codeLanguage,
-                content: codeLines.join("\n")
-            });
-
-        }
-
-        inCodeBlock = false;
-        codeLanguage = "";
-        codeLines = [];
-
-    }
-
-    return;
-}
-
-if (inCodeBlock) {
-    codeLines.push(rawLine);
-    return;
-}
 
 if(!clean){
 
@@ -5200,8 +5342,6 @@ text:clean
 
 options:[],
 
-blocks: [],
-
 number:
 
 number ||
@@ -5286,18 +5426,13 @@ return;
 
 
 
-const sectionHeading = clean.replace(
-    /^#{1,6}\s*/,
-    ""
-).trim();
-
 if(
 
-/^section\s+(?:[a-d]|\d+)\b/i.test(sectionHeading)
+/^section\s+[a-d]/i.test(clean)
 
 ||
 
-/^खंड\s*["']?[कखगघ](?:\s*\d+)?/u.test(sectionHeading)
+/^खंड\s*["']?[कखगघ]/u.test(clean)
 
 ){
 
@@ -5378,8 +5513,6 @@ currentSection.questions.push({
 text:instructionText,
 
 options:[],
-
-blocks: [],
 
 number:currentSection.questions.length + 1
 
@@ -5641,8 +5774,6 @@ text:clean
 
 options:[],
 
-blocks: [],
-
 number:
 
 number ||
@@ -5735,8 +5866,6 @@ text:clean.replace(
 
 options:[],
 
-blocks: [],
-
 number:
 
 currentSection.questions.length + 1
@@ -5753,18 +5882,15 @@ return;
 
 
 
-if (currentQuestion) {
+if(currentQuestion){
 
-    // Don't append fenced code lines to question text.
-    if (!inCodeBlock && clean) {
+currentQuestion.text +=
 
-        currentQuestion.text +=
-            (currentQuestion.text ? "\n" : "") +
-            clean;
-
-    }
+" " + clean;
 
 }
+
+
 
 });
 
@@ -5774,81 +5900,6 @@ pushCurrentSection();
 
 pushCurrentAnswerSection();
 
-
-
-
-if(
-    options.isProgrammingTest === true
-){
-
-    sections.forEach(section=>{
-
-        (section.questions || [])
-        .forEach(question=>{
-
-            const rawQuestionText =
-                String(
-                    question?.text || ""
-                );
-
-            const answerMatch =
-                rawQuestionText.match(
-                    /(?:^|\n)\s*(?:answer|solution)\s*:\s*/i
-                );
-
-            if(!answerMatch){
-                return;
-            }
-
-            const questionText =
-                rawQuestionText
-                .slice(
-                    0,
-                    answerMatch.index
-                )
-                .trim();
-
-            const rawAnswerText =
-                rawQuestionText
-                .slice(
-                    answerMatch.index +
-                    answerMatch[0].length
-                )
-                .trim();
-
-            const parsedAnswer =
-                extractProgrammingAnswerContent(
-                    rawAnswerText
-                );
-
-            const existingBlocks =
-                Array.isArray(
-                    question.blocks
-                )
-                ?
-                question.blocks
-                :
-                [];
-
-            question.text =
-                questionText;
-
-            question.answerText =
-                parsedAnswer.answerText;
-
-            question.blocks = [
-                ...existingBlocks,
-                ...parsedAnswer.tableBlocks
-            ];
-
-            question.isProgrammingTest =
-                true;
-
-        });
-
-    });
-
-}
 
 
 sections.forEach(section=>{
@@ -5903,33 +5954,7 @@ data = {}
 
 const parsed = parseContent(
 
-data.content || "",
-
-{
-
-isProgrammingTest:
-
-/test/i.test(
-
-String(
-
-data.type || ""
-
-)
-
-) &&
-
-/```/.test(
-
-String(
-
 data.content || ""
-
-)
-
-)
-
-}
 
 );
 
@@ -6007,6 +6032,7 @@ const parsedNoteBlocks = isNotes
     :
 
     [];
+
 
     const quickRevisionRows = [];
 
@@ -6118,8 +6144,6 @@ const quickRevisionTable = isNotes
 
     null;
 
-
-
 const noteBlocks = isNotes
 
 ?
@@ -6127,6 +6151,11 @@ const noteBlocks = isNotes
 [
 
     ...parsedNoteBlocks,
+
+    {
+        type:"flowchart"
+    },
+
     quickRevisionTable
 
 ]
@@ -6211,7 +6240,6 @@ String(block.text || "").trim()
 
 "";
 
-const finalNoteBlocks = noteBlocks;
 
 
 const metadataClass =
@@ -6619,31 +6647,7 @@ data={normalizedMetadata}
 
 <NotesContent
 
-blocks={finalNoteBlocks}
-
-/>
-
-<NotesFlowchart
-
-title={
-
-noteChapterHeading ||
-
-data.title ||
-
-"Flow Chart"
-
-}
-
-content={
-
-parsed.diagramData?.cleanedContent ||
-
-data.content ||
-
-""
-
-}
+blocks={noteBlocks}
 
 />
 
