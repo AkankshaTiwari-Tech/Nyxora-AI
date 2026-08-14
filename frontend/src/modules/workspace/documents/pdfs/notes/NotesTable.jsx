@@ -3,24 +3,13 @@ import {
     Text,
 } from "@react-pdf/renderer";
 
+import normalizeContentText 
+from "./contentTextNormalizer.js";
+
 
 
 function normalizeCellValue(value) {
-
-    if (
-        value === null ||
-        value === undefined
-    ) {
-        return "";
-    }
-
-    if (
-        typeof value === "object"
-    ) {
-        return JSON.stringify(value);
-    }
-
-    return String(value);
+    return normalizeContentText(value);
 }
 
 

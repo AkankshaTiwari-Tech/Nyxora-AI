@@ -45,6 +45,462 @@ from "../notes/NotesTable";
 import NotesFlowchart
 from "../notes/NotesFlowchart";
 
+function formatPdfTitle(title=""){
+
+    return String(title || "")
+        .trim()
+        .replace(
+            /[A-Za-zÀ-ÖØ-öø-ÿ]+/g,
+            word => {
+
+                if(
+                    word.length <= 4 &&
+                    word === word.toUpperCase()
+                ){
+
+                    return word;
+
+                }
+
+                return (
+                    word.charAt(0).toUpperCase() +
+                    word.slice(1).toLowerCase()
+                );
+
+            }
+        );
+
+}
+
+
+
+
+function NyxoraDocumentDetails({
+    data = {}
+}){
+
+    const subject =
+        String(
+            data.subject ||
+            data.subjectName ||
+            "Not Provided"
+        ).trim() ||
+        "Not Provided";
+
+    const className =
+        String(
+            data.className ||
+            data.class ||
+            data.grade ||
+            "Not Provided"
+        ).trim() ||
+        "Not Provided";
+
+    const chapter =
+        String(
+            data.chapter ||
+            data.chapterName ||
+            data.topic ||
+            "Not Provided"
+        ).trim() ||
+        "Not Provided";
+
+    const type =
+        String(
+            data.type ||
+            data.documentType ||
+            "Notes"
+        ).trim() ||
+        "Notes";
+
+    const isTest =
+        /test|exam|assessment|quiz/i.test(
+            type
+        );
+
+    const fields = [
+        {
+            label:"SUBJECT",
+            value:subject
+        },
+        {
+            label:"CLASS",
+            value:className
+        },
+        {
+            label:"CHAPTER",
+            value:chapter
+        },
+        {
+            label:"TYPE",
+            value:type
+        }
+    ];
+
+    return (
+
+        <View
+            style={{
+                width:"100%",
+                marginBottom:12,
+                padding:8,
+                borderWidth:1,
+                borderColor:"#DCD8EF",
+                borderRadius:14,
+                backgroundColor:"#FFFFFF"
+            }}
+            wrap={false}
+        >
+
+            {/* CARD HEADER */}
+
+            <View
+                style={{
+                    flexDirection:"row",
+                    alignItems:"center",
+                    justifyContent:"space-between",
+                    marginBottom:6
+                }}
+            >
+
+                <View
+                    style={{
+                        flexDirection:"row",
+                        alignItems:"center"
+                    }}
+                >
+
+                    <View
+                        style={{
+                            width:4,
+                            height:4,
+                            borderRadius:2,
+                            backgroundColor:"#8B7CF6",
+                            marginRight:5
+                        }}
+                    />
+
+                    <Text
+                        style={{
+                            fontFamily:"NotoSansDevanagari",
+                            fontSize:7,
+                            fontWeight:"bold",
+                            color:"#6D5DFB",
+                            letterSpacing:1.35
+                        }}
+                    >
+                        DOCUMENT DETAILS
+                    </Text>
+
+                </View>
+
+
+                <View
+                    style={{
+                        paddingVertical:2,
+                        paddingHorizontal:6,
+                        borderRadius:7,
+                        backgroundColor:
+                            isTest
+                                ? "#FFF7EA"
+                                : "#F5F1FF",
+                        borderWidth:1,
+                        borderColor:
+                            isTest
+                                ? "#F0D39D"
+                                : "#DED5FF"
+                    }}
+                >
+
+                    <Text
+                        style={{
+                            fontFamily:"NotoSansDevanagari",
+                            fontSize:5.5,
+                            fontWeight:"bold",
+                            color:
+                                isTest
+                                    ? "#A96A00"
+                                    : "#6D5DFB",
+                            letterSpacing:0.8
+                        }}
+                    >
+                        {isTest
+                            ? "ASSESSMENT"
+                            : "LEARNING NOTES"}
+                    </Text>
+
+                </View>
+
+            </View>
+
+
+            {/* COMPACT 2 x 2 GRID */}
+
+            <View
+                style={{
+                    flexDirection:"row",
+                    flexWrap:"wrap",
+                    width:"100%"
+                }}
+            >
+
+                {fields.map(
+                    (field,index) => (
+
+                        <View
+                            key={
+                                "document-detail-" +
+                                index
+                            }
+                            style={{
+                                width:"48.7%",
+                                marginRight:
+                                    index % 2 === 0
+                                        ? "2.6%"
+                                        : 0,
+                                marginBottom:5,
+                                minHeight:45,
+                                paddingVertical:8,
+                                paddingHorizontal:8,
+                                justifyContent:"center",
+                                borderWidth:1,
+                                borderColor:"#E4E5EC",
+                                borderRadius:9,
+                                backgroundColor:"#FBFBFD"
+                            }}
+                        >
+
+                            <View
+                                style={{
+                                    flexDirection:"row",
+                                    alignItems:"center",
+                                    marginBottom:1
+                                }}
+                            >
+
+                                <View
+                                    style={{
+                                        width:3,
+                                        height:3,
+                                        borderRadius:2,
+                                        backgroundColor:
+                                            isTest
+                                                ? "#C88A22"
+                                                : "#8B7CF6",
+                                        marginRight:4
+                                    }}
+                                />
+
+                                <Text
+                                    style={{
+                                        fontFamily:"NotoSansDevanagari",
+                                        fontSize:5.4,
+                                        fontWeight:"bold",
+                                        color:"#7B8392",
+                                        letterSpacing:0.8
+                                    }}
+                                >
+                                    {field.label}
+                                </Text>
+
+                            </View>
+
+                            <Text
+                                style={{
+                                    fontFamily:"NotoSansDevanagari",
+                                    fontSize:8.5,
+                                    lineHeight:10,
+                                    color:"#292D40",
+                                    width:"100%"
+                                }}
+                            >
+                                {String(
+                                    field.value ||
+                                    "Not Provided"
+                                ).trim()}
+                            </Text>
+
+                        </View>
+
+                    )
+                )}
+
+            </View>
+
+
+            {/* SMALL NYXORA ACCENT */}
+
+            <View
+                style={{
+                    flexDirection:"row",
+                    alignItems:"center",
+                    marginTop:0
+                }}
+            >
+
+                <View
+                    style={{
+                        width:32,
+                        height:2,
+                        backgroundColor:
+                            isTest
+                                ? "#C88A22"
+                                : "#6D5DFB",
+                        borderRadius:2
+                    }}
+                />
+
+                <View
+                    style={{
+                        width:5,
+                        height:5,
+                        borderRadius:3,
+                        backgroundColor:
+                            isTest
+                                ? "#E4B968"
+                                : "#A99CFB",
+                        marginLeft:4,
+                        marginRight:5
+                    }}
+                />
+
+                <View
+                    style={{
+                        flex:1,
+                        height:1,
+                        backgroundColor:"#E9E8EF"
+                    }}
+                />
+
+            </View>
+
+        </View>
+
+    );
+
+}
+
+
+function NyxoraPDFTitle({
+    title = ""
+}){
+
+    const safeTitle =
+        formatPdfTitle(
+            cleanText(title)
+        );
+
+    return (
+
+        <View
+            style={{
+                width:"100%",
+                marginTop:2,
+                marginBottom:12,
+                paddingBottom:8
+            }}
+            wrap={false}
+        >
+
+            {/* SAME NYXORA SECTION BADGE STYLE */}
+
+            <View
+                style={{
+                    flexDirection:"row",
+                    alignItems:"center",
+                    marginBottom:5
+                }}
+            >
+
+                <View
+                    style={{
+                        width:4,
+                        height:4,
+                        borderRadius:2,
+                        backgroundColor:"#8B7CF6",
+                        marginRight:5
+                    }}
+                />
+
+                <Text
+                    style={{
+                        fontFamily:"NotoSansDevanagari",
+                        fontSize:7.5,
+                        fontWeight:"bold",
+                        color:"#6D5DFB",
+                        letterSpacing:1.5
+                    }}
+                >
+                    SECTION
+                </Text>
+
+            </View>
+
+
+            {/* DOCUMENT TITLE */}
+
+            <Text
+                style={{
+                    fontFamily:"NotoSansDevanagari",
+                    fontSize:15.5,
+                    fontWeight:"bold",
+                    color:"#24203B",
+                    lineHeight:1.38,
+                    textAlign:"left"
+                }}
+            >
+                {safeTitle}
+            </Text>
+
+
+            {/* SAME NYXORA GRADIENT-LINE TREATMENT */}
+
+            <View
+                style={{
+                    width:"100%",
+                    flexDirection:"row",
+                    alignItems:"center",
+                    marginTop:8
+                }}
+            >
+
+                <View
+                    style={{
+                        width:52,
+                        height:3,
+                        backgroundColor:"#6D5DFB",
+                        borderRadius:2
+                    }}
+                />
+
+                <View
+                    style={{
+                        width:7,
+                        height:7,
+                        borderRadius:4,
+                        backgroundColor:"#A99CFB",
+                        marginLeft:5,
+                        marginRight:6
+                    }}
+                />
+
+                <View
+                    style={{
+                        flex:1,
+                        height:1,
+                        backgroundColor:"#E3DFF0"
+                    }}
+                />
+
+            </View>
+
+        </View>
+
+    );
+
+}
+
+
 function cleanText(text = ""){
 
 
@@ -394,7 +850,7 @@ function AnswerKeyLabelBubble({text}){
                     textAlign:"left",
                 }}
             >
-                {cleanText(text)}
+                {renderMixedMathText(cleanText(text))}
             </Text>
 
 
@@ -1232,15 +1688,17 @@ matches[index + 1].index
 rest.length;
 
 parts.push({
+    label:entry.label,
 
-label:entry.label,
-
-content:cleanAnswerKeyText(
-
-rest.slice(contentStart,contentEnd)
-
-)
-
+    content:
+        cleanAnswerKeyText(
+            rest.slice(contentStart,contentEnd)
+        )
+        .replace(
+            /^\s*\*+\s*$/gm,
+            ""
+        )
+        .trim()
 });
 
 });
@@ -1503,7 +1961,7 @@ part.content
 
 ?
 
-": " + part.content
+": " + part.content.replace(/^\*+\s*/u, "").trim()
 
 :
 
@@ -1832,9 +2290,234 @@ function parseNoteTable(line = "") {
     };
 }
 
+
+function isFlowchartDiagramBlock(language="", content=""){
+
+    const lang =
+        String(language || "")
+            .trim()
+            .toLowerCase();
+
+    if(
+        lang === "mermaid" ||
+        lang === "mermaidjs" ||
+        lang === "flowchart" ||
+        lang === "graph"
+    ){
+        return true;
+    }
+
+    const source =
+        String(content || "");
+
+    return (
+        /\b(?:graph|flowchart)\s+(?:td|tb|lr|rl|bt)\b/i.test(source) ||
+        /(?:-->|==>|-.->|══>|→|⇒)/u.test(source) ||
+        /[┌┐└┘├┤┬┴│─╲╱▼△]/u.test(source)
+    );
+
+}
+
+
+function extractFlowchartDiagramSteps(content=""){
+
+    const source =
+        String(content || "");
+
+    const steps = [];
+    const seen = new Set();
+
+    const addStep = value => {
+
+        const point =
+            String(value || "")
+                .replace(/\*\*/g, "")
+                .replace(/^[-*•\d.)\s]+/u, "")
+                .replace(/[┌┐└┘├┤┬┴│─═╲╱▼△→⇒]+/gu, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+
+        if(
+            !point ||
+            point.length < 2 ||
+            point.length > 80
+        ){
+            return;
+        }
+
+        if(
+            /^[<>'"`;:,._\\/=+\-]+$/u.test(point) ||
+            /^(?:graph|flowchart|td|tb|lr|rl|bt)$/iu.test(point)
+        ){
+            return;
+        }
+
+        const key =
+            point.toLowerCase();
+
+        if(
+            seen.has(key) ||
+            steps.length >= 6
+        ){
+            return;
+        }
+
+        seen.add(key);
+        steps.push(point);
+
+    };
+
+    /*
+     * Mermaid / bracket node labels:
+     * A[Machine Learning] --> B[Supervised Learning]
+     */
+    for(
+        const match of source.matchAll(
+            /(?:[A-Za-z0-9_-]+\s*)?\[\[?([^\]\n]+?)\]\]?/g
+        )
+    ){
+        addStep(match[1]);
+    }
+
+    /*
+     * ASCII boxes using pipe-separated cells.
+     * Merge matching columns across successive rows.
+     */
+    const pipeRows =
+        source
+            .split(/\r?\n/)
+            .map(line => line.trim())
+            .filter(
+                line =>
+                    (line.match(/\|/g) || []).length >= 2
+            )
+            .map(line =>
+                line
+                    .split("|")
+                    .slice(1,-1)
+                    .map(cell =>
+                        cell
+                            .replace(
+                                /[`~^<>{}\[\]()*_:=;]+/gu,
+                                " "
+                            )
+                            .replace(/\s+/g," ")
+                            .trim()
+                    )
+                    .filter(Boolean)
+            )
+            .filter(row => row.length > 0);
+
+    if(pipeRows.length){
+
+        const maxColumns =
+            Math.max(
+                ...pipeRows.map(
+                    row => row.length
+                )
+            );
+
+        for(
+            let column=0;
+            column<maxColumns;
+            column++
+        ){
+
+            const parts=[];
+
+            pipeRows.forEach(row => {
+
+                if(
+                    row[column] &&
+                    (
+                        !parts.length ||
+                        parts[parts.length - 1].toLowerCase() !==
+                            row[column].toLowerCase()
+                    )
+                ){
+                    parts.push(
+                        row[column]
+                    );
+                }
+
+            });
+
+            if(parts.length){
+                addStep(
+                    parts.join(" ")
+                );
+            }
+
+        }
+
+    }
+
+    /*
+     * Single-box labels such as:
+     * | Machine Learning |
+     */
+    source
+        .split(/\r?\n/)
+        .forEach(line => {
+
+            const cells =
+                line
+                    .split("|")
+                    .slice(1,-1)
+                    .map(cell =>
+                        cell
+                            .replace(
+                                /[`~^<>{}\[\]()*_:=;]+/gu,
+                                " "
+                            )
+                            .replace(/\s+/g," ")
+                            .trim()
+                    )
+                    .filter(Boolean);
+
+            cells.forEach(
+                addStep
+            );
+
+        });
+
+    return steps.slice(0,6);
+
+}
+
+
 function parseNotes(content="", orderedDiagrams=[]){
 
-const lines = String(content || "")
+const rawSource =
+String(content || "");
+
+const safeSource =
+rawSource.replace(
+    /```([^\n`]*)\n([\s\S]*?)```/g,
+    (full, language, fencedContent) => {
+
+        if(
+            isFlowchartDiagramBlock(
+                language,
+                fencedContent
+            )
+        ){
+
+            /*
+             * The fenced diagram is converted into the existing
+             * mandatory Nyxora flowchart instead of becoming
+             * ordinary note bullets.
+             */
+            return "";
+
+        }
+
+        return fencedContent;
+
+    }
+);
+
+const lines = safeSource
 
 .split("\n")
 
@@ -2144,397 +2827,7 @@ return blocks;
 
 
 
-function buildNotesFlowchartData(blocks=[]){
-
-const safeBlocks =
-Array.isArray(blocks)
-?
-blocks.filter(Boolean)
-:
-[];
-
-
-/*
-    --------------------------------------------------
-    1. USE EXPLICIT FLOWCHART DATA FIRST
-    --------------------------------------------------
-
-    If the AI already supplied a flowchart block,
-    preserve its steps and only use the template
-    renderer for presentation.
-*/
-
-const explicit =
-safeBlocks.find(
-block =>
-block?.type === "flowchart" &&
-Array.isArray(block.steps) &&
-block.steps.length > 0
-);
-
-
-if(explicit){
-
-const explicitSteps =
-explicit.steps
-.map(step => {
-
-if(typeof step === "string"){
-return step.trim();
-}
-
-if(step && typeof step === "object"){
-
-return String(
-step.text ??
-step.label ??
-step.title ??
-step.content ??
-step.description ??
-step.name ??
-step.step ??
-step.value ??
-""
-).trim();
-
-}
-
-return "";
-
-})
-.filter(Boolean)
-.slice(0,6);
-
-
-if(explicitSteps.length){
-
-return {
-
-title:
-String(
-explicit.title ||
-"Flow Chart"
-).trim(),
-
-steps:explicitSteps
-
-};
-
-}
-
-}
-
-
-/*
-    --------------------------------------------------
-    2. DERIVE A FLOWCHART FROM REAL NOTES CONTENT
-    --------------------------------------------------
-
-    The Notes PDF must contain a flowchart even when
-    the AI did not explicitly return one.
-
-    Priority:
-    A. First heading + its bullet points.
-    B. Process-like heading + its bullet points.
-    C. First useful bullet group.
-    D. Useful headings when bullets are unavailable.
-
-    No topic-specific data is hardcoded.
-*/
-
-const headings =
-safeBlocks
-.filter(
-block =>
-(
-block?.type === "heading" ||
-block?.type === "subheading"
-) &&
-String(block.text || "").trim()
-)
-.map(block =>
-String(block.text || "").trim()
-);
-
-
-const title =
-headings[0] ||
-"Flow Chart";
-
-
-const processPattern =
-/\b(process|steps?|stages?|cycle|flow|mechanism|procedure|working|how it works|sequence|क्रम|चरण|प्रक्रिया|प्रवाह|कार्यविधि|क्रमबद्ध)\b/i;
-
-
-const derivedSteps = [];
-
-
-/*
-    --------------------------------------------------
-    A. FIRST HEADING + FOLLOWING BULLETS
-    --------------------------------------------------
-*/
-
-let firstHeadingIndex = -1;
-
-for(
-let index = 0;
-index < safeBlocks.length;
-index += 1
-){
-
-const block = safeBlocks[index];
-
-if(
-(
-block?.type === "heading" ||
-block?.type === "subheading"
-) &&
-String(block.text || "").trim()
-){
-
-firstHeadingIndex = index;
-break;
-
-}
-
-}
-
-
-if(firstHeadingIndex >= 0){
-
-for(
-let index = firstHeadingIndex + 1;
-index < safeBlocks.length;
-index += 1
-){
-
-const block = safeBlocks[index];
-
-if(
-block?.type === "heading" ||
-block?.type === "subheading"
-){
-break;
-}
-
-if(
-block?.type === "bullets" &&
-Array.isArray(block.items)
-){
-
-block.items.forEach(item => {
-
-const value =
-String(item || "").trim();
-
-if(
-derivedSteps.length < 6 &&
-value
-){
-
-derivedSteps.push(value);
-
-}
-
-});
-
-}
-
-}
-
-}
-
-
-/*
-    --------------------------------------------------
-    B. PROCESS / STAGE HEADING + ITS BULLETS
-    --------------------------------------------------
-
-    If the first heading is not followed by useful
-    bullets, look for a heading that describes a
-    process or sequence.
-*/
-
-if(derivedSteps.length === 0){
-
-let processIndex = -1;
-
-for(
-let index = 0;
-index < safeBlocks.length;
-index += 1
-){
-
-const block = safeBlocks[index];
-
-if(
-(
-block?.type === "heading" ||
-block?.type === "subheading"
-) &&
-processPattern.test(
-String(block.text || "")
-)
-){
-
-processIndex = index;
-break;
-
-}
-
-}
-
-
-if(processIndex >= 0){
-
-for(
-let index = processIndex + 1;
-index < safeBlocks.length;
-index += 1
-){
-
-const block = safeBlocks[index];
-
-if(
-block?.type === "heading" ||
-block?.type === "subheading"
-){
-break;
-}
-
-if(
-block?.type === "bullets" &&
-Array.isArray(block.items)
-){
-
-block.items.forEach(item => {
-
-const value =
-String(item || "").trim();
-
-if(
-derivedSteps.length < 6 &&
-value
-){
-
-derivedSteps.push(value);
-
-}
-
-});
-
-}
-
-}
-
-}
-
-}
-
-
-/*
-    --------------------------------------------------
-    C. FALLBACK TO THE FIRST USEFUL BULLET GROUP
-    --------------------------------------------------
-*/
-
-if(derivedSteps.length === 0){
-
-for(
-const block of safeBlocks
-){
-
-if(
-block?.type === "bullets" &&
-Array.isArray(block.items)
-){
-
-block.items.forEach(item => {
-
-const value =
-String(item || "").trim();
-
-if(
-derivedSteps.length < 6 &&
-value
-){
-
-derivedSteps.push(value);
-
-}
-
-});
-
-}
-
-if(derivedSteps.length >= 6){
-break;
-}
-
-}
-
-}
-
-
-/*
-    --------------------------------------------------
-    D. FINAL FALLBACK: USE HEADINGS
-    --------------------------------------------------
-
-    This is only used when no meaningful bullet
-    points exist.
-*/
-
-if(derivedSteps.length === 0){
-
-headings
-.slice(1,7)
-.forEach(heading => {
-
-const value =
-String(heading || "").trim();
-
-if(
-value &&
-derivedSteps.length < 6
-){
-
-derivedSteps.push(value);
-
-}
-
-});
-
-}
-
-
-/*
-    --------------------------------------------------
-    RETURN
-    --------------------------------------------------
-*/
-
-return {
-
-title:
-String(
-title ||
-"Flow Chart"
-).trim(),
-
-steps:
-derivedSteps
-.filter(Boolean)
-.slice(0,6)
-
-};
-
-}
-
 function NotesContent({blocks=[]}){
-
-const flowchartData = buildNotesFlowchartData(blocks);
 
 return(
 
@@ -2579,26 +2872,6 @@ wrap={false}
 </View>
 
 );
-
-}
-
-if(block.type==="flowchart"){
-
-    if(flowchartData.steps.length === 0){
-        return null;
-    }
-
-    return(
-
-        <NotesFlowchart
-            key={"note-flowchart-"+index}
-
-            title={flowchartData.title}
-
-            steps={flowchartData.steps}
-        />
-
-    );
 
 }
 
@@ -2929,68 +3202,39 @@ marginBottom:4
 block.items.map((item,itemIndex)=>(
 
 <View
-
-key={"note-item-"+index+"-"+itemIndex}
-
-style={{
-
-flexDirection:"row",
-
-alignItems:"flex-start",
-
-marginBottom:5,
-
-paddingLeft:2
-
-}}
-
+  key={"note-item-"+index+"-"+itemIndex}
+  style={{
+    flexDirection:"row",
+    alignItems:"flex-start",
+    marginBottom:5,
+    paddingLeft:2
+  }}
 >
 
-<Text
+  <Text
+    style={{
+      fontFamily:"NotoSansDevanagari",
+      fontSize:18,
+      lineHeight:1.35,
+      color:"#6D5DFB",
+      width:18,
+      marginTop:1
+    }}
+  >
+    {"•"}
+  </Text>
 
-style={{
-
-fontFamily:"NotoSansDevanagari",
-
-fontSize:18,
-
-lineHeight:1.35,
-
-color:"#6D5DFB",
-
-width:18,
-
-marginTop:1
-
-}}
-
->
-
-{"•"}
-
-</Text>
-
-<Text
-
-style={{
-
-fontFamily:"NotoSansDevanagari",
-
-fontSize:10,
-
-lineHeight:1.35,
-
-color:"#111827",
-
-flex:1
-
-}}
-
->
-
-{renderMixedMathText(item)}
-
-</Text>
+  <Text
+    style={{
+      fontFamily:"NotoSansDevanagari",
+      fontSize:10,
+      lineHeight:1.35,
+      color:"#111827",
+      flex:1
+    }}
+  >
+    {renderMixedMathText(item)}
+  </Text>
 
 </View>
 
@@ -3005,6 +3249,7 @@ flex:1
 })
 
 }
+
 </View>
 
 );
@@ -3458,21 +3703,14 @@ lineHeight:9
 
 
 <Text
-
-style={{
-
-fontFamily:"NotoSansDevanagari",
-
-fontSize:9.5,
-
-lineHeight:1.35,
-
-color:"#111827",
-
-flex:1
-
-}}
-
+  style={{
+    fontFamily:"NotoSansDevanagari",
+    fontSize:9,
+    lineHeight:1.45,
+    color:"#111827",
+    flex:1
+  }}
+  preserveWhitespace
 >
 
 {text}
@@ -5048,7 +5286,267 @@ cleanedContent
 }
 
 
-function parseContent(content=""){
+
+function isProgrammingMarkdownTableSeparator(line=""){
+
+    const value =
+        String(line || "")
+        .trim();
+
+    if(!value.includes("|")){
+        return false;
+    }
+
+    const cells =
+        value
+        .replace(/^\|/,"")
+        .replace(/\|$/,"")
+        .split("|")
+        .map(cell =>
+            String(cell || "").trim()
+        )
+        .filter(Boolean);
+
+    if(cells.length < 2){
+        return false;
+    }
+
+    return cells.every(
+        cell =>
+            /^[|:\-\s]+$/.test(cell) &&
+            /:/.test(cell)
+    );
+
+}
+
+
+
+function parseProgrammingMarkdownTable(
+    lines=[],
+    startIndex=0
+){
+
+    const headerLine =
+        String(
+            lines[startIndex] || ""
+        ).trim();
+
+    if(!headerLine.includes("|")){
+        return null;
+    }
+
+    const separatorIndex =
+        startIndex + 1;
+
+    if(
+        separatorIndex >=
+        lines.length
+    ){
+        return null;
+    }
+
+    if(
+        !isProgrammingMarkdownTableSeparator(
+            lines[separatorIndex]
+        )
+    ){
+        return null;
+    }
+
+    const splitCells = line =>
+        String(line || "")
+        .trim()
+        .replace(/^\|/,"")
+        .replace(/\|$/,"")
+        .split("|")
+        .map(
+            cell =>
+                cleanNoteText(
+                    cell.trim()
+                )
+        )
+        .filter(Boolean);
+
+    const headers =
+        splitCells(headerLine);
+
+    if(headers.length < 2){
+        return null;
+    }
+
+    const rows = [];
+
+    let rowIndex =
+        separatorIndex + 1;
+
+    while(
+        rowIndex <
+        lines.length
+    ){
+
+        const line =
+            String(
+                lines[rowIndex] || ""
+            ).trim();
+
+        if(
+            !line ||
+            !line.includes("|")
+        ){
+            break;
+        }
+
+        if(
+            isProgrammingMarkdownTableSeparator(
+                line
+            )
+        ){
+            rowIndex++;
+            continue;
+        }
+
+        const cells =
+            splitCells(line);
+
+        if(cells.length < 2){
+            break;
+        }
+
+        rows.push(
+            cells.slice(
+                0,
+                Math.max(
+                    2,
+                    headers.length
+                )
+            )
+        );
+
+        rowIndex++;
+    }
+
+    if(!rows.length){
+        return null;
+    }
+
+    return {
+        endIndex:rowIndex,
+        block:{
+            type:"table",
+            title:"",
+            headers:headers.slice(0,4),
+            rows:rows.map(
+                row =>
+                    row.slice(0,4)
+            )
+        }
+    };
+
+}
+
+
+
+function extractProgrammingAnswerContent(
+    answerText=""
+){
+
+    const sourceLines =
+        String(answerText || "")
+        .split(/\r?\n/)
+        .map(
+            line =>
+                String(line || "")
+                .trim()
+        )
+        .filter(Boolean);
+
+    const answerPoints = [];
+    const tableBlocks = [];
+
+    let lineIndex = 0;
+
+    while(
+        lineIndex <
+        sourceLines.length
+    ){
+
+        const table =
+            parseProgrammingMarkdownTable(
+                sourceLines,
+                lineIndex
+            );
+
+        if(table){
+
+            tableBlocks.push(
+                table.block
+            );
+
+            lineIndex =
+                table.endIndex;
+
+            continue;
+        }
+
+        const value =
+            cleanNoteText(
+                sourceLines[lineIndex]
+            )
+            .replace(
+                /^\s*(?:[-*•]|\d+[.)])\s+/,
+                ""
+            )
+            .trim();
+
+        if(
+            value &&
+            !/^[._*=-]+$/.test(value)
+        ){
+            answerPoints.push(value);
+        }
+
+        lineIndex++;
+    }
+
+    return {
+        answerText:
+            answerPoints.join("\n"),
+        tableBlocks
+    };
+
+}
+
+
+
+function splitProgrammingAnswerPoints(
+    text=""
+){
+
+    return String(text || "")
+        .split(/\r?\n/)
+        .map(
+            line =>
+                cleanAnswerKeyText(
+                    String(line || "")
+                    .replace(
+                        /^\s*(?:[-*•]|\d+[.)])\s+/,
+                        ""
+                    )
+                )
+                .trim()
+        )
+        .filter(
+            line =>
+                line &&
+                !/^[._*=-]+$/.test(line)
+        );
+
+}
+
+
+
+
+function parseContent(content="", options={}){
 
 const mathDiagramData =
 extractMathDiagramData(content);
@@ -5124,6 +5622,9 @@ let currentAnswerQuestion = null;
 
 let readingAnswerKey = false;
 
+let inCodeBlock = false;
+let codeLanguage = "";
+let codeLines = [];
 
 
 const pushCurrentSection = () => {
@@ -5166,7 +5667,45 @@ lines.forEach(rawLine=>{
 
 const clean = cleanText(rawLine);
 
+const fence = clean.match(/^```([a-zA-Z0-9#+-]*)$/);
 
+if (fence) {
+
+    if (!inCodeBlock) {
+
+        inCodeBlock = true;
+        codeLanguage = fence[1] || "text";
+        codeLines = [];
+
+    } else {
+
+        if (currentQuestion) {
+
+            if (!currentQuestion.blocks) {
+                currentQuestion.blocks = [];
+            }
+
+            currentQuestion.blocks.push({
+                type: "code",
+                language: codeLanguage,
+                content: codeLines.join("\n")
+            });
+
+        }
+
+        inCodeBlock = false;
+        codeLanguage = "";
+        codeLines = [];
+
+    }
+
+    return;
+}
+
+if (inCodeBlock) {
+    codeLines.push(rawLine);
+    return;
+}
 
 if(!clean){
 
@@ -5342,6 +5881,8 @@ text:clean
 
 options:[],
 
+blocks: [],
+
 number:
 
 number ||
@@ -5426,13 +5967,18 @@ return;
 
 
 
+const sectionHeading = clean.replace(
+    /^#{1,6}\s*/,
+    ""
+).trim();
+
 if(
 
-/^section\s+[a-d]/i.test(clean)
+/^section\s+(?:[a-d]|\d+)\b/i.test(sectionHeading)
 
 ||
 
-/^खंड\s*["']?[कखगघ]/u.test(clean)
+/^खंड\s*["']?[कखगघ](?:\s*\d+)?/u.test(sectionHeading)
 
 ){
 
@@ -5513,6 +6059,8 @@ currentSection.questions.push({
 text:instructionText,
 
 options:[],
+
+blocks: [],
 
 number:currentSection.questions.length + 1
 
@@ -5774,6 +6322,8 @@ text:clean
 
 options:[],
 
+blocks: [],
+
 number:
 
 number ||
@@ -5866,6 +6416,8 @@ text:clean.replace(
 
 options:[],
 
+blocks: [],
+
 number:
 
 currentSection.questions.length + 1
@@ -5882,15 +6434,18 @@ return;
 
 
 
-if(currentQuestion){
+if (currentQuestion) {
 
-currentQuestion.text +=
+    // Don't append fenced code lines to question text.
+    if (!inCodeBlock && clean) {
 
-" " + clean;
+        currentQuestion.text +=
+            (currentQuestion.text ? "\n" : "") +
+            clean;
+
+    }
 
 }
-
-
 
 });
 
@@ -5900,6 +6455,81 @@ pushCurrentSection();
 
 pushCurrentAnswerSection();
 
+
+
+
+if(
+    options.isProgrammingTest === true
+){
+
+    sections.forEach(section=>{
+
+        (section.questions || [])
+        .forEach(question=>{
+
+            const rawQuestionText =
+                String(
+                    question?.text || ""
+                );
+
+            const answerMatch =
+                rawQuestionText.match(
+                    /(?:^|\n)\s*(?:answer|solution)\s*:\s*/i
+                );
+
+            if(!answerMatch){
+                return;
+            }
+
+            const questionText =
+                rawQuestionText
+                .slice(
+                    0,
+                    answerMatch.index
+                )
+                .trim();
+
+            const rawAnswerText =
+                rawQuestionText
+                .slice(
+                    answerMatch.index +
+                    answerMatch[0].length
+                )
+                .trim();
+
+            const parsedAnswer =
+                extractProgrammingAnswerContent(
+                    rawAnswerText
+                );
+
+            const existingBlocks =
+                Array.isArray(
+                    question.blocks
+                )
+                ?
+                question.blocks
+                :
+                [];
+
+            question.text =
+                questionText;
+
+            question.answerText =
+                parsedAnswer.answerText;
+
+            question.blocks = [
+                ...existingBlocks,
+                ...parsedAnswer.tableBlocks
+            ];
+
+            question.isProgrammingTest =
+                true;
+
+        });
+
+    });
+
+}
 
 
 sections.forEach(section=>{
@@ -5954,7 +6584,33 @@ data = {}
 
 const parsed = parseContent(
 
+data.content || "",
+
+{
+
+isProgrammingTest:
+
+/test/i.test(
+
+String(
+
+data.type || ""
+
+)
+
+) &&
+
+/```/.test(
+
+String(
+
 data.content || ""
+
+)
+
+)
+
+}
 
 );
 
@@ -6032,7 +6688,6 @@ const parsedNoteBlocks = isNotes
     :
 
     [];
-
 
     const quickRevisionRows = [];
 
@@ -6144,6 +6799,8 @@ const quickRevisionTable = isNotes
 
     null;
 
+
+
 const noteBlocks = isNotes
 
 ?
@@ -6151,11 +6808,6 @@ const noteBlocks = isNotes
 [
 
     ...parsedNoteBlocks,
-
-    {
-        type:"flowchart"
-    },
-
     quickRevisionTable
 
 ]
@@ -6239,6 +6891,233 @@ String(block.text || "").trim()
 :
 
 "";
+
+const mandatoryFlowchartSteps = [];
+
+const flowPointSeen = new Set();
+
+const addMainFlowPoint = value => {
+
+    const text =
+        String(value || "")
+            .replace(/\*\*/g,"")
+            .replace(/^[-*•]\s*/u,"")
+            .replace(/^\d+[.)]\s*/u,"")
+            .replace(/\s+/g," ")
+            .trim();
+
+    if(!text){
+        return;
+    }
+
+    const colonMatch =
+        text.match(
+            /^([^:：]{2,60})\s*[:：]/
+        );
+
+    const sentenceMatch =
+        text.match(
+            /^(.{3,120}?[.!?])(?:\s|$)/u
+        );
+
+    let point =
+        (
+            colonMatch
+                ? colonMatch[1]
+                : sentenceMatch
+                    ? sentenceMatch[1]
+                    : text
+        )
+            .trim();
+
+    if(point.length > 52){
+
+        const clauseMatch =
+            point.match(
+                /^(.{3,52}?)(?:,|;|\s+-\s+|\s+—\s+)/u
+            );
+
+        if(clauseMatch){
+
+            point =
+                clauseMatch[1]
+                    .trim();
+
+        }
+
+    }
+
+    const normalized =
+        point.toLowerCase();
+
+    if(
+        !point ||
+        flowPointSeen.has(normalized) ||
+        normalized ===
+            String(noteChapterHeading || "")
+                .trim()
+                .toLowerCase()
+    ){
+        return;
+    }
+
+    flowPointSeen.add(normalized);
+
+    mandatoryFlowchartSteps.push(
+        point
+    );
+
+};
+
+
+/*
+ * 1. Highest priority:
+ * If the AI response contains a Mermaid / ASCII / diagram block,
+ * use its actual node labels for the existing Nyxora flowchart.
+ */
+const rawFlowchartSource =
+    String(
+        data.content ||
+        parsed.diagramData?.cleanedContent ||
+        ""
+    );
+
+const diagramFlowSteps =
+    extractFlowchartDiagramSteps(
+        rawFlowchartSource
+    );
+
+diagramFlowSteps.forEach(
+    addMainFlowPoint
+);
+
+
+/*
+ * 2. Otherwise use real headings/subheadings.
+ */
+if(
+    mandatoryFlowchartSteps.length === 0
+){
+
+    parsedNoteBlocks.forEach(block => {
+
+        if(
+            mandatoryFlowchartSteps.length >= 6
+        ){
+            return;
+        }
+
+        if(
+            (
+                block?.type === "heading" ||
+                block?.type === "subheading"
+            ) &&
+            block.text
+        ){
+
+            addMainFlowPoint(
+                block.text
+            );
+
+        }
+
+    });
+
+}
+
+
+/*
+ * 3. If there are fewer than three main points,
+ * use only the first meaningful point from each bullet group.
+ */
+if(
+    mandatoryFlowchartSteps.length < 3
+){
+
+    parsedNoteBlocks.forEach(block => {
+
+        if(
+            mandatoryFlowchartSteps.length >= 6
+        ){
+            return;
+        }
+
+        if(
+            block?.type === "bullets" &&
+            Array.isArray(block.items)
+        ){
+
+            const firstMeaningful =
+                block.items.find(
+                    item =>
+                        String(item || "").trim()
+                );
+
+            if(firstMeaningful){
+
+                addMainFlowPoint(
+                    firstMeaningful
+                );
+
+            }
+
+        }
+
+    });
+
+}
+
+
+/*
+ * 4. Last-resort raw content fallback.
+ */
+if(
+    mandatoryFlowchartSteps.length === 0
+){
+
+    rawFlowchartSource
+        .split(/\r?\n/)
+        .map(line =>
+            line
+                .replace(/^#{1,6}\s*/u,"")
+                .replace(/^[-*•]\s*/u,"")
+                .replace(/^\d+[.)]\s*/u,"")
+                .replace(/\*\*/g,"")
+                .trim()
+        )
+        .filter(Boolean)
+        .forEach(line => {
+
+            if(
+                mandatoryFlowchartSteps.length >= 6
+            ){
+                return;
+            }
+
+            addMainFlowPoint(
+                line
+            );
+
+        });
+
+}
+
+
+if(
+    mandatoryFlowchartSteps.length === 0
+){
+
+    addMainFlowPoint(
+        noteChapterHeading ||
+        data.title ||
+        "Main Topic"
+    );
+
+}
+
+const finalNoteBlocks = noteBlocks;
+
+
 
 
 
@@ -6627,29 +7506,115 @@ backgroundColor:"#FFFFFF"
 
 <PDFHeader
 
-title={
+title=""
 
+/>
+
+
+
+<NyxoraPDFTitle
+title={
+formatPdfTitle(
 data.title || "Nyxora Document"
+)
+}
+/>
+
+<NyxoraDocumentDetails
+data={normalizedMetadata}
+/>
+
+
+
+{
+
+(() => {
+
+    const firstHeadingIndex =
+        finalNoteBlocks.findIndex(
+            block =>
+                block &&
+                block.type === "heading"
+        );
+
+    if(
+        firstHeadingIndex >= 0
+    ){
+
+        return (
+
+            <>
+
+                <NotesContent
+                    blocks={
+                        finalNoteBlocks.slice(
+                            0,
+                            firstHeadingIndex + 1
+                        )
+                    }
+                />
+
+                <NotesFlowchart
+                    title={
+                        noteChapterHeading ||
+                        data.title ||
+                        "Flow Chart"
+                    }
+                    steps={
+                        mandatoryFlowchartSteps
+                    }
+                    content={
+                        parsed.diagramData?.cleanedContent ||
+                        data.content ||
+                        ""
+                    }
+                />
+
+                <NotesContent
+                    blocks={
+                        finalNoteBlocks.slice(
+                            firstHeadingIndex + 1
+                        )
+                    }
+                />
+
+            </>
+
+        );
+
+    }
+
+    return (
+
+        <>
+
+            <NotesContent
+                blocks={finalNoteBlocks}
+            />
+
+            <NotesFlowchart
+                title={
+                    noteChapterHeading ||
+                    data.title ||
+                    "Flow Chart"
+                }
+                steps={
+                    mandatoryFlowchartSteps
+                }
+                content={
+                    parsed.diagramData?.cleanedContent ||
+                    data.content ||
+                    ""
+                }
+            />
+
+        </>
+
+    );
+
+})()
 
 }
-
-/>
-
-
-
-<PDFMetadata
-
-data={normalizedMetadata}
-
-/>
-
-
-
-<NotesContent
-
-blocks={noteBlocks}
-
-/>
 
 </Page>
 
@@ -6687,20 +7652,22 @@ backgroundColor:"#FFFFFF"
 
 <PDFHeader
 
-title={
-
-data.title || "Nyxora Document"
-
-}
+title=""
 
 />
 
 
 
-<PDFMetadata
+<NyxoraPDFTitle
+title={
+formatPdfTitle(
+data.title || "Nyxora Document"
+)
+}
+/>
 
+<NyxoraDocumentDetails
 data={normalizedMetadata}
-
 />
 
 
