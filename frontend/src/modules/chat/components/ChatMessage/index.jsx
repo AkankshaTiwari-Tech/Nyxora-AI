@@ -37,6 +37,10 @@ import {
   createChatPdfTitle,
 } from "../../utils/pdfIntent";
 
+import {
+  searchNotesImage,
+} from "../../../../services/notesImageService";
+
 
 // ======================================================
 // CHAT MESSAGE
@@ -50,13 +54,15 @@ export default function ChatMessage({
   isThinking = false,
 }) {
 
-  const {
-    id,
-    role,
-    message: text,
-    file,
-    pdfRequested = false,
-  } = message;
+const {
+  id,
+  role,
+  message: text,
+  file,
+  pdfRequested = false,
+  notesImageRequested = false,
+  notesImageTopic = "",
+} = message;
 
 
   const isUser =
@@ -621,42 +627,152 @@ export default function ChatMessage({
 
     };
 
+function getNotesImageTopic(
+  value = ""
+) {
 
-  // ====================================================
-  // PDF DATA
-  // ====================================================
+  let topic =
+    String(
+      value || ""
+    )
+      .replace(
+        /generate\s+pdf/iu,
+        ""
+      )
+      .replace(
+        /\bnotes?\b/iu,
+        ""
+      )
+      .replace(
+        /\b(?:and\s+)?add\s+(?:a\s+)?(?:relevant\s+)?(?:image|images|picture|pictures|photo|photos|visual|visuals|figure|figures|illustration|illustrations)\b/iu,
+        ""
+      )
+      .replace(
+        /\bfor\s+class\s+\d+(?:\s*[A-Za-z])?\b/iu,
+        ""
+      )
+      .replace(
+        /\bclass\s+\d+(?:\s*[A-Za-z])?\b/iu,
+        ""
+      )
+      .replace(
+        /\b(?:on|about|regarding)\b/iu,
+        ""
+      )
+      .replace(
+        /\s+/g,
+        " "
+      )
+      .trim();
 
-  const getPdfData =
-    () => {
+  return (
+    topic ||
+    String(value || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 80)
+  );
 
-      const content =
-        String(
-          text || ""
-        ).trim();
+}
+
+ // ====================================================
+// PDF DATA
+// ====================================================
+
+const getPdfData =
+  async () => {
+
+    const content =
+      String(
+        text || ""
+      ).trim();
 
 
-      return {
+    let finalNotesImage =
+      null;
 
-        title:
-          createChatPdfTitle(
-            content,
-            "Nyxora AI Document"
-          ),
 
-        type:
-          "AI Generated Document",
+    // ==================================================
+    // FETCH NOTES IMAGE ONLY WHEN USER REQUESTED IT
+    // ==================================================
 
-        subject:
-          "",
+    const isNotesDocument =
+      /\bnotes?\b/i.test(
+        content
+      ) ||
+      /नोट्स/u.test(
+        content
+      );
 
-        chapter:
-          "",
 
-        content,
+    if (
+      isNotesDocument &&
+      notesImageRequested &&
+      notesImageTopic
+    ) {
 
-      };
+      try {
+
+const imageTopic =
+  getNotesImageTopic(
+    notesImageTopic
+  );
+
+console.log(
+  "🖼️ Notes image search topic:",
+  imageTopic
+);
+
+finalNotesImage =
+  await searchNotesImage(
+    imageTopic
+  );
+
+      } catch (
+        error
+      ) {
+
+        console.error(
+          "Notes PDF image fetch failed:",
+          error
+        );
+
+      }
+
+    }
+
+
+    return {
+
+      title:
+        createChatPdfTitle(
+          content,
+          "Nyxora AI Document"
+        ),
+
+      type:
+        isNotesDocument
+          ? "Notes"
+          : "AI Generated Document",
+
+      subject:
+        "",
+
+      chapter:
+        "",
+
+      content,
+
+      ...(finalNotesImage
+        ? {
+            notesImage:
+              finalNotesImage,
+          }
+        : {}),
 
     };
+
+  };
 
 
   // ====================================================
@@ -690,9 +806,9 @@ export default function ChatMessage({
 
 
         url =
-          await createWorkspacePdfUrl(
-            getPdfData()
-          );
+await createWorkspacePdfUrl(
+  await getPdfData()
+);
 
 
         window.open(
@@ -767,10 +883,9 @@ export default function ChatMessage({
         );
 
 
-        await downloadWorkspacePdf(
-          getPdfData()
-        );
-
+await downloadWorkspacePdf(
+  await getPdfData()
+);
       } catch (error) {
 
         console.error(

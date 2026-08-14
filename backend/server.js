@@ -6,6 +6,8 @@ import chatRoutes from "./routes/chatRoutes.js";
 
 import imageRoutes from "./routes/imageRoutes.js";
 
+import notesImageRoutes from "./routes/notesImageRoutes.js";
+
 // ======================================================
 // ENVIRONMENT
 // ======================================================
@@ -27,7 +29,6 @@ const app = express();
 app.use(
   cors()
 );
-
 
 // ======================================================
 // JSON BODY LIMIT
@@ -88,6 +89,11 @@ app.use(
 app.use(
   "/api/generate-image",
   imageRoutes
+);
+
+app.use(
+  "/api/notes-image",
+  notesImageRoutes
 );
 
 // ======================================================

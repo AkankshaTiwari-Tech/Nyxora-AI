@@ -38,6 +38,9 @@ import {
   isPdfRequest,
 } from "../utils/pdfIntent";
 
+import {
+  searchNotesImage,
+} from "../../../services/notesImageService";
 
 // ======================================================
 // CONFIG
@@ -1188,7 +1191,58 @@ function cleanValue(
 
 }
 
+// ======================================================
+// NOTES IMAGE REQUEST DETECTION
+// ======================================================
 
+function isNotesImageRequest(
+  text = ""
+) {
+
+  const value =
+    String(text || "")
+      .trim();
+
+  if (!value) {
+    return false;
+  }
+
+  const asksForImage =
+    /\b(image|images|picture|pictures|photo|photos|visual|visuals|figure|figures|illustration|illustrations|photograph|photographs)\b/i.test(
+      value
+    ) ||
+
+    /(?:चित्र|तस्वीर|फोटो|इमेज|चित्रण|दृश्य|विजुअल|फिगर)/u.test(
+      value
+    );
+
+  if (!asksForImage) {
+    return false;
+  }
+
+  const isNotesRequest =
+    /\bnotes?\b/i.test(
+      value
+    ) ||
+
+    /नोट्स/u.test(
+      value
+    ) ||
+
+    /\bgenerate\s+pdf\b.*\bnotes?\b/i.test(
+      value
+    ) ||
+
+    /\bpdf\b.*\bnotes?\b/i.test(
+      value
+    ) ||
+
+    /\bnotes?\b.*\bpdf\b/i.test(
+      value
+    );
+
+  return isNotesRequest;
+}
 // ======================================================
 // CHAT TITLE
 // ======================================================
@@ -2599,7 +2653,12 @@ ${userPrompt}
           : isPdfRequest(
               cleanUserMessage
             );
-
+          
+            const notesImageRequested =
+  pdfRequested &&
+  isNotesImageRequest(
+    cleanUserMessage
+  );
 
       let userPrompt;
 
@@ -2620,6 +2679,18 @@ ${userPrompt}
 
       }
 
+ let notesImage = null;
+
+if (
+  notesImageRequested
+) {
+
+  notesImage =
+    await searchNotesImage(
+      cleanUserMessage
+    );
+
+}
 
       let memory =
         null;
@@ -2701,24 +2772,31 @@ ${userPrompt}
       };
 
 
-      const aiMessage = {
+const aiMessage = {
 
-        id:
-          Date.now() + 1,
+  id:
+    Date.now() + 1,
 
-        role:
-          "assistant",
+  role:
+    "assistant",
 
-        message:
-          "",
+  message:
+    "",
 
-        pdfRequested:
-          pdfRequested,
+  pdfRequested:
+    pdfRequested,
 
-        pdfGeneratorMode:
-          isPdfGeneratorMode,
+  pdfGeneratorMode:
+    isPdfGeneratorMode,
 
-      };
+notesImageRequested:
+  notesImageRequested,
+
+notesImageTopic:
+  notesImageRequested
+    ? cleanUserMessage
+    : "",
+};
 
 
       const newMessages = [

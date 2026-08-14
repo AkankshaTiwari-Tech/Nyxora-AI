@@ -10,8 +10,10 @@ import {
     Path
 } from "@react-pdf/renderer";
 
-import normalizeContentText
-from "./contentTextNormalizer.js";
+import {
+    normalizeLatexText,
+    normalizeContentText
+} from "./contentTextNormalizer.js";
 
 
 const FLOW_COLORS = [
@@ -49,13 +51,22 @@ const FLOW_COLORS = [
 ];
 
 
+const FLOW_MATH_PATTERN =
+    /[π√∞∑∫≤≥≠≈±×÷→←↔⇒⇔α-ωΑ-Ω⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]/u;
+
 function getFlowFont(text=""){
 
-    return /[\u0900-\u097F]/u.test(
-        String(text || "")
-    )
-        ? "NotoSansDevanagari"
-        : "Helvetica";
+    const value = String(text || "");
+
+    if(/[\u0900-\u097F]/u.test(value)){
+        return "NotoSansDevanagari";
+    }
+
+    if(FLOW_MATH_PATTERN.test(value)){
+        return "STIXTwoMath";
+    }
+
+    return "Helvetica";
 
 }
 
@@ -63,14 +74,49 @@ function getFlowFont(text=""){
 
 function cleanFlowPoint(text=""){
 
-    const rawText =
-        normalizeContentText(
+    const sourceText =
+        String(text || "")
+            .replace(/\*\*/g, "")
+            .replace(/^[-*•]\s*/u, "")
+            .trim();
+
+    /*
+     * DIRECTLY CONNECT THE SHARED NYXORA LATEX NORMALIZER.
+     *
+     * This is the same normalizeLatexText() exported by
+     * contentTextNormalizer.js.
+     *
+     * Examples:
+     *   \leftrightarrow  -> ↔
+     *   \rightarrow      -> →
+     *   \leftarrow       -> ←
+     *   \Rightarrow     -> ⇒
+     *   \Longleftrightarrow -> ⟺
+     *   x^{2}            -> x²
+     *   a_{1}            -> a₁
+     *   \frac{a}{b}      -> (a)/(b)
+     */
+
+    const latexNormalized =
+        normalizeLatexText(
+            sourceText
+        );
+
+    /*
+     * Keep the ordinary content normalizer in the flowchart pipeline too.
+     * This preserves the existing Notes text-cleaning behavior.
+     */
+
+const rawText =
+    normalizeContentText(
+        normalizeLatexText(
             String(text || "")
                 .replace(/\*\*/g, "")
                 .replace(/^[-*•]\s*/u, "")
         )
-            .replace(/\s+/g, " ")
-            .trim();
+    )
+        .replace(/\s+/g, " ")
+        .trim();
 
     const mainPointMatch =
         rawText.match(
@@ -86,71 +132,120 @@ function cleanFlowPoint(text=""){
 }
 
 
-function wrapSvgText(text=""){
+function normalizeFlowTitle(title=""){
 
-    const words =
+    return normalizeLatexText(
+        String(title || "")
+            .replace(/\*\*/g, "")
+            .trim()
+    )
+        .replace(/\s+/g, " ")
+        .trim();
+
+}
+
+
+function wrapSvgText(
+    text = ""
+){
+
+    const value =
         String(text || "")
             .trim()
-            .split(/\s+/)
-            .filter(Boolean);
+            .replace(/\s+/g, " ");
 
-    if(!words.length){
+    if (!value) {
         return [];
     }
 
-    if(words.length === 1){
-        return [words[0]];
+    const words =
+        value
+            .split(/\s+/)
+            .filter(Boolean);
+
+    if (!words.length) {
+        return [];
     }
 
-    let bestSplit = 1;
-    let bestDifference = Infinity;
+    const MAX_CHARS_PER_LINE = 34;
+    const MAX_LINES = 4;
 
-    for(
-        let split = 1;
-        split < words.length;
-        split++
-    ){
+    const lines = [];
+    let currentLine = "";
 
-        const first =
-            words
-                .slice(0, split)
-                .join(" ");
+    words.forEach(
+        word => {
 
-        const second =
-            words
-                .slice(split)
-                .join(" ");
+            const candidate =
+                currentLine
+                    ? `${currentLine} ${word}`
+                    : word;
 
-        const difference =
-            Math.abs(
-                first.length -
-                second.length
-            );
+            if (
+                candidate.length <=
+                MAX_CHARS_PER_LINE
+            ) {
 
-        if(
-            difference <
-            bestDifference
-        ){
+                currentLine =
+                    candidate;
 
-            bestDifference =
-                difference;
+                return;
+            }
 
-            bestSplit =
-                split;
+            if (currentLine) {
+                lines.push(
+                    currentLine
+                );
+            }
+
+            currentLine =
+                word;
 
         }
+    );
 
+    if (currentLine) {
+        lines.push(
+            currentLine
+        );
     }
 
-    return [
-        words
-            .slice(0, bestSplit)
-            .join(" "),
-        words
-            .slice(bestSplit)
-            .join(" ")
-    ];
+    if (
+        lines.length > MAX_LINES
+    ) {
 
+        const compactLines = [];
+
+        const wordsPerLine =
+            Math.ceil(
+                words.length /
+                MAX_LINES
+            );
+
+        for (
+            let i = 0;
+            i < words.length;
+            i += wordsPerLine
+        ) {
+
+            compactLines.push(
+                words
+                    .slice(
+                        i,
+                        i + wordsPerLine
+                    )
+                    .join(" ")
+            );
+        }
+
+        return compactLines
+            .slice(
+                0,
+                MAX_LINES
+            );
+    }
+
+    return lines;
 }
 
 
@@ -165,6 +260,17 @@ function getFlowTextFontSize(lines=[]){
             1
         );
 
+    const lineCount =
+        lines.length;
+
+    if(lineCount >= 4){
+        return 5.6;
+    }
+
+    if(lineCount === 3){
+        return 6.1;
+    }
+
     if(longestLine <= 28){
         return 7.2;
     }
@@ -177,13 +283,8 @@ function getFlowTextFontSize(lines=[]){
         return 6.6;
     }
 
-    if(longestLine <= 46){
-        return 6.3;
-    }
-
-    return 6;
+    return 6.2;
 }
-
 
 
 
@@ -194,9 +295,9 @@ function FlowchartSvg({
 }){
 
     const normalizedTitle =
-        String(title || "")
-            .trim()
-            .toLowerCase();
+        normalizeFlowTitle(
+            title
+        ).toLowerCase();
 
     const filteredSteps =
         steps
@@ -216,7 +317,7 @@ function FlowchartSvg({
                         point.replace(
                             /\bvs\.?$/iu,
                             "vs. " +
-                            String(title || "").trim()
+                            normalizeFlowTitle(title)
                         ).trim();
 
                 }
@@ -484,6 +585,21 @@ function FlowchartSvg({
                 const fontSize =
                     getFlowTextFontSize(lines);
 
+                const lineGap =
+                    lines.length >= 4
+                        ? 5
+                        : 8;
+
+                const textStart =
+                    y -
+                    (
+                        (
+                            (lines.length - 1) *
+                            lineGap
+                        ) /
+                        2
+                    );
+
                 const cardTop =
                     y -
                     (
@@ -575,21 +691,15 @@ function FlowchartSvg({
                                     }
                                     x={centerX}
                                     y={
-                                        y -
+                                        textStart +
                                         (
-                                            (
-                                                lines.length - 1
-                                            ) * 5
-                                        ) +
-                                        (
-                                            lineIndex * 10
+                                            lineIndex *
+                                            lineGap
                                         ) +
                                         1
                                     }
                                     fontFamily={
-                                        /[\u0900-\u097F]/u.test(line)
-                                            ? "NotoSansDevanagari"
-                                            : "Helvetica"
+                                        getFlowFont(line)
                                     }
                                     fontSize={fontSize}
                                     fontWeight="bold"
@@ -685,6 +795,7 @@ function FlowchartSvg({
 
 }
 
+
 function Card({
     step,
     index,
@@ -697,11 +808,40 @@ function Card({
     const cardWidth = 156;
     const cardHeight = 42;
 
+    /*
+     * Normalize one more time at the card boundary.
+     *
+     * This guarantees that every AI-generated label reaching the actual
+     * SVG Text element has already passed through the shared LaTeX parser.
+     */
+
+    const normalizedStep =
+        cleanFlowPoint(
+            step
+        );
+
     const lines =
-        wrapSvgText(step);
+        wrapSvgText(
+            normalizedStep
+        );
 
     const fontSize =
         getFlowTextFontSize(lines);
+
+    const lineGap =
+        lines.length >= 4
+            ? 5
+            : 8;
+
+    const textStart =
+        y -
+        (
+            (
+                (lines.length - 1) *
+                lineGap
+            ) /
+            2
+        );
 
     const cardTop =
         y -
@@ -795,21 +935,15 @@ function Card({
                         }
                         x={center}
                         y={
-                            y -
+                            textStart +
                             (
-                                (
-                                    lines.length - 1
-                                ) * 5
-                            ) +
-                            (
-                                lineIndex * 10
+                                lineIndex *
+                                lineGap
                             ) +
                             1
                         }
                         fontFamily={
-                            /[\u0900-\u097F]/u.test(line)
-                                ? "NotoSansDevanagari"
-                                : "Helvetica"
+                            getFlowFont(line)
                         }
                         fontSize={fontSize}
                         fontWeight="bold"
@@ -967,16 +1101,22 @@ export default function NotesFlowchart({
             if(headingMatch){
 
                 const heading =
-                    headingMatch[1]
-                        .replace(/\*\*/g, "")
-                        .trim();
+                    normalizeLatexText(
+                        headingMatch[1]
+                            .replace(/\*\*/g, "")
+                            .trim()
+                    );
 
                 if(heading){
-                    headingItems.push(heading);
+                    headingItems.push(
+                        heading
+                    );
                 }
 
                 activeProcess =
-                    processPattern.test(heading);
+                    processPattern.test(
+                        heading
+                    );
 
                 return;
 
@@ -990,14 +1130,21 @@ export default function NotesFlowchart({
                     );
 
                 if(bulletMatch){
+
                     safeSteps.push(
-                        bulletMatch[1]
-                            .replace(/\*\*/g, "")
-                            .trim()
+                        normalizeLatexText(
+                            bulletMatch[1]
+                                .replace(/\*\*/g, "")
+                                .trim()
+                        )
                     );
+
                 }
+
             }
+
         });
+
 
         if(safeSteps.length === 0){
             safeSteps = headingItems;
@@ -1012,19 +1159,21 @@ export default function NotesFlowchart({
     ){
 
         const normalizedTitle =
-            String(title)
-                .trim()
-                .toLowerCase();
+            normalizeFlowTitle(
+                title
+            ).toLowerCase();
 
         if(
-            String(safeSteps[0])
-                .trim()
-                .toLowerCase()
-                ===
+            normalizeFlowTitle(
+                safeSteps[0]
+            ).toLowerCase()
+            ===
             normalizedTitle
         ){
+
             safeSteps =
                 safeSteps.slice(1);
+
         }
 
     }
@@ -1032,6 +1181,12 @@ export default function NotesFlowchart({
 
     safeSteps =
         safeSteps
+            .map(
+                step =>
+                    normalizeLatexText(
+                        String(step || "")
+                    )
+            )
             .filter(Boolean)
             .slice(0,6);
 

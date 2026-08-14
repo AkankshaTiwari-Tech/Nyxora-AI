@@ -6,8 +6,9 @@ Page,
 
 View,
 
-Text
+Text,
 
+Image
 }
 
 from "@react-pdf/renderer";
@@ -44,6 +45,10 @@ from "../notes/NotesTable";
 
 import NotesFlowchart
 from "../notes/NotesFlowchart";
+
+import {
+    normalizeContentText
+} from "../notes/contentTextNormalizer.js";
 
 function formatPdfTitle(title=""){
 
@@ -1378,112 +1383,91 @@ function cleanAnswerKeyText(text = "") {
 }
 
 function renderMixedMathText(text = "") {
-  const value = String(text || "");
 
-  const mathSymbols =
-    /[△⊥∥α-ωΑ-ΩθπμσφψΔΓΣΩ∠∼≅≈≠≤≥±×÷·√∞∴∵→⇒←↔∈∉°]/u;
+    const value =
+        normalizeContentText(
+            String(text || "")
+        );
 
-  const parts = value.split(
-  /(r_[A-Za-z0-9]+(?:\^[A-Za-z0-9]+)?|[A-Za-z]\^[A-Za-z0-9]+|[A-Za-z]_[A-Za-z0-9]+|[△⊥∥α-ωΑ-ΩθπμσφψΔΓΣΩ∠∼≅≈≠≤≥±×÷·√∞∴∵→⇒←↔∈∉°])/u
-);
+    const mathSymbols =
+        /[^\x00-\x7F]/u;
 
-  return parts.map((part, index) => {
-    if (!part) return null;
+    const parts =
+        value.split(
+            /([^\x00-\x7F]+)/u
+        );
 
-    const subSupMatch = part.match(
-      /^([A-Za-z])_([A-Za-z0-9]+)\^([A-Za-z0-9]+)$/
+    return parts.map(
+        (part, index) => {
+
+            if (!part) {
+                return null;
+            }
+
+            const isDevanagari =
+                /[\u0900-\u097F]/u.test(part);
+
+            if (isDevanagari) {
+                return (
+                    <Text
+                        key={"mixed-math-" + index}
+                        style={{
+                            fontFamily:
+                                "NotoSansDevanagari",
+                            fontSize: 9.5
+                        }}
+                    >
+                        {part}
+                    </Text>
+                );
+            }
+
+            if (part === "△") {
+                return (
+                    <Text
+                        key={"mixed-math-" + index}
+                        style={{
+                            fontFamily:
+                                "NotoSansSymbols2",
+                            fontSize: 9.5
+                        }}
+                    >
+                        {part}
+                    </Text>
+                );
+            }
+
+            if (mathSymbols.test(part)) {
+                return (
+                    <Text
+                        key={"mixed-math-" + index}
+                        style={{
+                            fontFamily:
+                                "STIXTwoMath",
+                            fontSize: 9.5
+                        }}
+                    >
+                        {part}
+                    </Text>
+                );
+            }
+
+            return (
+                <Text
+                    key={"mixed-math-" + index}
+                    style={{
+                        fontFamily:
+                            "NotoSans",
+                        fontSize: 9.5
+                    }}
+                >
+                    {part}
+                </Text>
+            );
+
+        }
     );
 
-    if (subSupMatch) {
-      return (
-        <Text key={"mixed-math-" + index}>
-          <Text>{subSupMatch[1]}</Text>
-
-          <Text
-            style={{
-              fontSize: 6.5,
-              verticalAlign: "sub"
-            }}
-          >
-            {subSupMatch[2]}
-          </Text>
-
-          <Text
-            style={{
-              fontSize: 6.5,
-              verticalAlign: "super"
-            }}
-          >
-            {subSupMatch[3]}
-          </Text>
-        </Text>
-      );
-    }
-
-    const subMatch = part.match(
-      /^([A-Za-z])_([A-Za-z0-9]+)$/
-    );
-
-    if (subMatch) {
-      return (
-        <Text key={"mixed-math-" + index}>
-          <Text>{subMatch[1]}</Text>
-
-          <Text
-            style={{
-              fontSize: 6.5,
-              verticalAlign: "sub"
-            }}
-          >
-            {subMatch[2]}
-          </Text>
-        </Text>
-      );
-    }
-
-    const supMatch = part.match(
-      /^([A-Za-z])\^([A-Za-z0-9]+)$/
-    );
-
-    if (supMatch) {
-      return (
-        <Text key={"mixed-math-" + index}>
-          <Text>{supMatch[1]}</Text>
-
-          <Text
-            style={{
-              fontSize: 6.5,
-              verticalAlign: "super"
-            }}
-          >
-            {supMatch[2]}
-          </Text>
-        </Text>
-      );
-    }
-
-    let fontFamily = "NotoSans";
-
-    if (/[\u0900-\u097F]/u.test(part)) {
-      fontFamily = "NotoSansDevanagari";
-    } else if (part === "△") {
-      fontFamily = "NotoSansSymbols2";
-    } else if (mathSymbols.test(part)) {
-      fontFamily = "STIXTwoMath";
-    }
-
-    return (
-      <Text
-        key={"mixed-math-" + index}
-        style={{
-          fontFamily,
-          fontSize: 9.5
-        }}
-      >
-        {part}
-      </Text>
-    );
-  });
 }
 
  
@@ -2051,146 +2035,16 @@ marginBottom:3
 function cleanNoteText(
   text = ""
 ) {
-
-  let value =
-    String(text || "");
-
-  value =
-    value
-      .replace(/\*\*/g, "")
-      .replace(/`/g, "");
-
-  // FRACTIONS
-  value =
-    replaceBalancedLatexCommand(
-      value,
-      "frac",
-      (numerator, denominator) =>
-        `${numerator}/${denominator}`
+    return normalizeContentText(
+        String(text || "")
+            .replace(/\*\*/g,"")
+            .replace(/`/g,"")
+            .trim()
     );
 
-  value =
-    replaceBalancedLatexCommand(
-      value,
-      "dfrac",
-      (numerator, denominator) =>
-        `${numerator}/${denominator}`
-    );
-
-  // SQUARE ROOTS
-  value =
-    replaceBalancedLatexCommand(
-      value,
-      "sqrt",
-      content =>
-        `√(${content})`
-    );
-
-  // SAME LATEX SYMBOL CONVERSIONS AS ANSWER KEY
-  value =
-    value
-      .replace(/\\implies/g, "⇒")
-      .replace(/\\Rightarrow/g, "⇒")
-      .replace(/\\Longrightarrow/g, "⇒")
-      .replace(/\\therefore/g, "∴")
-      .replace(/\\because/g, "∵")
-      .replace(/\\rightarrow/g, "→")
-      .replace(/\\to/g, "→")
-      .replace(/\\triangle/g, "△ ")
-      .replace(/\\Delta/g, "Δ")
-      .replace(/\\angle/g, "∠")
-      .replace(/\\alpha/g, "α")
-      .replace(/\\beta/g, "β")
-      .replace(/\\gamma/g, "γ")
-      .replace(/\\delta/g, "δ")
-      .replace(/\\epsilon/g, "ε")
-      .replace(/\\theta/g, "θ")
-      .replace(/\\lambda/g, "λ")
-      .replace(/\\mu/g, "μ")
-      .replace(/\\pi/g, "π")
-      .replace(/\\rho/g, "ρ")
-      .replace(/\\sigma/g, "σ")
-      .replace(/\\phi/g, "φ")
-      .replace(/\\psi/g, "ψ")
-      .replace(/\\omega/g, "ω")
-      .replace(/\\Gamma/g, "Γ")
-      .replace(/\\Theta/g, "Θ")
-      .replace(/\\Lambda/g, "Λ")
-      .replace(/\\Pi/g, "Π")
-      .replace(/\\Sigma/g, "Σ")
-      .replace(/\\Phi/g, "Φ")
-      .replace(/\\Psi/g, "Ψ")
-      .replace(/\\Omega/g, "Ω")
-      .replace(/\\cong/g, "≅")
-      .replace(/\\approx/g, "≈")
-      .replace(/\\times/g, "×")
-      .replace(/\\cdot/g, "·")
-      .replace(/\\div/g, "÷")
-      .replace(/\\pm/g, "±")
-      .replace(/\\leq/g, "≤")
-      .replace(/\\le/g, "≤")
-      .replace(/\\geq/g, "≥")
-      .replace(/\\ge/g, "≥")
-      .replace(/\\neq/g, "≠")
-      .replace(/\\sim/g, "∼")
-      .replace(/\\parallel/g, " || ")
-      .replace(/\\perpendicular/g, "⊥")
-      .replace(/\\perp/g, "⊥")
-      .replace(/\\in/g, "∈")
-      .replace(/\\notin/g, "∉");
-
-  // TRIGONOMETRY
-  value =
-    value
-      .replace(/\\tan\b/g, "tan")
-      .replace(/\\sin\b/g, "sin")
-      .replace(/\\cos\b/g, "cos")
-      .replace(/\\cot\b/g, "cot")
-      .replace(/\\sec\b/g, "sec")
-      .replace(/\\csc\b/g, "csc");
-
-  // TEXT COMMANDS
-  value =
-    value
-      .replace(/\\text\{([^{}]*)\}/g, "$1")
-      .replace(/\\mathrm\{([^{}]*)\}/g, "$1")
-      .replace(/\\mathbf\{([^{}]*)\}/g, "$1")
-      .replace(/\\textbf\{([^{}]*)\}/g, "$1")
-      .replace(/\\textit\{([^{}]*)\}/g, "$1");
-
-  // POWERS / ANGLES
-  value =
-    value
-      .replace(/^{([^{}]+)}/g, "^$1")
-      .replace(/\^\\circ/g, "°")
-      .replace(/\^o\b/g, "°")
-      .replace(/\\circ/g, "°");
-
-  // LATEX DELIMITERS
-  value =
-    value
-      .replace(/\\left/g, "")
-      .replace(/\\right/g, "")
-      .replace(/\\\(/g, "")
-      .replace(/\\\)/g, "")
-      .replace(/\\\[/g, "")
-      .replace(/\\\]/g, "")
-      .replace(/\$\$/g, "")
-      .replace(/\$/g, "")
-      .replace(/\\,/g, " ")
-      .replace(/\\_/g, "_")
-      .replace(/\\ /g, " ");
-
-  // SPACING
-  value =
-    value
-      .replace(/[ \t]+/g, " ")
-      .replace(/[ \t]*\r?\n[ \t]*/g, "\n")
-      .trim();
-
-  return value;
 }
 
+ 
 function isNoteHeading(line=""){
 
 return /^\s*(?:[-*•]\s*)?#{1,6}\s+/.test(line);
@@ -2485,6 +2339,80 @@ function extractFlowchartDiagramSteps(content=""){
 
 }
 
+function isNyxoraFlowchartDiagram(diagram = {}){
+
+    if(
+        !diagram ||
+        typeof diagram !== "object"
+    ){
+        return false;
+    }
+
+    const labels =
+        Array.isArray(diagram.labels)
+            ? diagram.labels
+            : [];
+
+    const lines =
+        Array.isArray(diagram.lines)
+            ? diagram.lines
+            : [];
+
+    const rectangles =
+        Array.isArray(diagram.rectangles)
+            ? diagram.rectangles
+            : [];
+
+    const points =
+        Array.isArray(diagram.points)
+            ? diagram.points
+            : [];
+
+    const polygons =
+        Array.isArray(diagram.polygons)
+            ? diagram.polygons
+            : [];
+
+    const ellipses =
+        Array.isArray(diagram.ellipses)
+            ? diagram.ellipses
+            : [];
+
+    const paths =
+        Array.isArray(diagram.paths)
+            ? diagram.paths
+            : [];
+
+    const dimensions =
+        Array.isArray(diagram.dimensions)
+            ? diagram.dimensions
+            : [];
+
+    /*
+     * AI flowcharts generated for Notes use:
+     * scene + labeled rectangles + connector lines.
+     *
+     * Scientific/geometry diagrams generally contain additional
+     * geometric primitives such as points, polygons, ellipses,
+     * paths or dimensions.
+     */
+
+    return (
+        String(diagram.type || "")
+            .toLowerCase() === "scene" &&
+
+        labels.length >= 3 &&
+        lines.length >= 1 &&
+        rectangles.length >= 2 &&
+
+        points.length === 0 &&
+        polygons.length === 0 &&
+        ellipses.length === 0 &&
+        paths.length === 0 &&
+        dimensions.length === 0
+    );
+
+}
 
 function parseNotes(content="", orderedDiagrams=[]){
 
@@ -2839,39 +2767,100 @@ blocks.map((block,index)=>{
 
 if(block.type==="diagram"){
 
-return(
+    const useNyxoraFlowchart =
+        isNyxoraFlowchartDiagram(
+            block.diagram
+        );
 
-<View
+    return(
 
-key={"note-diagram-"+index}
+        <View
+            key={"note-diagram-"+index}
+            style={{
+                width:"100%",
+                marginTop:8,
+                marginBottom:10,
+                alignItems:"center"
+            }}
+            wrap={false}
+        >
 
-style={{
+            {useNyxoraFlowchart ? (
 
-width:"100%",
+                <NotesFlowchart
+                    title={
+                        block.diagram?.title ||
+                        "Flow Chart"
+                    }
+                    steps={
+                        Array.isArray(
+                            block.diagram?.labels
+                        )
+                            ? block.diagram.labels
+                                .map(label =>
+                                    typeof label === "string"
+                                        ? label
+                                        : label?.text || ""
+                                )
+                                .filter(Boolean)
+                            : []
+                    }
+                />
 
-marginTop:8,
+            ) : (
 
-marginBottom:10,
+                <MathDiagram
+                    {...(block.diagram || {})}
+                />
 
-alignItems:"center"
+            )}
 
+        </View>
 
+    );
 
-}}
+}
 
-wrap={false}
+if(block.type==="image"){
 
->
+    return(
+        <View
+            key={"note-image-"+index}
+            style={{
+                width:"100%",
+                marginTop:10,
+                marginBottom:12,
+                alignItems:"center"
+            }}
+            wrap={false}
+        >
 
-<MathDiagram
+            <View
+                style={{
+                    width:"100%",
+                    borderRadius:14,
+                    overflow:"hidden",
+                    backgroundColor:"#FFFFFF",
+                    borderWidth:1,
+                    borderColor:"#E4E5EC",
+                    padding:0
+                }}
+            >
 
-{...(block.diagram || {})}
+                <Image
+                    src={block.imageUrl}
+                    style={{
+                        width:"100%",
+                        height:220,
+                        objectFit:"cover",
+                        borderRadius:14
+                    }}
+                />
 
-/>
+            </View>
 
-</View>
-
-);
+        </View>
+    );
 
 }
 
@@ -2971,7 +2960,7 @@ if(block.type==="subheading"){
                     textAlign:"left",
                 }}
             >
-                {block.text}
+                {renderMixedMathText(block.text)}
             </Text>
 
 
@@ -3119,7 +3108,7 @@ if(block.type==="heading"){
                     textAlign:"left",
                 }}
             >
-                {block.text}
+                {renderMixedMathText(block.text)}
             </Text>
 
 
@@ -6799,22 +6788,240 @@ const quickRevisionTable = isNotes
 
     null;
 
+function normalizeImageMatchText(
+    value = ""
+) {
+
+    return String(value || "")
+        .toLowerCase()
+        .replace(/\*\*/g, "")
+        .replace(/^#{1,6}\s*/u, "")
+        .replace(/^\d+[.)]\s*/u, "")
+        .replace(/[^\p{L}\p{N}\s]/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+}
 
 
-const noteBlocks = isNotes
+function getHeadingMatchScore(
+    heading,
+    topic
+) {
 
-?
+    const h =
+        normalizeImageMatchText(
+            heading
+        );
 
-[
+    const t =
+        normalizeImageMatchText(
+            topic
+        );
 
-    ...parsedNoteBlocks,
+    if (
+        !h ||
+        !t
+    ) {
+
+        return 0;
+
+    }
+
+
+    if (
+        h === t
+    ) {
+
+        return 100;
+
+    }
+
+
+    if (
+        h.includes(t) ||
+        t.includes(h)
+    ) {
+
+        return 80;
+
+    }
+
+
+    const headingWords =
+        new Set(
+            h.split(" ")
+        );
+
+
+    const topicWords =
+        t.split(" ");
+
+
+    const matchedWords =
+        topicWords.filter(
+            word =>
+                word.length > 2 &&
+                headingWords.has(
+                    word
+                )
+        );
+
+
+    return (
+        matchedWords.length * 10
+    );
+
+}
+
+
+function findBestImageInsertionIndex(
+    blocks = [],
+    imageTopic = ""
+) {
+
+    let bestIndex = -1;
+
+    let bestScore = 0;
+
+
+    blocks.forEach(
+        (
+            block,
+            index
+        ) => {
+
+            if (
+                block?.type !== "heading" &&
+                block?.type !== "subheading"
+            ) {
+
+                return;
+
+            }
+
+
+            const score =
+                getHeadingMatchScore(
+                    block.text,
+                    imageTopic
+                );
+
+
+            if (
+                score > bestScore
+            ) {
+
+                bestScore =
+                    score;
+
+                bestIndex =
+                    index;
+
+            }
+
+        }
+    );
+
+
+    return bestIndex;
+
+}
+
+const notesImageBlock =
+    data?.notesImage?.imageUrl
+        ? {
+            type: "image",
+
+            imageUrl:
+                data.notesImage.imageUrl,
+
+            alt:
+                data.notesImage.alt ||
+                data.notesImage.topic ||
+                "Notes image",
+
+            topic:
+                data.notesImage.topic ||
+                "",
+
+            photographer:
+                data.notesImage.photographer ||
+                "",
+
+            photographerUrl:
+                data.notesImage.photographerUrl ||
+                "",
+
+            photoUrl:
+                data.notesImage.photoUrl ||
+                "",
+
+            pexelsUrl:
+                data.notesImage.pexelsUrl ||
+                "https://www.pexels.com/",
+
+            source:
+                data.notesImage.source ||
+                "pexels"
+        }
+        : null;
+
+
+let noteBlocks =
+    isNotes
+        ? [
+            ...parsedNoteBlocks
+        ]
+        : [];
+
+
+if (
+    isNotes &&
+    notesImageBlock
+) {
+
+    const imageIndex =
+        findBestImageInsertionIndex(
+            noteBlocks,
+            notesImageBlock.topic
+        );
+
+
+    if (
+        imageIndex >= 0
+    ) {
+
+        noteBlocks.splice(
+            imageIndex + 1,
+            0,
+            notesImageBlock
+        );
+
+    }
+    else {
+
+        // Safe fallback only when no heading matches.
+
+        noteBlocks.push(
+            notesImageBlock
+        );
+
+    }
+
+}
+
+
+if (
+    isNotes &&
     quickRevisionTable
+) {
 
-]
+    noteBlocks.push(
+        quickRevisionTable
+    );
 
-:
-
-[];
+}
 
 const noteChapterHeading =
 

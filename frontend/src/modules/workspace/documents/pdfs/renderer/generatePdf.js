@@ -133,110 +133,81 @@ return URL.createObjectURL(
 
 
 export async function downloadWorkspacePdf(
+  data = {}
+) {
 
-    data = {}
-
-){
-
-
-const {
-
+  const {
     blob,
+    filename,
+  } =
+    await generateWorkspacePdf(
+      data
+    );
 
-    filename
+
+  if (
+    !blob ||
+    blob.size === 0
+  ) {
+
+    throw new Error(
+      "Generated PDF is empty."
+    );
+
+  }
+
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+
+  const link =
+    document.createElement(
+      "a"
+    );
+
+
+  link.href =
+    url;
+
+  link.download =
+    filename ||
+    "Nyxora Document.pdf";
+
+
+  link.style.display =
+    "none";
+
+
+  document.body.appendChild(
+    link
+  );
+
+
+  link.click();
+
+
+  document.body.removeChild(
+    link
+  );
+
+
+  // Keep the Blob URL alive long enough for
+  // the browser to complete the download.
+
+  setTimeout(
+    () => {
+
+      URL.revokeObjectURL(
+        url
+      );
+
+    },
+    10000
+  );
 
 }
-
-=
-
-await generateWorkspacePdf(
-
-    data
-
-);
-
-
-
-
-
-const url =
-
-URL.createObjectURL(
-
-    blob
-
-);
-
-
-
-
-
-const link =
-
-document.createElement(
-
-    "a"
-
-);
-
-
-
-link.href =
-
-url;
-
-
-
-link.download =
-
-filename;
-
-
-
-document.body.appendChild(
-
-    link
-
-);
-
-
-
-link.click();
-
-
-
-document.body.removeChild(
-
-    link
-
-);
-
-
-
-
-
-setTimeout(
-
-()=>{
-
-URL.revokeObjectURL(
-
-    url
-
-);
-
-},
-
-1000
-
-);
-
-
-
-}
-
-
-
-
 
 export default generateWorkspacePdf;

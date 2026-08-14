@@ -60,7 +60,14 @@ const SYMBOLS = {
     "\\uparrow":"↑", "\\downarrow":"↓", "\\updownarrow":"↕",
     "\\implies":"⇒", "\\iff":"⇔", "\\vdash":"⊢", "\\models":"⊨",
     "\\ldots":"…", "\\cdots":"⋯", "\\vdots":"⋮", "\\ddots":"⋱",
+    "\\dots":"…",
     "\\prime":"′", "\\dprime":"″", "\\degree":"°", "\\div":"÷"
+    
+};
+
+const EXTRA_SYMBOLS = {
+
+    "\\rightarrowtail":"↠",
 };
 
 const LETTER_SETS = {
@@ -450,6 +457,58 @@ function normalizeLatexText(value = "") {
         );
 
     text =
+        text.replace(
+            /\\x(rightarrow|leftarrow|leftrightarrow|Rightarrow|Leftarrow|Leftrightarrow)\s*(?:\[([\s\S]*?)\])?\s*\{([\s\S]*?)\}/gu,
+            function(_, command, below, above){
+
+                const arrows = {
+                    rightarrow: "→",
+                    leftarrow: "←",
+                    leftrightarrow: "↔",
+                    Rightarrow: "⇒",
+                    Leftarrow: "⇐",
+                    Leftrightarrow: "⇔"
+                };
+
+                const upper =
+                    normalizeLatexText(
+                        above || ""
+                    ).trim();
+
+                const lower =
+                    normalizeLatexText(
+                        below || ""
+                    ).trim();
+
+                if (
+                    lower &&
+                    upper
+                ) {
+
+                    return (
+                        " " +
+                        arrows[command] +
+                        " " +
+                        upper +
+                        " (" +
+                        lower +
+                        ") "
+                    );
+
+                }
+
+                return (
+                    " " +
+                    arrows[command] +
+                    " " +
+                    upper +
+                    " "
+                );
+
+            }
+        );
+
+    text =
         replaceTwoBalancedCommand(
             text,
             "frac",
@@ -555,12 +614,12 @@ function normalizeLatexText(value = "") {
 
     text =
         text
-            .replace(/\\left/g, "")
-            .replace(/\\right/g, "")
-            .replace(/\\bigl/g, "")
-            .replace(/\\bigr/g, "")
-            .replace(/\\Bigl/g, "")
-            .replace(/\\Bigr/g, "");
+            .replace(/\\left(?![A-Za-z])/g, "")
+            .replace(/\\right(?![A-Za-z])/g, "")
+            .replace(/\\bigl(?![A-Za-z])/g, "")
+            .replace(/\\bigr(?![A-Za-z])/g, "")
+            .replace(/\\Bigl(?![A-Za-z])/g, "")
+            .replace(/\\Bigr(?![A-Za-z])/g, "");
 
     Object.entries(
         LETTER_SETS
@@ -594,18 +653,24 @@ function normalizeLatexText(value = "") {
 
     Object.entries(
         SYMBOLS
-    ).forEach(
-        function(entry){
+    )
+        .sort(
+            function(a,b){
+                return b[0].length - a[0].length;
+            }
+        )
+        .forEach(
+            function(entry){
 
-            text =
-                text.split(
-                    entry[0]
-                ).join(
-                    entry[1]
-                );
+                text =
+                    text.split(
+                        entry[0]
+                    ).join(
+                        entry[1]
+                    );
 
-        }
-    );
+            }
+        );
 
     /*
      * Common higher-study symbols/operators not covered above.

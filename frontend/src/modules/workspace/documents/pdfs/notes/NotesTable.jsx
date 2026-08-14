@@ -3,16 +3,43 @@ import {
     Text,
 } from "@react-pdf/renderer";
 
-import normalizeContentText 
-from "./contentTextNormalizer.js";
+import {
+    normalizeLatexText,
+    normalizeContentText
+} from "./contentTextNormalizer.js";
 
 
 
-function normalizeCellValue(value) {
-    return normalizeContentText(value);
+function normalizeCellValue(value){
+
+    return normalizeContentText(
+        normalizeLatexText(
+            String(value ?? "")
+        )
+    );
+
 }
 
+function getTableFont(text=""){
 
+    const value = String(text || "");
+
+    if(/[\u0900-\u097F]/u.test(value)){
+        return "NotoSansDevanagari";
+    }
+
+    /*
+     * Any non-ASCII character after normalizeLatexText()
+     * (π, √, ↔, ≤, α, β, superscripts, subscripts, etc.)
+     * uses STIXTwoMath.
+     */
+    if(/[^\x00-\x7F]/u.test(value)){
+        return "STIXTwoMath";
+    }
+
+    return "Helvetica";
+
+}
 
 export default function NotesTable({
     headers = [],
@@ -85,7 +112,7 @@ export default function NotesTable({
 
             <Text
                 style={{
-                    fontFamily: "NotoSansDevanagari",
+                    fontFamily: "STIXTwoMath",
                     fontSize: 7.5,
                     fontWeight: "bold",
                     color: "#6D5DFB",
@@ -102,7 +129,7 @@ export default function NotesTable({
 
         <Text
             style={{
-                fontFamily: "NotoSansDevanagari",
+                fontFamily: "STIXTwoMath",
                 fontSize: 15.5,
                 fontWeight: "bold",
                 color: "#24203B",
@@ -240,8 +267,7 @@ export default function NotesTable({
 
                                     <Text
                                         style={{
-                                            fontFamily:
-                                                "NotoSansDevanagari",
+                                            fontFamily: "STIXTwoMath",
 
                                             fontSize: 8.5,
 
@@ -390,8 +416,7 @@ export default function NotesTable({
 
                                                 <Text
                                                     style={{
-                                                        fontFamily:
-                                                            "NotoSansDevanagari",
+                                                        fontFamily: "STIXTwoMath",
 
                                                         fontSize: 8,
 
