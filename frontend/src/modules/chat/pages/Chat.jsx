@@ -388,7 +388,19 @@ export default function Chat() {
       await newChat();
 
     };
+// ====================================================
+// MODE CHANGE
+// ====================================================
 
+const handleModeChange = async (modeId) => {
+
+  clearAttachmentError();
+
+  setSelectedMode(modeId);
+
+  await newChat();
+
+};
 
   // ====================================================
   // SELECT CHAT
@@ -1446,8 +1458,8 @@ export default function Chat() {
           }
 
           onModeChange={
-            setSelectedMode
-          }
+  handleModeChange
+}
 
           activeChat={
             activeChat

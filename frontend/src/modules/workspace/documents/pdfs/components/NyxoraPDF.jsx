@@ -154,7 +154,7 @@ function NyxoraDocumentDetails({
                 borderRadius:14,
                 backgroundColor:"#FFFFFF"
             }}
-            wrap={false}
+           
         >
 
             {/* CARD HEADER */}
@@ -2893,7 +2893,6 @@ if(block.type==="subheading"){
                 paddingBottom:6,
             }}
 
-            wrap={false}
         >
 
             {/* SUBSECTION LABEL */}

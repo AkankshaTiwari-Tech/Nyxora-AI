@@ -917,7 +917,26 @@ export default function Login() {
                 />
 
 
-
+<div className="flex justify-end -mt-2">
+  <button
+    type="button"
+    onClick={() => navigate("/forgot-password")}
+    className="
+      text-sm
+      bg-gradient-to-r
+      from-fuchsia-400
+      via-violet-400
+      to-cyan-400
+      bg-clip-text
+      font-medium
+      text-transparent
+      transition
+      hover:brightness-125
+    "
+  >
+    Forgot Password?
+  </button>
+</div>
                 {/* ==================================================
                     SIGN IN BUTTON
                 ================================================== */}

@@ -941,32 +941,34 @@ export default function ChatInput({
         ) : (
 
           <button
-            type="submit"
-
-            disabled={
-              !message.trim() &&
-              !selectedFile
-            }
-
-            className="
-              rounded-xl
-              bg-violet-600
-              p-3
-              text-white
-              transition
-              hover:bg-violet-500
-              disabled:cursor-not-allowed
-              disabled:opacity-40
-            "
-
-            aria-label="Send message"
-
-            title="Send"
-          >
-
-            <Send size={18} />
-
-          </button>
+  type="submit"
+  disabled={
+    !message.trim() &&
+    !selectedFile
+  }
+  className="
+    rounded-xl
+    bg-gradient-to-r
+    from-fuchsia-600
+    via-violet-600
+    to-cyan-500
+    p-3
+    text-white
+    transition-all
+    duration-300
+    hover:scale-105
+    hover:shadow-[0_0_22px_rgba(139,92,246,0.45)]
+    active:scale-95
+    disabled:cursor-not-allowed
+    disabled:opacity-40
+    disabled:hover:scale-100
+    disabled:hover:shadow-none
+  "
+  aria-label="Send message"
+  title="Send"
+>
+  <Send size={18} />
+</button>
 
         )}
 

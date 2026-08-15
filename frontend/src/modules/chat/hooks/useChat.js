@@ -2518,21 +2518,18 @@ ${userPrompt}
   // SEND
   // ====================================================
 
-  const send =
+  
+
+const send =
     async (
       payload
     ) => {
 
-      if (
-        isThinking
-      ) {
+       if (isThinking) {
+  return false;
+}
 
-        return false;
-
-      }
-
-
-      setAttachmentError("");
+setAttachmentError("");
 
 
       const userId =
@@ -2567,36 +2564,18 @@ ${userPrompt}
         return false;
 
       }
+      
+      const currentChat = chats.find(
+  (chat) => chat.id === activeChatId
+);
 
+if (!currentChat) {
+  return false;
+}
 
-      const currentChat =
-        chats.find(
-          (chat) =>
-            chat.id ===
-            activeChatId
-        );
+const history = currentChat.messages || [];
 
-
-      if (
-        !currentChat
-      ) {
-
-        return false;
-
-      }
-
-
-      const history =
-        currentChat.messages ||
-        [];
-
-
-      const cleanUserMessage =
-        cleanValue(
-          text
-        );
-
-         
+const cleanUserMessage = cleanValue(text);   
       // ================================================
       // DEDICATED PDF GENERATOR MODE VALIDATION
       // ================================================
@@ -2809,7 +2788,7 @@ notesImageTopic:
 
       ];
 
-
+      setIsThinking(false);
       setChats(
         (prev) =>
           prev.map(

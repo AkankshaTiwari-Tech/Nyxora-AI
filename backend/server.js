@@ -1,6 +1,6 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 
 import chatRoutes from "./routes/chatRoutes.js";
 
@@ -12,7 +12,6 @@ import notesImageRoutes from "./routes/notesImageRoutes.js";
 // ENVIRONMENT
 // ======================================================
 
-dotenv.config();
 
 
 // ======================================================

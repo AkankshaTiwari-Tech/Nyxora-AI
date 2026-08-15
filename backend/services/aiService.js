@@ -9,17 +9,33 @@ dotenv.config();
 
 
 // ======================================================
-// GEMINI CLIENT
+// GEMINI API KEY ROTATION
 // ======================================================
 
-const ai =
-  new GoogleGenAI({
+const API_KEYS = [
+  process.env.GEMINI_API_KEY_1,
+  process.env.GEMINI_API_KEY_2,
+  process.env.GEMINI_API_KEY_3,
+  process.env.GEMINI_API_KEY_4,
+  process.env.GEMINI_API_KEY_5,
+  process.env.GEMINI_API_KEY_6,
+  process.env.GEMINI_API_KEY_7,
+  process.env.GEMINI_API_KEY_8,
+  process.env.GEMINI_API_KEY_9,
+  process.env.GEMINI_API_KEY_10,
+  process.env.GEMINI_API_KEY_11,
+  process.env.GEMINI_API_KEY_12,
+  process.env.GEMINI_API_KEY_13,
+  process.env.GEMINI_API_KEY_14,
+  process.env.GEMINI_API_KEY_15,
+].filter(Boolean);
+if (API_KEYS.length === 0) {
+  throw new Error("No Gemini API keys found.");
+}
 
-    apiKey:
-      process.env
-        .GEMINI_API_KEY,
-
-  });
+function getAIClient(apiKey) {
+  return new GoogleGenAI({ apiKey });
+}
 
 
 // ======================================================
@@ -115,6 +131,8 @@ Attachment rules:
 Formatting:
 - Use proper Markdown when useful.
 - Keep formatting clean and readable.
+- Never use emojis, decorative icons, Unicode symbols, or emoji-style bullets in any response.
+- Use only plain text headings, numbered headings, bullet points, tables, and flowcharts when needed.
 `;
 
 
@@ -953,6 +971,7 @@ Do not invent details that cannot be seen reliably.
 // ======================================================
 
 async function streamFromModel(
+  apiKey,
   model,
   prompt,
   attachment = null,
@@ -1369,6 +1388,8 @@ ${prompt}
   // START STREAM
   // ====================================================
 
+  const ai = getAIClient(apiKey);
+
   return await ai.models.generateContentStream({
     model,
 
@@ -1393,9 +1414,13 @@ generateAIResponseStream(
     null;
 
 
-  for (
-    const model of MODELS
-  ) {
+  for (const apiKey of API_KEYS) {
+
+    console.log(`Using API key ${API_KEYS.indexOf(apiKey) + 1}/${API_KEYS.length}`);
+
+    for (
+      const model of MODELS
+    ) {
 
     try {
 
@@ -1420,21 +1445,21 @@ generateAIResponseStream(
 
 
       const response =
-        await streamFromModel(
+  await streamFromModel(
 
-          model,
+    apiKey,
 
-          message,
+    model,
 
-          attachment,
+    message,
 
-          history,
+    attachment,
 
-          memory
+    history,
 
-        );
+    memory
 
-
+  );
       for await (
         const chunk of
           response
@@ -1503,11 +1528,11 @@ generateAIResponseStream(
       ) {
 
         console.log(
-          `⚠️ ${model} quota exceeded. Switching model...`
+          `⚠️ ${model} quota exceeded. Switching API key...`
         );
 
 
-        continue;
+        break;
 
       }
 
@@ -1526,6 +1551,8 @@ generateAIResponseStream(
 
   }
 
+
+  }
 
   throw (
     lastError ||
