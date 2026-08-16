@@ -243,6 +243,16 @@ function normalizeDocument(
         WORKSPACE_LIMITS.CHAPTER
       ),
 
+    notesImageRequested:
+      Boolean(
+        data.notesImageRequested
+      ),
+
+    notesImageTopic:
+      cleanString(
+        data.notesImageTopic
+      ),
+
     content:
       cleanString(
         data.content
@@ -602,6 +612,9 @@ export async function saveAiDocument({
   subject = "",
   chapter = "",
 
+    notesImageRequested = false,
+  notesImageTopic = "",
+
   aiMode = "",
 }) {
 
@@ -615,6 +628,16 @@ export async function saveAiDocument({
 
     subject,
     chapter,
+
+    notesImageRequested:
+      Boolean(
+        notesImageRequested
+      ),
+
+    notesImageTopic:
+      cleanString(
+        notesImageTopic
+      ),
 
     aiMode,
 

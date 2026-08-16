@@ -430,9 +430,10 @@ export default function ChatSidebar({
               overflow-hidden
               rounded-xl
               bg-gradient-to-r
-              from-indigo-600
-              via-violet-600
-              to-cyan-500
+              from-fuchsia-600
+via-violet-600
+to-cyan-500
+
               px-4
               py-3
               font-semibold

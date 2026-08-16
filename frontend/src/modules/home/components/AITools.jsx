@@ -37,7 +37,7 @@ export default function AITools() {
       title: "Notes Generator",
       description: "Create structured notes",
       icon: FileText,
-      path: "/workspace",
+      path: "/notes",
       accent: "purple",
     },
 
@@ -45,7 +45,7 @@ export default function AITools() {
       title: "PDF Generator",
       description: "Build polished documents",
       icon: FileDown,
-      path: "/workspace",
+      path: "/pdf",
       accent: "violet",
     },
 
@@ -54,14 +54,18 @@ export default function AITools() {
       description: "Generate smart assessments",
       icon: ClipboardList,
       path: "/chat",
+      state: {
+  createNewChat: true,
+  assistantMode: "test",
+},
       accent: "indigo",
     },
-
+    
     {
       title: "Presentation",
       description: "Design AI presentations",
       icon: Presentation,
-      path: "/workspace",
+      path: "/presentation",
       accent: "blue",
     },
 
@@ -253,11 +257,17 @@ export default function AITools() {
 
                 type="button"
 
-                onClick={() =>
-                  navigate(
-                    tool.path
-                  )
-                }
+onClick={() =>
+  navigate(
+    tool.path,
+    tool.state
+      ? {
+          state:
+            tool.state,
+        }
+      : undefined
+  )
+}
 
                 className="
                   group

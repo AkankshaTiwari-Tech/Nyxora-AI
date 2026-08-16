@@ -8,6 +8,8 @@ import {
     Text,
 } from "@react-pdf/renderer";
 
+import NotesFlowchart from "../notes/NotesFlowchart";
+
 function finite(value, fallback = 0) {
     const number = Number(value);
 
@@ -3473,6 +3475,851 @@ function resolveSemanticLabelPosition({
     return null;
 }
 
+
+/* ======================================================
+   FLOWCHART DIAGRAM
+
+   Flowcharts use their own renderer/layout so process,
+   pipeline, algorithm and AI architecture diagrams do not
+   depend on the mathematical/general scene renderer.
+   ====================================================== */
+
+function FlowchartDiagram({
+    
+    width = 515,
+    height = 300,
+    showLabels = true,
+    background = "transparent",
+    nodes = [],
+    edges = [],
+    steps = [],
+    rectangles = [],
+    arrows = [],
+    labels = [],
+}) {
+    const safeWidth = safeDimension(width, 515);
+    const safeHeight = safeDimension(height, 300);
+    const padding = 24;
+
+    const rawNodes =
+        Array.isArray(nodes) && nodes.length
+            ? nodes
+            : Array.isArray(steps) && steps.length
+              ? steps
+              : [];
+
+    const normalizeNode = (node, index) => ({
+        ...node,
+        id: String(
+            node?.id ??
+            node?.key ??
+            node?.name ??
+            node?.label ??
+            index,
+        ),
+        text: String(
+            node?.text ??
+            node?.label ??
+            node?.title ??
+            node?.name ??
+            "",
+        ).trim(),
+        nodeType: String(
+            node?.nodeType ??
+            node?.shape ??
+            node?.type ??
+            "process",
+        ).toLowerCase(),
+        width: safeDimension(
+            node?.width,
+            108,
+        ),
+        height: safeDimension(
+            node?.height,
+            44,
+        ),
+    });
+
+    let normalizedNodes = rawNodes.map(
+        normalizeNode,
+    );
+
+    /*
+     * Backward-compatible fallback:
+     * If the AI still sends a scene-style rectangle/label
+     * representation for a flowchart, convert those pieces
+     * into flowchart nodes without changing the scene renderer.
+     */
+    if (
+        normalizedNodes.length === 0 &&
+        Array.isArray(rectangles) &&
+        rectangles.length
+    ) {
+        normalizedNodes = rectangles.map(
+            (rectangle, index) => {
+                const centerX =
+                    finite(rectangle?.x) +
+                    finite(
+                        rectangle?.width,
+                        1,
+                    ) / 2;
+                const centerY =
+                    finite(rectangle?.y) -
+                    finite(
+                        rectangle?.height,
+                        1,
+                    ) / 2;
+
+                const nearestLabel =
+                    Array.isArray(labels)
+                        ? labels
+                              .map(
+                                  (label) => ({
+                                      ...label,
+                                      distance:
+                                          Math.abs(
+                                              finite(
+                                                  label?.x,
+                                              ) -
+                                              centerX,
+                                          ) +
+                                          Math.abs(
+                                              finite(
+                                                  label?.y,
+                                              ) -
+                                              centerY,
+                                          ),
+                                  }),
+                              )
+                              .sort(
+                                  (a, b) =>
+                                      a.distance -
+                                      b.distance,
+                              )[0]
+                        : null;
+
+                return normalizeNode(
+                    {
+                        id:
+                            rectangle?.id ??
+                            rectangle?.name ??
+                            index,
+                        text:
+                            rectangle?.text ??
+                            rectangle?.label ??
+                            nearestLabel?.text ??
+                            "",
+                        nodeType:
+                            rectangle?.nodeType ??
+                            rectangle?.shape ??
+                            "process",
+                        width:
+                            rectangle?.width,
+                        height:
+                            rectangle?.height,
+                        x: centerX,
+                        y: centerY,
+                    },
+                    index,
+                );
+            },
+        );
+    }
+
+    const flowchartSteps =
+        normalizedNodes
+            .map(
+                (node) =>
+                    String(
+                        node?.text ??
+                        node?.label ??
+                        node?.title ??
+                        node?.name ??
+                        ""
+                    ).trim()
+            )
+            .filter(Boolean);
+
+    if (flowchartSteps.length > 0) {
+        return (
+            <NotesFlowchart
+                title="Flow Chart"
+                steps={flowchartSteps.slice(0, 6)}
+            />
+        );
+    }
+
+    const nodeMap = new Map();
+
+    normalizedNodes.forEach(
+        (node, index) => {
+            nodeMap.set(
+                String(node.id),
+                {
+                    ...node,
+                    index,
+                },
+            );
+        },
+    );
+
+    const explicitEdges = (
+        Array.isArray(edges)
+            ? edges
+            : []
+    )
+        .map((edge, index) => ({
+            ...edge,
+            id: String(
+                edge?.id ??
+                edge?.name ??
+                index,
+            ),
+            from: String(
+                edge?.from ??
+                edge?.source ??
+                edge?.start ??
+                "",
+            ),
+            to: String(
+                edge?.to ??
+                edge?.target ??
+                edge?.end ??
+                "",
+            ),
+            text: String(
+                edge?.text ??
+                edge?.label ??
+                "",
+            ).trim(),
+        }))
+        .filter(
+            (edge) =>
+                nodeMap.has(edge.from) &&
+                nodeMap.has(edge.to) &&
+                edge.from !== edge.to,
+        );
+
+    const findNearestNodeId = (point) => {
+        let nearestId = null;
+        let nearestDistance = Infinity;
+
+        nodeMap.forEach((node) => {
+            const centerX = Number(node?.x);
+            const centerY = Number(node?.y);
+
+            if (
+                !Number.isFinite(centerX) ||
+                !Number.isFinite(centerY)
+            ) {
+                return;
+            }
+
+            const dx =
+                finite(point?.x) - centerX;
+            const dy =
+                finite(point?.y) - centerY;
+            const distance =
+                dx * dx + dy * dy;
+
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestId = node.id;
+            }
+        });
+
+        return nearestId;
+    };
+
+    /*
+     * Legacy scene-style flowcharts often contain only
+     * rectangles + arrow coordinates. Convert those arrows into
+     * semantic node-to-node edges so the new flowchart renderer
+     * can lay them out cleanly.
+     */
+    const inferredEdges =
+        explicitEdges.length > 0
+            ? []
+            : Array.isArray(arrows)
+              ? arrows
+                    .map((arrow, index) => ({
+                        ...arrow,
+                        id: String(
+                            arrow?.id ??
+                            arrow?.name ??
+                            `inferred-${index}`,
+                        ),
+                        from: findNearestNodeId({
+                            x: arrow?.x1,
+                            y: arrow?.y1,
+                        }),
+                        to: findNearestNodeId({
+                            x: arrow?.x2,
+                            y: arrow?.y2,
+                        }),
+                        text: String(
+                            arrow?.text ??
+                            arrow?.label ??
+                            "",
+                        ).trim(),
+                    }))
+                    .filter(
+                        (edge) =>
+                            edge.from &&
+                            edge.to &&
+                            edge.from !== edge.to,
+                    )
+              : [];
+
+    const normalizedEdges = [
+        ...explicitEdges,
+        ...inferredEdges,
+    ];
+
+    /*
+     * Build a simple left-to-right rank layout when AI output
+     * does not provide explicit positions.
+     */
+    const incoming = new Map();
+    const outgoing = new Map();
+
+    normalizedNodes.forEach((node) => {
+        incoming.set(node.id, []);
+        outgoing.set(node.id, []);
+    });
+
+    normalizedEdges.forEach((edge) => {
+        incoming.get(edge.to)?.push(edge.from);
+        outgoing.get(edge.from)?.push(edge.to);
+    });
+
+    const ranks = new Map();
+    const unresolved = new Set(
+        normalizedNodes.map((node) => node.id),
+    );
+
+    normalizedNodes.forEach((node) => {
+        if (!incoming.get(node.id)?.length) {
+            ranks.set(node.id, 0);
+            unresolved.delete(node.id);
+        }
+    });
+
+    for (let pass = 0; pass < normalizedNodes.length + 2; pass += 1) {
+        let changed = false;
+
+        unresolved.forEach((id) => {
+            const parents = incoming.get(id) || [];
+            const knownParents = parents.filter((parent) =>
+                ranks.has(parent),
+            );
+
+            if (knownParents.length === parents.length) {
+                const nextRank =
+                    knownParents.reduce(
+                        (maxRank, parent) =>
+                            Math.max(
+                                maxRank,
+                                ranks.get(parent),
+                            ),
+                        0,
+                    ) + 1;
+
+                ranks.set(id, nextRank);
+                unresolved.delete(id);
+                changed = true;
+            }
+        });
+
+        if (!changed) {
+            break;
+        }
+    }
+
+    /* Cycles / disconnected nodes get deterministic fallback ranks. */
+    normalizedNodes.forEach((node) => {
+        if (!ranks.has(node.id)) {
+            ranks.set(node.id, 0);
+        }
+    });
+
+    const columns = new Map();
+
+    normalizedNodes.forEach((node) => {
+        const hasExplicitPosition =
+            Number.isFinite(Number(node?.x)) &&
+            Number.isFinite(Number(node?.y));
+
+        const rank = hasExplicitPosition
+            ? null
+            : ranks.get(node.id) || 0;
+
+        if (rank !== null) {
+            if (!columns.has(rank)) {
+                columns.set(rank, []);
+            }
+
+            columns.get(rank).push(node.id);
+        }
+    });
+
+    const maxRank =
+        columns.size > 0
+            ? Math.max(...columns.keys())
+            : 0;
+
+    const horizontalGap = 32;
+    const verticalGap = 28;
+
+    const positionedNodes = new Map();
+
+    const explicitNodes = normalizedNodes.filter(
+        (node) =>
+            Number.isFinite(Number(node?.x)) &&
+            Number.isFinite(Number(node?.y)),
+    );
+
+    explicitNodes.forEach((node) => {
+        positionedNodes.set(node.id, {
+            ...node,
+            x: finite(node.x),
+            y: finite(node.y),
+        });
+    });
+
+    const availableWidth =
+        safeWidth - padding * 2;
+    const columnWidth =
+        maxRank > 0
+            ? Math.max(
+                  110,
+                  (availableWidth -
+                      maxRank * horizontalGap) /
+                      (maxRank + 1),
+              )
+            : 110;
+
+    columns.forEach((ids, rank) => {
+        ids.forEach((id, rowIndex) => {
+            const node = nodeMap.get(id);
+            if (!node) {
+                return;
+            }
+
+            const x =
+                padding +
+                rank *
+                    (columnWidth + horizontalGap) +
+                columnWidth / 2;
+
+            const totalHeight =
+                ids.length * node.height +
+                Math.max(
+                    0,
+                    ids.length - 1,
+                ) *
+                    verticalGap;
+
+            const startY =
+                safeHeight / 2 -
+                totalHeight / 2 +
+                node.height / 2;
+
+            const y =
+                startY +
+                rowIndex *
+                    (node.height + verticalGap);
+
+            positionedNodes.set(id, {
+                ...node,
+                x,
+                y,
+            });
+        });
+    });
+
+    const remainingIds = normalizedNodes
+        .map((node) => node.id)
+        .filter((id) => !positionedNodes.has(id));
+
+    remainingIds.forEach((id, index) => {
+        const node = nodeMap.get(id);
+        if (!node) {
+            return;
+        }
+
+        positionedNodes.set(id, {
+            ...node,
+            x:
+                padding +
+                node.width / 2 +
+                index *
+                    (node.width + horizontalGap),
+            y: safeHeight / 2,
+        });
+    });
+
+    const clampNodeCenter = (node) => ({
+        ...node,
+        x: Math.min(
+            safeWidth - padding -
+                node.width / 2,
+            Math.max(
+                padding + node.width / 2,
+                finite(node.x, safeWidth / 2),
+            ),
+        ),
+        y: Math.min(
+            safeHeight - padding -
+                node.height / 2,
+            Math.max(
+                padding + node.height / 2,
+                finite(node.y, safeHeight / 2),
+            ),
+        ),
+    });
+
+    positionedNodes.forEach((node, id) => {
+        positionedNodes.set(
+            id,
+            clampNodeCenter(node),
+        );
+    });
+
+    const getNodeTextLines = (text) =>
+        String(text || "")
+            .split(/\n+/u)
+            .map((line) => line.trim())
+            .filter(Boolean);
+
+    const getNodeEdgePoint = (
+        node,
+        side,
+    ) => {
+        if (side === "left") {
+            return {
+                x: node.x - node.width / 2,
+                y: node.y,
+            };
+        }
+
+        if (side === "right") {
+            return {
+                x: node.x + node.width / 2,
+                y: node.y,
+            };
+        }
+
+        if (side === "top") {
+            return {
+                x: node.x,
+                y: node.y - node.height / 2,
+            };
+        }
+
+        return {
+            x: node.x,
+            y: node.y + node.height / 2,
+        };
+    };
+
+    const getEdgeGeometry = (edge) => {
+        const source = positionedNodes.get(edge.from);
+        const target = positionedNodes.get(edge.to);
+
+        if (!source || !target) {
+            return null;
+        }
+
+        const sameRow =
+            Math.abs(source.y - target.y) < 10;
+        const targetIsRight =
+            target.x >= source.x;
+
+        if (sameRow) {
+            const from = getNodeEdgePoint(
+                source,
+                targetIsRight
+                    ? "right"
+                    : "left",
+            );
+            const to = getNodeEdgePoint(
+                target,
+                targetIsRight
+                    ? "left"
+                    : "right",
+            );
+
+            return {
+                points: [from, to],
+                labelPoint: {
+                    x: (from.x + to.x) / 2,
+                    y: (from.y + to.y) / 2 - 8,
+                },
+            };
+        }
+
+        const targetIsBelow =
+            target.y >= source.y;
+
+        const from = getNodeEdgePoint(
+            source,
+            targetIsBelow ? "bottom" : "top",
+        );
+        const to = getNodeEdgePoint(
+            target,
+            targetIsBelow ? "top" : "bottom",
+        );
+
+        const midY =
+            (from.y + to.y) / 2;
+
+        return {
+            points: [
+                from,
+                {
+                    x: from.x,
+                    y: midY,
+                },
+                {
+                    x: to.x,
+                    y: midY,
+                },
+                to,
+            ],
+            labelPoint: {
+                x: (from.x + to.x) / 2 + 6,
+                y: midY - 6,
+            },
+        };
+    };
+
+    const renderFlowArrow = (
+        x1,
+        y1,
+        x2,
+        y2,
+        style = {},
+        key = "flow-arrow",
+    ) =>
+        renderSceneArrow(
+            x1,
+            y1,
+            x2,
+            y2,
+            style,
+            true,
+            key,
+        );
+
+    const getNodePath = (node) => {
+        const left =
+            node.x - node.width / 2;
+        const right =
+            node.x + node.width / 2;
+        const top =
+            node.y - node.height / 2;
+        const bottom =
+            node.y + node.height / 2;
+
+        if (
+            node.nodeType.includes("decision") ||
+            node.nodeType.includes("diamond")
+        ) {
+            return [
+                `M ${node.x} ${top}`,
+                `L ${right} ${node.y}`,
+                `L ${node.x} ${bottom}`,
+                `L ${left} ${node.y}`,
+                "Z",
+            ].join(" ");
+        }
+
+        return [
+            `M ${left} ${top}`,
+            `L ${right} ${top}`,
+            `L ${right} ${bottom}`,
+            `L ${left} ${bottom}`,
+            "Z",
+        ].join(" ");
+    };
+
+    const flowElements = [];
+
+    /* Connectors are rendered first so nodes stay visually on top. */
+    normalizedEdges.forEach((edge, edgeIndex) => {
+        const geometry = getEdgeGeometry(edge);
+
+        if (!geometry) {
+            return;
+        }
+
+        const style = normalizeSceneStyle(
+            edge?.style,
+        );
+
+        for (
+            let segmentIndex = 0;
+            segmentIndex <
+            geometry.points.length - 1;
+            segmentIndex += 1
+        ) {
+            const start =
+                geometry.points[segmentIndex];
+            const end =
+                geometry.points[segmentIndex + 1];
+
+            const isLast =
+                segmentIndex ===
+                geometry.points.length - 2;
+
+            flowElements.push(
+                renderFlowArrow(
+                    start.x,
+                    start.y,
+                    end.x,
+                    end.y,
+                    style,
+                    `flow-edge-${edgeIndex}-${segmentIndex}`,
+                ),
+            );
+
+            if (isLast && edge.endArrow === false) {
+                flowElements.pop();
+                flowElements.push(
+                    <Line
+                        key={`flow-edge-line-${edgeIndex}-${segmentIndex}`}
+                        x1={start.x}
+                        y1={start.y}
+                        x2={end.x}
+                        y2={end.y}
+                        stroke={style.stroke}
+                        strokeWidth={style.strokeWidth}
+                        opacity={style.opacity}
+                    />,
+                );
+            }
+        }
+
+        const edgeLabel = normalizeDiagramLabelText(
+            edge.text,
+        );
+
+        if (
+            showLabels &&
+            edgeLabel
+        ) {
+            flowElements.push(
+                <Text
+                    key={`flow-edge-label-${edgeIndex}`}
+                    x={geometry.labelPoint.x}
+                    y={geometry.labelPoint.y}
+                    fontSize={
+                        Math.max(
+                            1,
+                            finite(
+                                edge?.fontSize,
+                                9,
+                            ),
+                        )
+                    }
+                    fill={style.stroke}
+                >
+                    {edgeLabel}
+                </Text>,
+            );
+        }
+    });
+
+    positionedNodes.forEach((node, nodeIndex) => {
+        const style = normalizeSceneStyle(
+            node?.style,
+        );
+
+        flowElements.push(
+            <Path
+                key={`flow-node-${nodeIndex}`}
+                d={getNodePath(node)}
+                fill={style.fill}
+                stroke={style.stroke}
+                strokeWidth={style.strokeWidth}
+                opacity={style.opacity}
+            />,
+        );
+
+        if (!showLabels) {
+            return;
+        }
+
+        const linesForText =
+            getNodeTextLines(node.text);
+
+        if (!linesForText.length) {
+            return;
+        }
+
+        const lineHeight = 11;
+        const startY =
+            node.y -
+            ((linesForText.length - 1) *
+                lineHeight) /
+                2;
+
+        linesForText.forEach(
+            (line, lineIndex) => {
+                flowElements.push(
+                    <Text
+                        key={`flow-node-label-${nodeIndex}-${lineIndex}`}
+                        x={node.x}
+                        y={
+                            startY +
+                            lineIndex *
+                                lineHeight
+                        }
+                        textAnchor="middle"
+                        fontSize={
+                            Math.max(
+                                1,
+                                finite(
+                                    node?.fontSize,
+                                    9,
+                                ),
+                            )
+                        }
+                        fill={style.stroke}
+                    >
+                        {line}
+                    </Text>,
+                );
+            },
+        );
+    });
+
+    return (
+        <Svg
+            width={safeWidth}
+            height={safeHeight}
+            viewBox={`0 0 ${safeWidth} ${safeHeight}`}
+        >
+            {background &&
+                background !==
+                    "transparent" && (
+                    <Path
+                        d={[
+                            `M 0 0`,
+                            `L ${safeWidth} 0`,
+                            `L ${safeWidth} ${safeHeight}`,
+                            `L 0 ${safeHeight}`,
+                            "Z",
+                        ].join(" ")}
+                        fill={background}
+                    />
+                )}
+            {flowElements}
+        </Svg>
+    );
+}
+
 function UniversalVectorScene({
     width = 515,
     height = 300,
@@ -4238,12 +5085,19 @@ export default function MathDiagram({
      * Universal vector scenes are the preferred
      * representation for new diagrams.
      */
+    if (type === "flowchart") {
+        return (
+            <FlowchartDiagram
+                {...props}
+            />
+        );
+    }
+
     if (
         type === "scene" ||
         type === "vector" ||
         type === "custom" ||
         type === "graph" ||
-        type === "flowchart" ||
         type === "circuit"
     ) {
         return (

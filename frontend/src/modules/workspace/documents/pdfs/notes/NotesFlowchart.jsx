@@ -118,16 +118,33 @@ const rawText =
         .replace(/\s+/g, " ")
         .trim();
 
-    const mainPointMatch =
-        rawText.match(
-            /^([^:：]{2,56})\s*[:：]/
-        );
+const mainPointMatch =
+    rawText.match(
+        /^([^:：]{2,56})\s*[:：]/
+    );
 
-    return (
-        mainPointMatch
-            ? mainPointMatch[1]
-            : rawText
-    ).trim();
+if (mainPointMatch) {
+    return mainPointMatch[1].trim();
+}
+
+if (rawText.length <= 32) {
+    return rawText.trim();
+}
+
+const sentenceBreak =
+    rawText.match(
+        /^(.{1,32}?)(?:[.!?;,:]\s+|\s+(?:is|are|was|were|means|refers to|represents|shows|includes|contains|involves)\b)/iu
+    );
+
+if (sentenceBreak?.[1]) {
+    return sentenceBreak[1].trim();
+}
+
+return rawText
+    .split(/\s+/)
+    .slice(0, 4)
+    .join(" ")
+    .trim();
 
 }
 
@@ -167,8 +184,8 @@ function wrapSvgText(
         return [];
     }
 
-    const MAX_CHARS_PER_LINE = 34;
-    const MAX_LINES = 4;
+    const MAX_CHARS_PER_LINE = 20;
+    const MAX_LINES = 3;
 
     const lines = [];
     let currentLine = "";
@@ -263,12 +280,12 @@ function getFlowTextFontSize(lines=[]){
     const lineCount =
         lines.length;
 
-    if(lineCount >= 4){
-        return 5.6;
+    if(lineCount >= 3){
+        return 5.2;
     }
 
-    if(lineCount === 3){
-        return 6.1;
+    if(lineCount === 2){
+        return 6.5;
     }
 
     if(longestLine <= 28){
@@ -585,10 +602,10 @@ function FlowchartSvg({
                 const fontSize =
                     getFlowTextFontSize(lines);
 
-                const lineGap =
-                    lines.length >= 4
-                        ? 5
-                        : 8;
+const lineGap =
+    lines.length >= 3
+        ? 6
+        : 8;
 
                 const textStart =
                     y -
@@ -713,9 +730,9 @@ function FlowchartSvg({
 
                         <Line
                             x1={centerX - 46}
-                            y1={cardTop + cardHeight - 4}
+                            y1={cardTop + cardHeight - 3}
                             x2={centerX + 46}
-                            y2={cardTop + cardHeight - 4}
+                            y2={cardTop + cardHeight - 3}
                             stroke={color.main}
                             strokeWidth={1.8}
                             strokeLinecap="round"
@@ -828,10 +845,10 @@ function Card({
     const fontSize =
         getFlowTextFontSize(lines);
 
-    const lineGap =
-        lines.length >= 4
-            ? 5
-            : 8;
+const lineGap =
+    lines.length >= 3
+        ? 6
+        : 8;
 
     const textStart =
         y -
@@ -958,9 +975,9 @@ function Card({
 
             <Line
                 x1={x + 16}
-                y1={cardTop + cardHeight - 4}
+                y1={cardTop + cardHeight - 3}
                 x2={x + cardWidth - 16}
-                y2={cardTop + cardHeight - 4}
+                y2={cardTop + cardHeight - 3}
                 stroke={color.main}
                 strokeWidth={1.8}
                 strokeLinecap="round"

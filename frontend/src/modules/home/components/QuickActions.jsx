@@ -58,7 +58,7 @@ export default function QuickActions() {
 
       action: () =>
         navigate(
-          "/workspace"
+          "/notes"
         ),
     },
 
@@ -77,7 +77,7 @@ export default function QuickActions() {
 
       action: () =>
         navigate(
-          "/workspace"
+          "/pdf"
         ),
     },
 

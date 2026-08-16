@@ -1,4 +1,5 @@
 import {
+  useRef,
   useState,
 } from "react";
 
@@ -38,9 +39,6 @@ import {
   isPdfRequest,
 } from "../utils/pdfIntent";
 
-import {
-  searchNotesImage,
-} from "../../../services/notesImageService";
 
 // ======================================================
 // CONFIG
@@ -1191,6 +1189,8 @@ function cleanValue(
 
 }
 
+
+
 // ======================================================
 // NOTES IMAGE REQUEST DETECTION
 // ======================================================
@@ -1288,6 +1288,94 @@ function buildChatTitle(
 
 }
 
+function getThinkingMessages(
+  userMessage,
+  file = null
+) {
+  const value =
+    cleanValue(userMessage).toLowerCase();
+
+  if (file) {
+    return [
+      "Reading your file...",
+      "Analyzing the uploaded content...",
+      "Understanding your request...",
+      "Preparing the response...",
+    ];
+  }
+
+  if (
+    /\b(test|quiz|question paper|worksheet|exam)\b/i.test(
+      value
+    )
+  ) {
+    return [
+      "Understanding your requirements...",
+      "Planning the questions...",
+      "Balancing the difficulty...",
+      "Preparing the test...",
+    ];
+  }
+
+  if (
+    /\b(explain|meaning|what is|how does|why does|define)\b/i.test(
+      value
+    )
+  ) {
+    return [
+      "Understanding your question...",
+      "Analyzing the concept...",
+      "Breaking it down...",
+      "Preparing a clear explanation...",
+    ];
+  }
+
+  if (
+    /\b(math|calculate|solve|equation|formula|find)\b/i.test(
+      value
+    )
+  ) {
+    return [
+      "Understanding the problem...",
+      "Analyzing the given information...",
+      "Working through the solution...",
+      "Preparing the answer...",
+    ];
+  }
+
+  if (
+    /\b(notes|summary|summarize|revision)\b/i.test(
+      value
+    )
+  ) {
+    return [
+      "Understanding the topic...",
+      "Organizing the key points...",
+      "Structuring the information...",
+      "Preparing your notes...",
+    ];
+  }
+
+  if (
+    /\b(report|performance|marks|attendance|student)\b/i.test(
+      value
+    )
+  ) {
+    return [
+      "Reviewing the information...",
+      "Analyzing the available data...",
+      "Identifying important patterns...",
+      "Preparing the analysis...",
+    ];
+  }
+
+  return [
+    "Thinking...",
+    "Analyzing your request...",
+    "Working on it...",
+    "Preparing the answer...",
+  ];
+}
 
 // ======================================================
 // FILE METADATA
@@ -1547,7 +1635,6 @@ function buildWorkspaceContextPrompt(
 
 }
 
-
 // ======================================================
 // CHAT HOOK
 // ======================================================
@@ -1567,6 +1654,66 @@ export default function useChat({
     setIsThinking,
   ] = useState(false);
 
+  const [
+  thinkingText,
+  setThinkingText,
+] = useState("");
+
+const thinkingTimerRef =
+  useRef(null);
+
+  const startThinking = (
+  userMessage,
+  file = null
+) => {
+  const messages =
+    getThinkingMessages(
+      userMessage,
+      file
+    );
+
+  if (
+    thinkingTimerRef.current
+  ) {
+    window.clearInterval(
+      thinkingTimerRef.current
+    );
+  }
+
+  let index = 0;
+
+  setThinkingText(
+    messages[0]
+  );
+
+  setIsThinking(true);
+
+  thinkingTimerRef.current =
+    window.setInterval(() => {
+      index =
+        (index + 1) %
+        messages.length;
+
+      setThinkingText(
+        messages[index]
+      );
+    }, 1400);
+};
+
+const stopThinking = () => {
+  if (
+    thinkingTimerRef.current
+  ) {
+    window.clearInterval(
+      thinkingTimerRef.current
+    );
+
+    thinkingTimerRef.current =
+      null;
+  }
+
+  setThinkingText("");
+};
 
   const [
     attachmentError,
@@ -1888,23 +2035,122 @@ Use:
     }
 }
 
-The diagram type MUST be:
+==================================================
+STRUCTURED DIAGRAM FORMAT
+==================================================
 
-"type": "scene"
+Every diagram MUST be separate from normal content.
 
-Do NOT use:
+For normal mathematical or subject-specific diagrams,
+use:
 
-- coordinatePlane
-- functionGraph
-- line
-- triangle
-- rectangle
-- square
-- circle
-- angle
+{
+    "number": QUESTION_NUMBER,
+    "diagram": {
+        "type": "scene",
+        "points": [],
+        "lines": [],
+        "arrows": [],
+        "circles": [],
+        "ellipses": [],
+        "rectangles": [],
+        "polygons": [],
+        "paths": [],
+        "arcs": [],
+        "curves": [],
+        "labels": [],
+        "dimensions": []
+    }
+}
 
-Those describe mathematical concepts.
-The universal renderer uses "scene".
+==================================================
+FLOWCHART RULE
+==================================================
+
+Use:
+
+"type": "flowchart"
+
+ONLY when the requested visual is genuinely a
+PROCESS / WORKFLOW / PIPELINE / ALGORITHM / SYSTEM
+FLOW / STEP-BY-STEP PROCESS diagram.
+
+Examples:
+
+- AI processing pipeline
+- machine learning workflow
+- neural network processing flow
+- software/system workflow
+- algorithm steps
+- input → processing → output
+- data flow between processing stages
+- biological process shown as sequential stages
+  when the intended visual is explicitly a process flow
+- any similar process where boxes/nodes are connected
+  by directional arrows
+
+A genuine flowchart MUST NOT be represented as a
+normal "scene" diagram.
+
+For flowcharts, use:
+
+{
+    "number": QUESTION_NUMBER,
+    "diagram": {
+        "type": "flowchart",
+        "points": [],
+        "lines": [],
+        "arrows": [],
+        "circles": [],
+        "ellipses": [],
+        "rectangles": [],
+        "polygons": [],
+        "paths": [],
+        "arcs": [],
+        "curves": [],
+        "labels": [],
+        "dimensions": []
+    }
+}
+
+The flowchart renderer is responsible for arranging
+flowchart nodes and connectors.
+
+==================================================
+IMPORTANT SUBJECT PROTECTION RULE
+==================================================
+
+DO NOT convert a diagram into a flowchart merely because
+it contains:
+
+- rectangles
+- arrows
+- boxes
+- labels
+- lines
+
+A Mathematics, Physics, Chemistry, Biology, Geography,
+or other subject diagram MUST remain "scene" unless its
+actual purpose is a process/workflow/step-by-step flow.
+
+Examples that MUST remain "scene":
+
+- geometry figures
+- triangles
+- circles
+- coordinate graphs
+- physics apparatus diagrams
+- circuit diagrams
+- chemistry structures
+- molecular diagrams
+- biology labelled structures
+- anatomy diagrams
+- mathematical constructions
+- graphs and plots
+
+The semantic PURPOSE of the diagram determines whether
+it is "scene" or "flowchart", not the presence of boxes
+or arrows.
 
 ==================================================
 DIAGRAM OWNERSHIP
@@ -2306,7 +2552,8 @@ Before returning content:
 1. Check whether the user explicitly requested a diagram.
 2. Check whether the content genuinely requires a diagram.
 3. If yes, create separate structured diagram metadata.
-4. Use type "scene".
+4. Use type "scene" for mathematical/subject diagrams,
+   or "flowchart" for genuine process/workflow diagrams.
 5. Use the correct ownership number when applicable.
 6. Use numeric coordinates.
 7. Never generate ASCII.
@@ -2518,18 +2765,21 @@ ${userPrompt}
   // SEND
   // ====================================================
 
-  
-
-const send =
+  const send =
     async (
       payload
     ) => {
 
-       if (isThinking) {
-  return false;
-}
+      if (
+        isThinking
+      ) {
 
-setAttachmentError("");
+        return false;
+
+      }
+
+
+      setAttachmentError("");
 
 
       const userId =
@@ -2564,18 +2814,40 @@ setAttachmentError("");
         return false;
 
       }
-      
-      const currentChat = chats.find(
-  (chat) => chat.id === activeChatId
+
+
+      const currentChat =
+        chats.find(
+          (chat) =>
+            chat.id ===
+            activeChatId
+        );
+
+
+      if (
+        !currentChat
+      ) {
+
+        return false;
+
+      }
+
+
+      const history =
+        currentChat.messages ||
+        [];
+
+
+      const cleanUserMessage =
+        cleanValue(
+          text
+        );
+
+        startThinking(
+  cleanUserMessage,
+  file
 );
-
-if (!currentChat) {
-  return false;
-}
-
-const history = currentChat.messages || [];
-
-const cleanUserMessage = cleanValue(text);   
+         
       // ================================================
       // DEDICATED PDF GENERATOR MODE VALIDATION
       // ================================================
@@ -2639,6 +2911,19 @@ const cleanUserMessage = cleanValue(text);
     cleanUserMessage
   );
 
+  console.log(
+  "🖼️ Notes image request check:",
+  {
+    cleanUserMessage,
+    pdfRequested,
+    notesImageRequested,
+    notesImageTopic:
+      notesImageRequested
+        ? cleanUserMessage
+        : "",
+  }
+);
+
       let userPrompt;
 
 
@@ -2657,19 +2942,6 @@ const cleanUserMessage = cleanValue(text);
         );
 
       }
-
- let notesImage = null;
-
-if (
-  notesImageRequested
-) {
-
-  notesImage =
-    await searchNotesImage(
-      cleanUserMessage
-    );
-
-}
 
       let memory =
         null;
@@ -2788,7 +3060,7 @@ notesImageTopic:
 
       ];
 
-      setIsThinking(false);
+
       setChats(
         (prev) =>
           prev.map(
@@ -2854,10 +3126,6 @@ notesImageTopic:
       }
 
 
-      setIsThinking(
-        true
-      );
-
 
       try {
 
@@ -2900,6 +3168,7 @@ notesImageTopic:
           error
         );
 
+stopThinking();
 
         setIsThinking(
           false
@@ -3177,10 +3446,6 @@ notesImageTopic:
         updatedMessages
       );
 
-
-      setIsThinking(
-        true
-      );
 
 
       try {
@@ -3731,6 +3996,7 @@ notesImageTopic:
 
         });
 
+stopThinking();
 
         return true;
 
@@ -3758,38 +4024,52 @@ notesImageTopic:
   // STOP GENERATION
   // ====================================================
 
-  const stop =
-    () => {
+const stop = async () => {
+stopGeneration();
 
-      stopGeneration();
+stopThinking();
 
-      setIsThinking(
-        false
-      );
+setIsThinking(false);
 
-    };
+  setChats((prev) =>
+    prev.map((chat) => {
+      if (chat.id !== activeChatId) return chat;
+
+      const messages = [...chat.messages];
+
+      const lastMessage = messages[messages.length - 1];
+
+      if (
+        lastMessage &&
+        lastMessage.role === "assistant" &&
+        !lastMessage.message.trim()
+      ) {
+        messages.pop();
+      }
+
+      saveMessages(activeChatId, messages).catch(console.error);
+
+      return {
+        ...chat,
+        messages,
+      };
+    })
+  );
+};
 
 
   // ====================================================
   // RETURN
   // ====================================================
 
-  return {
-
-    send,
-
-    regenerate,
-
-    editMessage,
-
-    stop,
-
-    isThinking,
-
-    attachmentError,
-
-    clearAttachmentError,
-
-  };
-
+return {
+  send,
+  regenerate,
+  editMessage,
+  stop,
+  isThinking,
+  thinkingText,
+  attachmentError,
+  clearAttachmentError,
+};
 }

@@ -33,6 +33,10 @@ import {
     pdf,
 } from "@react-pdf/renderer";
 
+import {
+    searchNotesImage,
+} from "../../../../services/notesImageService";
+
 import HindiQuestionTestPDF
     from "./renderer/HindiQuestionTestPDF";
 
@@ -858,44 +862,97 @@ export default function PDFGenerator() {
   // PDF DATA
   // ====================================================
 
-  function getPdfData() {
+  async function getPdfData() {
 
-    return {
+  let notesImage = null;
 
-      title:
-        form.title,
+  const isNotesDocument =
+    /notes|नोट्स/iu.test(
+      String(
+        form.type || ""
+      )
+    );
 
-      type:
-        form.type,
+  const content =
+    String(
+      form.content || ""
+    ).trim();
 
-      subject:
-        form.subject,
+  const imageWasRequested =
+    /\b(?:add|include|with|insert)\b[\s\S]{0,60}\b(?:image|picture|photo|visual|figure|illustration)\b/i.test(
+      content
+    ) ||
+    /\b(?:image|picture|photo|visual|figure|illustration)\b[\s\S]{0,60}\b(?:add|include|with|insert)\b/i.test(
+      content
+    );
 
-      chapter:
-        form.chapter,
+  if (
+    isNotesDocument &&
+    imageWasRequested
+  ) {
 
-      content:
-        form.content,
+    try {
 
-      className:
-        /notes|नोट्स/iu.test(
-          String(
-            form.type || ""
-          )
-        )
-          ? (
-              classMap[
-                selectedDocument?.classId
-              ]?.name ||
-              selectedDocument?.className ||
-              selectedDocument?.class ||
-              ""
-            )
-          : "",
+      notesImage =
+        await searchNotesImage(
+          form.chapter ||
+          form.title ||
+          content
+        );
 
-    };
+      console.log(
+        "🖼️ PDF Generator Notes image:",
+        notesImage
+      );
+
+    } catch (error) {
+
+      console.error(
+        "PDF Generator Notes image fetch failed:",
+        error
+      );
+
+    }
 
   }
+
+  return {
+
+    title:
+      form.title,
+
+    type:
+      form.type,
+
+    subject:
+      form.subject,
+
+    chapter:
+      form.chapter,
+
+    content,
+
+    className:
+      isNotesDocument
+        ? (
+            classMap[
+              selectedDocument?.classId
+            ]?.name ||
+            selectedDocument?.className ||
+            selectedDocument?.class ||
+            ""
+          )
+        : "",
+
+    ...(notesImage
+      ? {
+          notesImage,
+        }
+      : {}),
+
+  };
+
+}
 
 
   // ====================================================
@@ -923,8 +980,8 @@ export default function PDFGenerator() {
       clearPreview();
 
 
-      const pdfData =
-        getPdfData();
+const pdfData =
+    await getPdfData();
 
 
       const url =
@@ -993,7 +1050,7 @@ export default function PDFGenerator() {
     try {
 
       const pdfData =
-        getPdfData();
+    await getPdfData();
 
 
       if (

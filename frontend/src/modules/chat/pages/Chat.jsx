@@ -328,18 +328,16 @@ export default function Chat() {
   // CHAT AI
   // ====================================================
 
-  const {
-    send,
-    regenerate,
-    editMessage,
-    stop,
-
-    isThinking,
-
-    attachmentError,
-    clearAttachmentError,
-
-  } = useChat({
+const {
+  send,
+  regenerate,
+  editMessage,
+  stop,
+  isThinking,
+  thinkingText,
+  attachmentError,
+  clearAttachmentError,
+} = useChat({
 
     activeChatId,
 
@@ -1249,10 +1247,12 @@ const handleModeChange = async (modeId) => {
   // SAVE AI RESPONSE TO WORKSPACE
   // ====================================================
 
-  const handleSaveToWorkspace =
-    async ({
-      content,
-    }) => {
+const handleSaveToWorkspace =
+  async ({
+    content,
+    notesImageRequested = false,
+    notesImageTopic = "",
+  }) => {
 
       const cleanContent =
         String(
@@ -1372,6 +1372,19 @@ const handleModeChange = async (modeId) => {
 
           chapter:
             extractedChapter,
+
+            notesImageRequested:
+  Boolean(
+    notesImageRequested
+  ),
+
+notesImageTopic:
+  String(
+    notesImageTopic || ""
+  ).trim(),
+
+aiMode:
+  selectedMode,
 
           aiMode:
             selectedMode,
@@ -1558,6 +1571,12 @@ const handleModeChange = async (modeId) => {
           isThinking={
             isThinkingMessage
           }
+
+          thinkingText={
+  isThinkingMessage
+    ? thinkingText
+    : ""
+}
 
           onRegenerate={
             handleRegenerate

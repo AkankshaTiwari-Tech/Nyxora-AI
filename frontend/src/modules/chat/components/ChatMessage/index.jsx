@@ -52,6 +52,7 @@ export default function ChatMessage({
   onEdit,
   onSaveToWorkspace,
   isThinking = false,
+  thinkingText = "",
 }) {
 
 const {
@@ -62,8 +63,8 @@ const {
   pdfRequested = false,
   notesImageRequested = false,
   notesImageTopic = "",
+  notesImage = null,
 } = message;
-
 
   const isUser =
     role === "user";
@@ -93,6 +94,11 @@ const {
     isFavorite,
     setIsFavorite,
   ] = useState(false);
+
+  const [
+  isSaved,
+  setIsSaved,
+] = useState(false);
 
 
   const [
@@ -613,19 +619,22 @@ const {
       }
 
 
-      onSaveToWorkspace({
-        messageId:
-          id,
+onSaveToWorkspace({
+  messageId: id,
+  content,
+  pdfRequested: Boolean(pdfRequested),
+  notesImageRequested:
+    Boolean(notesImageRequested),
+  notesImageTopic:
+    notesImageTopic,
+});
 
-        content,
+  setIsSaved(true);
 
-        pdfRequested:
-          Boolean(
-            pdfRequested
-          ),
-      });
-
-    };
+  window.setTimeout(() => {
+    setIsSaved(false);
+  }, 1600);
+};
 
 function getNotesImageTopic(
   value = ""
@@ -688,8 +697,8 @@ const getPdfData =
       ).trim();
 
 
-    let finalNotesImage =
-      null;
+let finalNotesImage =
+  notesImage || null;
 
 
     // ==================================================
@@ -705,11 +714,12 @@ const getPdfData =
       );
 
 
-    if (
-      isNotesDocument &&
-      notesImageRequested &&
-      notesImageTopic
-    ) {
+if (
+  isNotesDocument &&
+  !finalNotesImage &&
+  notesImageRequested &&
+  notesImageTopic
+) {
 
       try {
 
@@ -727,7 +737,10 @@ finalNotesImage =
   await searchNotesImage(
     imageTopic
   );
-
+console.log(
+  "🖼️ Pexels Notes image result:",
+  finalNotesImage
+);
       } catch (
         error
       ) {
@@ -1630,8 +1643,8 @@ await downloadWorkspacePdf(
 
 
                     <span>
-                      Nyxora AI is thinking...
-                    </span>
+  {thinkingText || "Thinking..."}
+</span>
 
                   </div>
 
@@ -2183,33 +2196,41 @@ await downloadWorkspacePdf(
                     onClick={
                       handleSaveToWorkspace
                     }
-                    className="
-                      inline-flex
-                      items-center
-                      gap-1.5
-                      rounded-lg
-                      border
-                      border-violet-500/20
-                      bg-violet-500/10
-                      px-3
-                      py-1.5
-                      text-xs
-                      font-medium
-                      text-violet-300
-                      transition
-                      hover:bg-violet-500/20
-                      hover:text-violet-200
-                    "
+className={`
+  inline-flex
+  items-center
+  gap-1.5
+  rounded-lg
+  border
+  px-3
+  py-1.5
+  text-xs
+  font-medium
+  transition-all
+  duration-300
+  ${
+    isSaved
+      ? "scale-105 border-emerald-400/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_20px_rgba(52,211,153,0.20)]"
+      : "border-violet-400/25 bg-gradient-to-r from-fuchsia-500/10 via-violet-500/15 to-cyan-500/10 text-violet-300 hover:-translate-y-[1px] hover:border-violet-400/45 hover:text-white hover:shadow-[0_0_20px_rgba(139,92,246,0.18)]"
+  }
+`}
                     title="Save AI response to Workspace"
                   >
 
-                    <FolderPlus
-                      size={15}
-                    />
+{isSaved ? (
+  <Check
+    size={15}
+    className="scale-110"
+  />
+) : (
+  <FolderPlus
+    size={15}
+  />
+)}
 
-                    <span>
-                      Save to Workspace
-                    </span>
+<span>
+  {isSaved ? "" : "Save to Workspace"}
+</span>
 
                   </button>
 
