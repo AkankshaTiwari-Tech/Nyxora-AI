@@ -6927,44 +6927,63 @@ function findBestImageInsertionIndex(
 
 }
 
-const notesImageBlock =
-    data?.notesImage?.imageUrl
-        ? {
-            type: "image",
+const notesImageBlocks =
+    Array.isArray(
+        data?.notesImages
+    )
+        ? data.notesImages
+            .filter(
+                image =>
+                    Boolean(
+                        image?.imageUrl
+                    )
+            )
+            .map(
+                (
+                    image,
+                    imageIndex
+                ) => ({
 
-            imageUrl:
-                data.notesImage.imageUrl,
+                    type:
+                        "image",
 
-            alt:
-                data.notesImage.alt ||
-                data.notesImage.topic ||
-                "Notes image",
+                    imageUrl:
+                        image.imageUrl,
 
-            topic:
-                data.notesImage.topic ||
-                "",
+                    alt:
+                        image.alt ||
+                        image.topic ||
+                        "Notes image",
 
-            photographer:
-                data.notesImage.photographer ||
-                "",
+                    topic:
+                        image.topic ||
+                        "",
 
-            photographerUrl:
-                data.notesImage.photographerUrl ||
-                "",
+                    photographer:
+                        image.photographer ||
+                        "",
 
-            photoUrl:
-                data.notesImage.photoUrl ||
-                "",
+                    photographerUrl:
+                        image.photographerUrl ||
+                        "",
 
-            pexelsUrl:
-                data.notesImage.pexelsUrl ||
-                "https://www.pexels.com/",
+                    photoUrl:
+                        image.photoUrl ||
+                        "",
 
-            source:
-                data.notesImage.source ||
-                "pexels"
-        }
-        : null;
+                    pexelsUrl:
+                        image.pexelsUrl ||
+                        "https://www.pexels.com/",
+
+                    source:
+                        image.source ||
+                        "pexels",
+
+                    imageIndex
+
+                })
+            )
+        : [];
 
 
 let noteBlocks =
@@ -6977,36 +6996,71 @@ let noteBlocks =
 
 if (
     isNotes &&
-    notesImageBlock
+    notesImageBlocks.length > 0
 ) {
 
-    const imageIndex =
-        findBestImageInsertionIndex(
-            noteBlocks,
-            notesImageBlock.topic
+    const matchedImages = [];
+
+
+    notesImageBlocks.forEach(
+        (
+            imageBlock
+        ) => {
+
+            const imageIndex =
+                findBestImageInsertionIndex(
+                    noteBlocks,
+                    imageBlock.topic
+                );
+
+
+            matchedImages.push({
+
+                imageBlock,
+
+                imageIndex
+
+            });
+
+        }
+    );
+
+
+    matchedImages
+        .sort(
+            (
+                a,
+                b
+            ) =>
+                b.imageIndex -
+                a.imageIndex
+        )
+        .forEach(
+            (
+                item
+            ) => {
+
+                if (
+                    item.imageIndex >= 0
+                ) {
+
+                    noteBlocks.splice(
+                        item.imageIndex + 1,
+                        0,
+                        item.imageBlock
+                    );
+
+                }
+                else {
+
+                    noteBlocks.push(
+                        item.imageBlock
+                    );
+
+                }
+
+            }
         );
-
-
-    if (
-        imageIndex >= 0
-    ) {
-
-        noteBlocks.splice(
-            imageIndex + 1,
-            0,
-            notesImageBlock
-        );
-
-    }
-    else {
-
-        // Safe fallback only when no heading matches.
-
-        noteBlocks.push(
-            notesImageBlock
-        );
-
-    }
 
 }
 

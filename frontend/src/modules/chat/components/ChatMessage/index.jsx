@@ -39,7 +39,9 @@ import {
 
 import {
   searchNotesImage,
+  searchNotesImages,
 } from "../../../../services/notesImageService";
+
 
 
 // ======================================================
@@ -684,6 +686,341 @@ function getNotesImageTopic(
 
 }
 
+// ====================================================
+// EXTRACT MULTIPLE RELEVANT NOTES IMAGE TOPICS
+// ====================================================
+
+function getNotesImageTopics(
+  value = ""
+) {
+
+  const source =
+    String(
+      value || ""
+    )
+      .replace(
+        /\r/g,
+        ""
+      )
+      .trim();
+
+
+  if (
+    !source
+  ) {
+
+    return [];
+
+  }
+
+
+  const topics =
+    [];
+
+
+  const addTopic =
+    (
+      topic
+    ) => {
+
+      const cleanTopic =
+        String(
+          topic || ""
+        )
+          .replace(
+            /\s+/g,
+            " "
+          )
+          .trim()
+          .replace(
+            /^[#*\-\d.)\s]+/,
+            ""
+          )
+          .replace(
+            /[:：]\s*$/,
+            ""
+          )
+          .trim()
+          .slice(
+            0,
+            100
+          );
+
+
+      if (
+        !cleanTopic
+      ) {
+
+        return;
+
+      }
+
+
+      /*
+       * Ignore headings that are too generic.
+       */
+
+      if (
+        /^(?:introduction|conclusion|summary|revision|references|contents|index|overview)$/iu.test(
+          cleanTopic
+        )
+      ) {
+
+        return;
+
+      }
+
+
+      /*
+       * Ignore headings that are actually long
+       * sentences instead of topics.
+       */
+
+      if (
+        cleanTopic.split(
+          /\s+/
+        ).length > 10
+      ) {
+
+        return;
+
+      }
+
+
+      const exists =
+        topics.some(
+          (
+            existing
+          ) =>
+            existing.toLowerCase() ===
+            cleanTopic.toLowerCase()
+        );
+
+
+      if (
+        !exists
+      ) {
+
+        topics.push(
+          cleanTopic
+        );
+
+      }
+
+    };
+
+
+  const lines =
+    source.split(
+      "\n"
+    );
+
+
+  lines.forEach(
+    (
+      rawLine
+    ) => {
+
+      const line =
+        String(
+          rawLine || ""
+        ).trim();
+
+
+      if (
+        !line
+      ) {
+
+        return;
+
+      }
+
+
+      /*
+       * Markdown headings:
+       *
+       * # Chlorophyll
+       * ## Leaf Anatomy
+       */
+
+      const markdownHeading =
+        line.match(
+          /^#{1,6}\s+(.+?)\s*$/u
+        );
+
+
+      if (
+        markdownHeading
+      ) {
+
+        addTopic(
+          markdownHeading[1]
+        );
+
+        return;
+
+      }
+
+
+      /*
+       * Numbered headings:
+       *
+       * 1. Chlorophyll
+       * 2. Chemical Equation
+       */
+
+      const numberedHeading =
+        line.match(
+          /^\d+\s*[.)-]\s+(.+?)\s*$/u
+        );
+
+
+      if (
+        numberedHeading
+      ) {
+
+        const candidate =
+          numberedHeading[1]
+            .replace(
+              /\s*:+\s*$/,
+              ""
+            )
+            .trim();
+
+
+        /*
+         * Only treat it as a topic when it
+         * looks like a heading rather than
+         * a complete sentence.
+         */
+
+        if (
+          candidate &&
+          candidate.split(
+            /\s+/
+          ).length <= 10 &&
+          !/[.!?]$/u.test(
+            candidate
+          )
+        ) {
+
+          addTopic(
+            candidate
+          );
+
+        }
+
+        return;
+
+      }
+
+
+      /*
+       * Bold standalone headings:
+       *
+       * **Chlorophyll**
+       * **Leaf Anatomy:**
+       */
+
+      const boldHeading =
+        line.match(
+          /^\*{1,2}([^*]+?)\*{1,2}\s*:?\s*$/u
+        );
+
+
+      if (
+        boldHeading
+      ) {
+
+        addTopic(
+          boldHeading[1]
+        );
+
+        return;
+
+      }
+
+
+      /*
+       * Standalone "Topic:" / "Heading:"
+       */
+
+      const colonHeading =
+        line.match(
+          /^([A-Za-z\u0900-\u097F][A-Za-z0-9\u0900-\u097F &()\/,+\-]{2,80})\s*:\s*$/u
+        );
+
+
+      if (
+        colonHeading
+      ) {
+
+        addTopic(
+          colonHeading[1]
+        );
+
+      }
+
+    }
+  );
+
+
+  /*
+   * Limit automatic topic images.
+   *
+   * Five images keeps the PDF useful without
+   * overwhelming the Notes pages.
+   */
+
+  if (
+    topics.length >
+    5
+  ) {
+
+    return topics.slice(
+      0,
+      5
+    );
+
+  }
+
+
+  /*
+   * Fallback for Notes that contain no
+   * recognizable headings.
+   */
+
+  if (
+    topics.length ===
+    0
+  ) {
+
+    const fallbackTopic =
+      getNotesImageTopic(
+        source
+      );
+
+
+    if (
+      fallbackTopic
+    ) {
+
+      addTopic(
+        fallbackTopic
+      );
+
+    }
+
+  }
+
+
+  return topics.slice(
+    0,
+    5
+  );
+
+}
+
  // ====================================================
 // PDF DATA
 // ====================================================
@@ -700,59 +1037,84 @@ const getPdfData =
 let finalNotesImage =
   notesImage || null;
 
+let finalNotesImages =
+  [];
+
 
     // ==================================================
     // FETCH NOTES IMAGE ONLY WHEN USER REQUESTED IT
     // ==================================================
 
-    const isNotesDocument =
-      /\bnotes?\b/i.test(
-        content
-      ) ||
-      /नोट्स/u.test(
-        content
-      );
+const isNotesDocument =
+  Boolean(
+    pdfRequested
+  );
 
 
 if (
   isNotesDocument &&
-  !finalNotesImage &&
-  notesImageRequested &&
-  notesImageTopic
+  Boolean(
+    notesImageRequested
+  ) &&
+  String(
+    notesImageTopic || ""
+  ).trim()
 ) {
 
-      try {
+  try {
 
-const imageTopic =
-  getNotesImageTopic(
-    notesImageTopic
-  );
+    const imageTopics =
+      getNotesImageTopics(
+        content
+      );
 
-console.log(
-  "🖼️ Notes image search topic:",
-  imageTopic
-);
 
-finalNotesImage =
-  await searchNotesImage(
-    imageTopic
-  );
-console.log(
-  "🖼️ Pexels Notes image result:",
-  finalNotesImage
-);
-      } catch (
-        error
-      ) {
+    console.log(
+      "🖼️ Notes image topics:",
+      imageTopics
+    );
 
-        console.error(
-          "Notes PDF image fetch failed:",
-          error
+
+    if (
+      imageTopics.length >
+      0
+    ) {
+
+      finalNotesImages =
+        await searchNotesImages(
+          imageTopics
         );
 
-      }
-
     }
+
+
+    // Preserve the existing
+    // single-image behavior.
+
+    finalNotesImage =
+      finalNotesImages[0] ||
+      finalNotesImage ||
+      null;
+
+
+    console.log(
+      "🖼️ Notes images received:",
+      finalNotesImages
+    );
+
+
+  } catch (
+    error
+  ) {
+
+    console.error(
+      "Notes PDF images fetch failed:",
+      error
+    );
+
+  }
+
+}
 
 
     return {
@@ -776,13 +1138,20 @@ console.log(
 
       content,
 
-      ...(finalNotesImage
-        ? {
-            notesImage:
-              finalNotesImage,
-          }
-        : {}),
+...(finalNotesImage
+  ? {
+      notesImage:
+        finalNotesImage,
+    }
+  : {}),
 
+...(finalNotesImages.length >
+  0
+  ? {
+      notesImages:
+        finalNotesImages,
+    }
+  : {}),
     };
 
   };

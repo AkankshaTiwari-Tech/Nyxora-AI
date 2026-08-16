@@ -17,6 +17,199 @@ function normalizeQuery(query = "") {
 
 
 // ======================================================
+// SEARCH NOTES IMAGES
+//
+// Frontend -> Nyxora backend -> Pexels
+//
+// The Pexels API key NEVER reaches the frontend.
+//
+// Supports multiple relevant topics while preserving
+// the original single-image function below.
+// ======================================================
+
+export async function searchNotesImages(
+    topics = []
+) {
+
+    const normalizedTopics =
+        Array.isArray(topics)
+            ? topics
+                .map(
+                    normalizeQuery
+                )
+                .filter(Boolean)
+                .slice(
+                    0,
+                    5
+                )
+            : [];
+
+
+    if (
+        !normalizedTopics.length
+    ) {
+
+        return [];
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                NOTES_IMAGE_API_URL,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            topics:
+                                normalizedTopics
+                        })
+                }
+            );
+
+
+        let data = null;
+
+        try {
+
+            data =
+                await response.json();
+
+        } catch {
+
+            data = null;
+
+        }
+
+
+        if (!response.ok) {
+
+            console.error(
+                "Nyxora Notes images request failed:",
+                data?.message ||
+                `HTTP ${response.status}`
+            );
+
+            return [];
+        }
+
+
+        if (
+            !data?.success ||
+            !Array.isArray(
+                data?.images
+            )
+        ) {
+
+            return [];
+        }
+
+
+        return data.images
+            .filter(
+                Boolean
+            )
+            .map(
+                (
+                    image
+                ) => ({
+
+                    imageUrl:
+                        String(
+                            image?.imageUrl ||
+                            ""
+                        ).trim(),
+
+                    thumbnailUrl:
+                        String(
+                            image?.thumbnailUrl ||
+                            ""
+                        ).trim(),
+
+                    alt:
+                        String(
+                            image?.alt ||
+                            image?.topic ||
+                            ""
+                        ).trim(),
+
+                    topic:
+                        String(
+                            image?.topic ||
+                            ""
+                        ).trim(),
+
+                    photographer:
+                        String(
+                            image?.photographer ||
+                            ""
+                        ).trim(),
+
+                    photographerUrl:
+                        String(
+                            image?.photographerUrl ||
+                            ""
+                        ).trim(),
+
+                    photoUrl:
+                        String(
+                            image?.photoUrl ||
+                            ""
+                        ).trim(),
+
+                    pexelsUrl:
+                        String(
+                            image?.pexelsUrl ||
+                            "https://www.pexels.com/"
+                        ).trim(),
+
+                    width:
+                        Number(
+                            image?.width
+                        ) || 0,
+
+                    height:
+                        Number(
+                            image?.height
+                        ) || 0,
+
+                    source:
+                        "pexels"
+
+                })
+            )
+            .filter(
+                (
+                    image
+                ) =>
+                    Boolean(
+                        image.imageUrl
+                    )
+            );
+
+    } catch (error) {
+
+        console.error(
+            "Nyxora Notes images service error:",
+            error
+        );
+
+        return [];
+
+    }
+
+}
+
+
+// ======================================================
 // SEARCH NOTES IMAGE
 //
 // Frontend -> Nyxora backend -> Pexels
@@ -169,5 +362,11 @@ export async function searchNotesImage(
 
 }
 
+
+// ======================================================
+// DEFAULT EXPORT
+//
+// Existing imports remain compatible.
+// ======================================================
 
 export default searchNotesImage;

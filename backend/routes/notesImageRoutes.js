@@ -8,7 +8,11 @@ const router = express.Router();
 const PEXELS_API_URL =
   "https://api.pexels.com/v1/search";
 
-const MAX_RESULTS = 15;
+const MAX_RESULTS =
+  15;
+
+const MAX_TOPICS =
+  5;
 
 
 // ======================================================
@@ -24,7 +28,10 @@ function normalizeQuery(
   )
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 120);
+    .slice(
+      0,
+      120
+    );
 
 }
 
@@ -81,8 +88,7 @@ function getPhotoScore(
     ) || 0;
 
 
-  // Prefer landscape because Notes cards
-  // use wide educational visuals.
+  // Prefer landscape.
 
   if (
     width >= height
@@ -93,7 +99,7 @@ function getPhotoScore(
   }
 
 
-  // Prefer high resolution.
+  // Prefer higher resolution.
 
   if (
     width >= 2000
@@ -225,9 +231,6 @@ function getBestImageUrl(
 
 // ======================================================
 // DOWNLOAD IMAGE AS BASE64
-//
-// React-PDF handles data URLs more reliably than
-// external image URLs during PDF generation.
 // ======================================================
 
 async function downloadImageAsDataUrl(
@@ -296,25 +299,227 @@ async function downloadImageAsDataUrl(
 
 
 // ======================================================
+// SEARCH ONE TOPIC
+// ======================================================
+
+async function searchSingleTopic(
+  topic
+) {
+
+  const query =
+    normalizeQuery(
+      topic
+    );
+
+  if (
+    !query
+  ) {
+
+    return null;
+
+  }
+
+
+  const searchParams =
+    new URLSearchParams({
+
+      query,
+
+      orientation:
+        "landscape",
+
+      size:
+        "large",
+
+      per_page:
+        String(
+          MAX_RESULTS
+        ),
+
+      page:
+        "1"
+
+    });
+
+
+  const response =
+    await fetch(
+      `${PEXELS_API_URL}?${searchParams.toString()}`,
+      {
+
+        method:
+          "GET",
+
+        headers: {
+
+          Authorization:
+            process.env.PEXELS_API_KEY
+
+        }
+
+      }
+    );
+
+
+  if (
+    !response.ok
+  ) {
+
+    let apiMessage =
+      `Pexels request failed (${response.status}).`;
+
+
+    try {
+
+      const errorData =
+        await response.json();
+
+
+      if (
+        errorData?.error
+      ) {
+
+        apiMessage +=
+          ` ${errorData.error}`;
+
+      }
+
+    }
+    catch {
+
+      // Keep default error.
+
+    }
+
+
+    throw new Error(
+      apiMessage
+    );
+
+  }
+
+
+  const data =
+    await response.json();
+
+
+  const photos =
+    Array.isArray(
+      data?.photos
+    )
+      ? data.photos
+      : [];
+
+
+  const selectedPhoto =
+    chooseBestPhoto(
+      photos
+    );
+
+
+  if (
+    !selectedPhoto
+  ) {
+
+    return null;
+
+  }
+
+
+  const imageUrl =
+    getBestImageUrl(
+      selectedPhoto
+    );
+
+
+  if (
+    !imageUrl
+  ) {
+
+    return null;
+
+  }
+
+
+  const imageDataUrl =
+    await downloadImageAsDataUrl(
+      imageUrl
+    );
+
+
+  return {
+
+    imageUrl:
+      imageDataUrl,
+
+    originalUrl:
+      imageUrl,
+
+    thumbnailUrl:
+      selectedPhoto?.src?.medium ||
+      selectedPhoto?.src?.small ||
+      imageUrl,
+
+    alt:
+      String(
+        selectedPhoto.alt ||
+        query
+      ).trim(),
+
+    topic:
+      query,
+
+    photographer:
+      String(
+        selectedPhoto.photographer ||
+        ""
+      ).trim(),
+
+    photographerUrl:
+      String(
+        selectedPhoto.photographer_url ||
+        ""
+      ).trim(),
+
+    photoUrl:
+      String(
+        selectedPhoto.url ||
+        ""
+      ).trim(),
+
+    pexelsUrl:
+      "https://www.pexels.com/",
+
+    width:
+      Number(
+        selectedPhoto.width
+      ) || 0,
+
+    height:
+      Number(
+        selectedPhoto.height
+      ) || 0,
+
+    source:
+      "pexels"
+
+  };
+
+}
+
+
+// ======================================================
 // POST /api/notes-image
 //
-// Notes-only image search.
+// Supports:
 //
-// Flow:
+// topic
+//     OR
 //
-// Frontend
-//    ↓
-// Nyxora backend
-//    ↓
-// Pexels search
-//    ↓
-// Download selected image
-//    ↓
-// Convert to Base64 data URL
-//    ↓
-// Frontend
-//    ↓
-// React-PDF
+// topics: []
+//
+// Response keeps the old `image` property for
+// backwards compatibility and adds `images`.
 // ======================================================
 
 router.post(
@@ -325,37 +530,6 @@ router.post(
   ) => {
 
     try {
-
-      const {
-        topic
-      } =
-        req.body;
-
-
-      const query =
-        normalizeQuery(
-          topic
-        );
-
-
-      if (
-        !query
-      ) {
-
-        return res
-          .status(400)
-          .json({
-
-            success:
-              false,
-
-            message:
-              "Notes image topic required."
-
-          });
-
-      }
-
 
       if (
         !process.env.PEXELS_API_KEY
@@ -381,117 +555,130 @@ router.post(
       }
 
 
+      // ==================================================
+      // NORMALIZE TOPICS
+      // ==================================================
+
+      let topics = [];
+
+
+      if (
+        Array.isArray(
+          req.body?.topics
+        )
+      ) {
+
+        topics =
+          req.body.topics
+            .map(
+              normalizeQuery
+            )
+            .filter(Boolean)
+            .slice(
+              0,
+              MAX_TOPICS
+            );
+
+      }
+
+
+      // ==================================================
+      // BACKWARDS COMPATIBILITY
+      // ==================================================
+
+      if (
+        !topics.length &&
+        req.body?.topic
+      ) {
+
+        const singleTopic =
+          normalizeQuery(
+            req.body.topic
+          );
+
+
+        if (
+          singleTopic
+        ) {
+
+          topics = [
+            singleTopic
+          ];
+
+        }
+
+      }
+
+
+      if (
+        !topics.length
+      ) {
+
+        return res
+          .status(400)
+          .json({
+
+            success:
+              false,
+
+            message:
+              "Notes image topic or topics required."
+
+          });
+
+      }
+
+
       console.log(
-        "🔎 Searching Pexels for Notes image:",
-        query
+        "🔎 Searching Pexels for Notes topics:",
+        topics
       );
 
 
-      const searchParams =
-        new URLSearchParams({
+      // ==================================================
+      // SEARCH ALL REQUESTED TOPICS
+      // ==================================================
 
-          query,
+      const results =
+        await Promise.all(
+          topics.map(
+            async (
+              topic
+            ) => {
 
-          orientation:
-            "landscape",
+              try {
 
-          size:
-            "large",
+                return await searchSingleTopic(
+                  topic
+                );
 
-          per_page:
-            String(
-              MAX_RESULTS
-            ),
+              }
+              catch (
+                error
+              ) {
 
-          page:
-            "1"
+                console.error(
+                  `❌ Pexels topic failed: ${topic}`,
+                  error
+                );
 
-        });
+                return null;
 
-
-      const response =
-        await fetch(
-          `${PEXELS_API_URL}?${searchParams.toString()}`,
-          {
-
-            method:
-              "GET",
-
-            headers: {
-
-              Authorization:
-                process.env.PEXELS_API_KEY
+              }
 
             }
+          )
+        );
 
-          }
+
+      const images =
+        results.filter(
+          Boolean
         );
 
 
       if (
-        !response.ok
-      ) {
-
-        let apiMessage =
-          `Pexels request failed (${response.status}).`;
-
-
-        try {
-
-          const errorData =
-            await response.json();
-
-
-          if (
-            errorData?.error
-          ) {
-
-            apiMessage +=
-              ` ${errorData.error}`;
-
-          }
-
-        }
-        catch {
-
-          // Keep fallback error message.
-
-        }
-
-
-        throw new Error(
-          apiMessage
-        );
-
-      }
-
-
-      const data =
-        await response.json();
-
-
-      const photos =
-        Array.isArray(
-          data?.photos
-        )
-          ? data.photos
-          : [];
-
-
-      console.log(
-        "📸 Pexels photos returned:",
-        photos.length
-      );
-
-
-      const selectedPhoto =
-        chooseBestPhoto(
-          photos
-        );
-
-
-      if (
-        !selectedPhoto
+        !images.length
       ) {
 
         return res
@@ -502,32 +689,7 @@ router.post(
               false,
 
             message:
-              "No relevant Pexels image found."
-
-          });
-
-      }
-
-
-      const imageUrl =
-        getBestImageUrl(
-          selectedPhoto
-        );
-
-
-      if (
-        !imageUrl
-      ) {
-
-        return res
-          .status(404)
-          .json({
-
-            success:
-              false,
-
-            message:
-              "Pexels returned a photo without a usable image URL."
+              "No relevant Pexels images found."
 
           });
 
@@ -535,23 +697,8 @@ router.post(
 
 
       console.log(
-        "✅ Selected Pexels image:",
-        imageUrl
-      );
-
-
-      // ==================================================
-      // DOWNLOAD IMAGE
-      // ==================================================
-
-      const imageDataUrl =
-        await downloadImageAsDataUrl(
-          imageUrl
-        );
-
-
-      console.log(
-        "✅ Pexels image converted to Base64."
+        "✅ Notes images selected:",
+        images.length
       );
 
 
@@ -560,80 +707,14 @@ router.post(
         success:
           true,
 
-        image: {
+        // New multi-image response.
 
-          // IMPORTANT:
-          // React-PDF uses this data URL.
+        images,
 
-          imageUrl:
-            imageDataUrl,
+        // Old single-image compatibility.
 
-
-          // Keep the original remote URL
-          // as metadata only.
-
-          originalUrl:
-            imageUrl,
-
-
-          thumbnailUrl:
-            selectedPhoto?.src?.medium ||
-            selectedPhoto?.src?.small ||
-            imageUrl,
-
-
-          alt:
-            String(
-              selectedPhoto.alt ||
-              query
-            ).trim(),
-
-
-          topic:
-            query,
-
-
-          photographer:
-            String(
-              selectedPhoto.photographer ||
-              ""
-            ).trim(),
-
-
-          photographerUrl:
-            String(
-              selectedPhoto.photographer_url ||
-              ""
-            ).trim(),
-
-
-          photoUrl:
-            String(
-              selectedPhoto.url ||
-              ""
-            ).trim(),
-
-
-          pexelsUrl:
-            "https://www.pexels.com/",
-
-
-          width:
-            Number(
-              selectedPhoto.width
-            ) || 0,
-
-
-          height:
-            Number(
-              selectedPhoto.height
-            ) || 0,
-
-
-          source:
-            "pexels"
-
-        }
+        image:
+          images[0]
 
       });
 
@@ -657,7 +738,7 @@ router.post(
 
           message:
             error?.message ||
-            "Failed to search for Notes image."
+            "Failed to search for Notes images."
 
         });
 

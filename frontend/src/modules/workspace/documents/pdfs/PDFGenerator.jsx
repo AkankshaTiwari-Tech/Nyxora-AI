@@ -33,15 +33,16 @@ import {
     pdf,
 } from "@react-pdf/renderer";
 
-import {
-    searchNotesImage,
-} from "../../../../services/notesImageService";
-
 import HindiQuestionTestPDF
     from "./renderer/HindiQuestionTestPDF";
 
 import MathDiagramTestPDF
     from "./diagrams/MathDiagramTestPDF";
+
+    import {
+  searchNotesImage,
+  searchNotesImages,
+} from "../../../../services/notesImageService";
 
 
 // ======================================================
@@ -857,14 +858,260 @@ export default function PDFGenerator() {
 
   }
 
+// ====================================================
+// EXTRACT NOTES IMAGE TOPICS
+// ====================================================
+
+function getNotesImageTopics(
+  value = ""
+) {
+
+  const source =
+    String(
+      value || ""
+    )
+      .replace(
+        /\r/g,
+        ""
+      )
+      .trim();
+
+
+  if (
+    !source
+  ) {
+
+    return [];
+
+  }
+
+
+  const topics = [];
+
+
+  const addTopic =
+    (
+      topic
+    ) => {
+
+      const cleanTopic =
+        String(
+          topic || ""
+        )
+          .replace(
+            /\s+/g,
+            " "
+          )
+          .trim()
+          .replace(
+            /^[#*\-\d.)\s]+/,
+            ""
+          )
+          .replace(
+            /[:：]\s*$/,
+            ""
+          )
+          .trim()
+          .slice(
+            0,
+            100
+          );
+
+
+      if (
+        !cleanTopic
+      ) {
+
+        return;
+
+      }
+
+
+      if (
+        /^(?:introduction|conclusion|summary|revision|references|contents|index|overview)$/iu.test(
+          cleanTopic
+        )
+      ) {
+
+        return;
+
+      }
+
+
+      if (
+        cleanTopic.split(/\s+/).length >
+        10
+      ) {
+
+        return;
+
+      }
+
+
+      const exists =
+        topics.some(
+          (
+            existing
+          ) =>
+            existing.toLowerCase() ===
+            cleanTopic.toLowerCase()
+        );
+
+
+      if (
+        !exists
+      ) {
+
+        topics.push(
+          cleanTopic
+        );
+
+      }
+
+    };
+
+
+  const lines =
+    source.split(
+      "\n"
+    );
+
+
+  lines.forEach(
+    (
+      rawLine
+    ) => {
+
+      const line =
+        String(
+          rawLine || ""
+        ).trim();
+
+
+      if (
+        !line
+      ) {
+
+        return;
+
+      }
+
+
+      const markdownHeading =
+        line.match(
+          /^#{1,6}\s+(.+?)\s*$/u
+        );
+
+
+      if (
+        markdownHeading
+      ) {
+
+        addTopic(
+          markdownHeading[1]
+        );
+
+        return;
+
+      }
+
+
+      const numberedHeading =
+        line.match(
+          /^\d+\s*[.)-]\s+(.+?)\s*$/u
+        );
+
+
+      if (
+        numberedHeading
+      ) {
+
+        const candidate =
+          numberedHeading[1]
+            .replace(
+              /\s*:+\s*$/,
+              ""
+            )
+            .trim();
+
+
+        if (
+          candidate &&
+          candidate.split(/\s+/).length <=
+            10 &&
+          !/[.!?]$/u.test(
+            candidate
+          )
+        ) {
+
+          addTopic(
+            candidate
+          );
+
+        }
+
+        return;
+
+      }
+
+
+      const boldHeading =
+        line.match(
+          /^\*{1,2}([^*]+?)\*{1,2}\s*:?\s*$/u
+        );
+
+
+      if (
+        boldHeading
+      ) {
+
+        addTopic(
+          boldHeading[1]
+        );
+
+        return;
+
+      }
+
+
+      const colonHeading =
+        line.match(
+          /^([A-Za-z\u0900-\u097F][A-Za-z0-9\u0900-\u097F &()\/,+\-]{2,80})\s*:\s*$/u
+        );
+
+
+      if (
+        colonHeading
+      ) {
+
+        addTopic(
+          colonHeading[1]
+        );
+
+      }
+
+    }
+  );
+
+
+  return topics.slice(
+    0,
+    5
+  );
+
+}
 
   // ====================================================
   // PDF DATA
   // ====================================================
 
-  async function getPdfData() {
+async function getPdfData() {
 
-  let notesImage = null;
+  const content =
+    String(
+      form.content || ""
+    ).trim();
+
 
   const isNotesDocument =
     /notes|नोट्स/iu.test(
@@ -873,39 +1120,165 @@ export default function PDFGenerator() {
       )
     );
 
-  const content =
-    String(
-      form.content || ""
-    ).trim();
 
-  const imageWasRequested =
-    /\b(?:add|include|with|insert)\b[\s\S]{0,60}\b(?:image|picture|photo|visual|figure|illustration)\b/i.test(
-      content
-    ) ||
-    /\b(?:image|picture|photo|visual|figure|illustration)\b[\s\S]{0,60}\b(?:add|include|with|insert)\b/i.test(
-      content
-    );
+  let shouldFetchImages =
+    false;
+
+
+  let imageTopicSource =
+    "";
+
+
+  // ==================================================
+  // WORKSPACE DOCUMENT
+  // ==================================================
 
   if (
-    isNotesDocument &&
-    imageWasRequested
+    sourceMode ===
+      "workspace" &&
+    selectedDocument
+  ) {
+
+shouldFetchImages =
+  isNotesDocument &&
+  (
+    Boolean(
+      selectedDocument.notesImageRequested
+    ) ||
+    Boolean(
+      String(
+        selectedDocument.notesImageTopic ||
+        ""
+      ).trim()
+    )
+  );
+
+
+imageTopicSource =
+  content;
+
+  }
+
+
+  // ==================================================
+  // CUSTOM CONTENT
+  //
+  // Only fetch images when the user explicitly
+  // included an image request in the content.
+  // ==================================================
+
+  if (
+    sourceMode ===
+    "custom"
+  ) {
+
+    const explicitImageRequest =
+      /\b(?:add|include|with|insert)\b[\s\S]{0,80}\b(?:image|images|picture|pictures|photo|photos|visual|visuals|figure|figures|illustration|illustrations)\b/i.test(
+        content
+      ) ||
+      /\b(?:image|images|picture|pictures|photo|photos|visual|visuals|figure|figures|illustration|illustrations)\b[\s\S]{0,80}\b(?:add|include|with|insert)\b/i.test(
+        content
+      );
+
+
+    shouldFetchImages =
+      isNotesDocument &&
+      explicitImageRequest;
+
+
+    imageTopicSource =
+      content;
+
+      const resolvedImageTopics =
+  imageTopics.length > 0
+    ? imageTopics
+    : [
+        String(
+          selectedDocument?.notesImageTopic ||
+          form.chapter ||
+          form.subject ||
+          form.title ||
+          ""
+        )
+          .trim()
+          .slice(
+            0,
+            120
+          )
+      ].filter(
+        Boolean
+      );
+
+  }
+
+  
+
+
+  let notesImages =
+    [];
+
+
+  // ==================================================
+  // FETCH RELEVANT NOTES IMAGES
+  // ==================================================
+
+  if (
+    shouldFetchImages
   ) {
 
     try {
 
-      notesImage =
-        await searchNotesImage(
-          form.chapter ||
-          form.title ||
-          content
-        );
+const imageTopics =
+  getNotesImageTopics(
+    imageTopicSource
+  );
 
-      console.log(
-        "🖼️ PDF Generator Notes image:",
-        notesImage
+
+const resolvedImageTopics =
+  imageTopics.length > 0
+    ? imageTopics
+    : [
+        String(
+          selectedDocument?.notesImageTopic ||
+          form.chapter ||
+          form.subject ||
+          form.title ||
+          ""
+        )
+          .trim()
+          .slice(
+            0,
+            120
+          )
+      ].filter(
+        Boolean
       );
 
-    } catch (error) {
+console.log(
+  "🖼️ PDF Generator image topics:",
+  resolvedImageTopics
+);
+
+if (
+  resolvedImageTopics.length >
+  0
+) {
+
+  notesImages =
+    await searchNotesImages(
+      resolvedImageTopics
+    );
+
+}
+
+      console.log(
+        "🖼️ PDF Generator images received:",
+        notesImages
+      );
+
+    } catch (
+      error
+    ) {
 
       console.error(
         "PDF Generator Notes image fetch failed:",
@@ -915,6 +1288,7 @@ export default function PDFGenerator() {
     }
 
   }
+
 
   return {
 
@@ -932,21 +1306,12 @@ export default function PDFGenerator() {
 
     content,
 
-    className:
-      isNotesDocument
-        ? (
-            classMap[
-              selectedDocument?.classId
-            ]?.name ||
-            selectedDocument?.className ||
-            selectedDocument?.class ||
-            ""
-          )
-        : "",
-
-    ...(notesImage
+    ...(notesImages.length >
+    0
       ? {
-          notesImage,
+          notesImages,
+          notesImage:
+            notesImages[0],
         }
       : {}),
 
@@ -955,7 +1320,7 @@ export default function PDFGenerator() {
 }
 
 
-  // ====================================================
+ // ====================================================
   // PREVIEW
   // ====================================================
 
