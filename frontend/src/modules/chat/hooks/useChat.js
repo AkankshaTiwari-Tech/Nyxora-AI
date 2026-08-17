@@ -2668,12 +2668,13 @@ ${userPrompt}
   // PDF MODE WARNING
   // ====================================================
 
-  const addPdfModeWarning =
-    async ({
-      currentChat,
-      cleanUserMessage,
-      file,
-    }) => {
+const addPdfModeWarning =
+  async ({
+    currentChat,
+    cleanUserMessage,
+    file,
+    files = [],
+  }) => {
 
       const history =
         currentChat.messages ||
@@ -2943,33 +2944,31 @@ if (
           text
         );
 
-        startThinking(
-  cleanUserMessage,
-  file
-);
-         
+        
       // ================================================
       // DEDICATED PDF GENERATOR MODE VALIDATION
       // ================================================
 
-      if (
-        isPdfGeneratorMode &&
-        !hasGeneratePdfCommand(
-          cleanUserMessage
-        )
-      ) {
+if (
+  isPdfGeneratorMode &&
+  !(
+    /\bgenerate\b/iu.test(
+      cleanUserMessage
+    ) &&
+    /\bpdf\b/iu.test(
+      cleanUserMessage
+    )
+  )
+) {
 
         try {
 
-          return await addPdfModeWarning({
-
-            currentChat,
-
-            cleanUserMessage,
-
-            file,
-
-          });
+return await addPdfModeWarning({
+  currentChat,
+  cleanUserMessage,
+  file,
+  files,
+});
 
         } catch (error) {
 
@@ -2985,6 +2984,10 @@ if (
 
       }
 
+      startThinking(
+  cleanUserMessage,
+  file
+);
 
       // ================================================
       // PDF REQUEST DETECTION
@@ -3809,11 +3812,24 @@ attachmentCacheRef.current.set(
       // PDF MODE EDIT VALIDATION
       // ================================================
 
-      const validPdfGeneratorCommand =
-        !isPdfGeneratorMode ||
-        hasGeneratePdfCommand(
-          cleanUserMessage
-        );
+const hasGenerateWord =
+  /\bgenerate\b/iu.test(
+    cleanUserMessage
+  );
+
+
+const hasPdfWord =
+  /\bpdf\b/iu.test(
+    cleanUserMessage
+  );
+
+
+const validPdfGeneratorCommand =
+  !isPdfGeneratorMode ||
+  (
+    hasGenerateWord &&
+    hasPdfWord
+  );
 
 
       const pdfRequested =
@@ -4117,7 +4133,6 @@ attachmentCacheRef.current.set(
 
           file:
             fileForAI,
-
 
 files:
   filesForAI,
