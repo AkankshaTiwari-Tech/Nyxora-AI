@@ -33,11 +33,206 @@ function getTableFont(text=""){
      * (π, √, ↔, ≤, α, β, superscripts, subscripts, etc.)
      * uses STIXTwoMath.
      */
-    if(/[^\x00-\x7F]/u.test(value)){
-        return "STIXTwoMath";
+if(/[^\x00-\x7F]/u.test(value)){
+
+    if(
+        /[ₐₑₕᵢⱼₖₗₘₙₒₚᵣₛₜᵤᵥₓ]/u.test(
+            value
+        )
+    ){
+        return "NotoSans";
     }
 
+    return "STIXTwoMath";
+}
     return "Helvetica";
+
+}
+
+function renderTableMixedMathText(
+    text = ""
+) {
+
+    const value =
+        normalizeContentText(
+            String(
+                text || ""
+            )
+        );
+
+
+    const parts =
+        value.split(
+            /([^\x00-\x7F]+)/
+        );
+
+
+    return parts.map(
+        (
+            part,
+            index
+        ) => {
+
+            if (!part) {
+                return null;
+            }
+
+
+            const isDevanagari =
+                /[\u0900-\u097F]/u.test(
+                    part
+                );
+
+
+            if (
+                isDevanagari
+            ) {
+
+                return (
+                    <Text
+                        key={
+                            "table-math-" +
+                            index
+                        }
+                        style={{
+                            fontFamily:
+                                "NotoSansDevanagari",
+
+                            fontSize: 8,
+                        }}
+                    >
+                        {part}
+                    </Text>
+                );
+
+            }
+
+
+            const isMath =
+                /[^\x00-\x7F]/u.test(
+                    part
+                );
+
+
+            return (
+                <Text
+                    key={
+                        "table-math-" +
+                        index
+                    }
+                    style={{
+                        fontFamily:
+                            isMath
+                                ? "STIXTwoMath"
+                                : "NotoSans",
+
+                        fontSize: 8,
+                    }}
+                >
+                    {part}
+                </Text>
+            );
+
+        }
+    );
+
+}
+
+function renderTableMathText(
+    text = ""
+) {
+
+    const value =
+        normalizeContentText(
+            String(
+                text || ""
+            )
+        );
+
+    const parts =
+        value.split(
+            /([^\x00-\x7F]+)/
+        );
+
+    return parts.map(
+        (
+            part,
+            index
+        ) => {
+
+            if (!part) {
+                return null;
+            }
+
+            const isDevanagari =
+                /[\u0900-\u097F]/u.test(
+                    part
+                );
+
+            if (
+                isDevanagari
+            ) {
+
+                return (
+                    <Text
+                        key={
+                            "table-math-" +
+                            index
+                        }
+                        style={{
+                            fontFamily:
+                                "NotoSansDevanagari",
+                        }}
+                    >
+                        {part}
+                    </Text>
+                );
+
+            }
+
+            const isMath =
+                /[^\x00-\x7F]/u.test(
+                    part
+                );
+
+            if (
+                isMath
+            ) {
+
+                return (
+                    <Text
+                        key={
+                            "table-math-" +
+                            index
+                        }
+                        style={{
+                            fontFamily:
+                                "STIXTwoMath",
+                        }}
+                    >
+                        {part}
+                    </Text>
+                );
+
+            }
+
+            return (
+                <Text
+                    key={
+                        "table-math-" +
+                        index
+                    }
+                    style={{
+                        fontFamily:
+                            "Helvetica",
+                    }}
+                >
+                    {part}
+                </Text>
+            );
+
+        }
+    );
 
 }
 
@@ -414,29 +609,29 @@ export default function NotesTable({
                                                 }}
                                             >
 
-                                                <Text
-                                                    style={{
-                                                        fontFamily: "STIXTwoMath",
+<Text
+    style={{
 
-                                                        fontSize: 8,
+        fontSize: 8,
 
-                                                        fontWeight:
-                                                            cellIndex === 0
-                                                                ? "bold"
-                                                                : "normal",
+        fontWeight:
+            cellIndex === 0
+                ? "bold"
+                : "normal",
 
-                                                        color:
-                                                            cellIndex === 0
-                                                                ? "#4F46E5"
-                                                                : "#1F2937",
+        color:
+            cellIndex === 0
+                ? "#4F46E5"
+                : "#1F2937",
 
-                                                        lineHeight: 1.35,
-                                                    }}
-                                                >
-                                                    {normalizeCellValue(
-                                                        cell
-                                                    )}
-                                                </Text>
+        lineHeight: 1.35,
+
+    }}
+>
+{renderTableMixedMathText(
+    cell
+    )}
+</Text>
 
                                             </View>
                                         )

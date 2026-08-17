@@ -62,11 +62,26 @@ const {
   role,
   message: text,
   file,
+  files = [],
   pdfRequested = false,
   notesImageRequested = false,
   notesImageTopic = "",
-  notesImage = null,
 } = message;
+
+const messageFiles =
+  Array.isArray(
+    files
+  ) &&
+  files.length > 0
+
+    ? files
+
+    : file
+      ? [
+          file
+        ]
+
+      : [];
 
   const isUser =
     role === "user";
@@ -1328,7 +1343,6 @@ await downloadWorkspacePdf(
       file
     );
 
-
   const EditAttachmentIcon =
     getFileIcon(
       currentEditAttachment
@@ -1718,92 +1732,138 @@ await downloadWorkspacePdf(
 
               <>
 
-                {/* ATTACHMENT */}
+{/* ATTACHMENTS */}
 
-                {file && (
+{messageFiles.length > 0 && (
 
-                  <div
-                    className="
-                      mb-3
-                      flex
-                      items-center
-                      gap-3
-                      rounded-xl
-                      border
-                      border-white/10
-                      bg-black/15
-                      px-3
-                      py-2.5
-                    "
-                  >
+  <div
+    className="
+      mb-3
+      flex
+      flex-col
+      gap-2
+    "
+  >
 
-                    <div
-                      className="
-                        flex
-                        h-9
-                        w-9
-                        shrink-0
-                        items-center
-                        justify-center
-                        rounded-lg
-                        bg-indigo-500/15
-                        text-indigo-300
-                      "
-                    >
+    {messageFiles.map(
+      (
+        attachment,
+        attachmentIndex
+      ) => {
 
-                      <AttachmentIcon
-                        size={18}
-                      />
-
-                    </div>
+        const AttachmentComponent =
+          getFileIcon(
+            attachment
+          );
 
 
-                    <div
-                      className="
-                        min-w-0
-                      "
-                    >
+        return (
 
-                      <p
-                        className="
-                          truncate
-                          text-xs
-                          font-medium
-                          text-gray-200
-                        "
-                      >
-                        {
-                          file.name ||
-                          "Attachment"
-                        }
-                      </p>
+          <div
+            key={
+              `${
+                attachment.name ||
+                "Attachment"
+              }-${
+                attachment.size ||
+                0
+              }-${
+                attachmentIndex
+              }`
+            }
+
+            className="
+              flex
+              items-center
+              gap-3
+              rounded-xl
+              border
+              border-white/10
+              bg-black/15
+              px-3
+              py-2.5
+            "
+          >
+
+            <div
+              className="
+                flex
+                h-9
+                w-9
+                shrink-0
+                items-center
+                justify-center
+                rounded-lg
+                bg-indigo-500/15
+                text-indigo-300
+              "
+            >
+
+              <AttachmentComponent
+                size={18}
+              />
+
+            </div>
 
 
-                      {formatFileSize(
-                        file.size
-                      ) && (
+            <div
+              className="
+                min-w-0
+                flex-1
+              "
+            >
 
-                        <p
-                          className="
-                            mt-0.5
-                            text-[11px]
-                            text-gray-500
-                          "
-                        >
-                          {
-                            formatFileSize(
-                              file.size
-                            )
-                          }
-                        </p>
+              <p
+                className="
+                  truncate
+                  text-xs
+                  font-medium
+                  text-gray-200
+                "
+              >
 
-                      )}
+                {
+                  attachment.name ||
+                  "Attachment"
+                }
 
-                    </div>
+              </p>
 
-                  </div>
 
-                )}
+              {formatFileSize(
+                attachment.size
+              ) && (
+
+                <p
+                  className="
+                    mt-0.5
+                    text-[11px]
+                    text-gray-500
+                  "
+                >
+
+                  {
+                    formatFileSize(
+                      attachment.size
+                    )
+                  }
+
+                </p>
+
+              )}
+
+            </div>
+
+          </div>
+
+        );
+
+      }
+    )}
+
+  </div>
+
+)}
 
 
                 {/* USER TEXT */}

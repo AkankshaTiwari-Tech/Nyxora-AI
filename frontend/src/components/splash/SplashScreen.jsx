@@ -5,6 +5,13 @@ import {
 
 import NyxoraLogo from "../common/NyxoraLogo";
 
+import flashBurstSound from "../../assets/sounds/01_flash_burst.wav";
+import impactFlashSound from "../../assets/sounds/02_impact_flash.wav";
+import textRevealSound from "../../assets/sounds/03_text_reveal.wav";
+import energyChargeSound from "../../assets/sounds/04_energy_charge.wav";
+import finalZoomSound from "../../assets/sounds/05_final_zoom.wav";
+import loginExitSound from "../../assets/sounds/06_login_exit.wav";
+
 
 
 
@@ -16,13 +23,31 @@ export default function SplashScreen({
   mode = "intro",
   onComplete,
 }) {
-  const rootRef = useRef(null);
-  const logoRef = useRef(null);
-  const glowRef = useRef(null);
-  const flashRef = useRef(null);
-  const brandRef = useRef(null);
-  const frameRef = useRef(null);
-  const completedRef = useRef(false);
+const rootRef = useRef(null);
+const logoRef = useRef(null);
+const glowRef = useRef(null);
+const flashRef = useRef(null);
+const brandRef = useRef(null);
+const frameRef = useRef(null);
+const completedRef = useRef(false);
+
+const flashBurstPlayedRef =
+  useRef(false);
+
+const impactFlashPlayedRef =
+  useRef(false);
+
+const textRevealPlayedRef =
+  useRef(false);
+
+const energyChargePlayedRef =
+  useRef(false);
+
+const finalZoomPlayedRef =
+  useRef(false);
+
+const loginExitPlayedRef =
+  useRef(false);
 
   const isExit =
     mode === "loginExit";
@@ -33,6 +58,56 @@ export default function SplashScreen({
   // ====================================================
 
   useEffect(() => {
+
+    const flashBurstAudio =
+  new Audio(
+    flashBurstSound
+  );
+
+const impactFlashAudio =
+  new Audio(
+    impactFlashSound
+  );
+
+const textRevealAudio =
+  new Audio(
+    textRevealSound
+  );
+
+const energyChargeAudio =
+  new Audio(
+    energyChargeSound
+  );
+
+const finalZoomAudio =
+  new Audio(
+    finalZoomSound
+  );
+
+const loginExitAudio =
+  new Audio(
+    loginExitSound
+  );
+
+
+flashBurstAudio.volume =
+  0.28;
+
+impactFlashAudio.volume =
+  0.36;
+
+textRevealAudio.volume =
+  0.24;
+
+energyChargeAudio.volume =
+  0.22;
+
+finalZoomAudio.volume =
+  0.30;
+
+loginExitAudio.volume =
+  0.30;
+
     const root =
       rootRef.current;
 
@@ -99,6 +174,46 @@ export default function SplashScreen({
         start
       ) *
       amount;
+
+      const playSound = (
+  audio
+) => {
+
+  if (!audio) {
+    return;
+  }
+
+
+  try {
+
+    audio.currentTime =
+      0;
+
+
+    const playPromise =
+      audio.play();
+
+
+    if (
+      playPromise &&
+      typeof playPromise.catch ===
+        "function"
+    ) {
+
+      playPromise.catch(
+        () => {}
+      );
+
+    }
+
+  } catch {
+
+    // Browser may block
+    // autoplay.
+
+  }
+
+};
 
 
     const easeOutCubic = (t) =>
@@ -406,8 +521,20 @@ export default function SplashScreen({
         // ===============================================
         // QUICK PURPLE CAMERA CROSS
         // ===============================================
+if (
+  time >= 1450 &&
+  !flashBurstPlayedRef.current
+) {
 
-        const firstFlash =
+  flashBurstPlayedRef.current =
+    true;
+
+  playSound(
+    flashBurstAudio
+  );
+
+}
+        const firstFlash =     
           range(
             time,
             1450,
@@ -527,6 +654,20 @@ export default function SplashScreen({
         // IMPACT FLASH
         // ===============================================
 
+if (
+  time >= 2090 &&
+  !impactFlashPlayedRef.current
+) {
+
+  impactFlashPlayedRef.current =
+    true;
+
+  playSound(
+    impactFlashAudio
+  );
+
+}
+
         const impact =
           range(
             time,
@@ -607,6 +748,20 @@ export default function SplashScreen({
         time >= 3450 &&
         time < 4300
       ) {
+       
+        if (
+  !textRevealPlayedRef.current
+) {
+
+  textRevealPlayedRef.current =
+    true;
+
+  playSound(
+    textRevealAudio
+  );
+
+}
+
         logo.style.opacity = "1";
 
         logo.style.transform =
@@ -669,6 +824,20 @@ export default function SplashScreen({
         time >= 4300 &&
         time < 4550
       ) {
+
+        if (
+  !energyChargePlayedRef.current
+) {
+
+  energyChargePlayedRef.current =
+    true;
+
+  playSound(
+    energyChargeAudio
+  );
+
+}
+
         const charge =
           easeOutCubic(
             range(
@@ -745,6 +914,20 @@ export default function SplashScreen({
       // FINAL ZOOM
       // =================================================
 
+      if (
+        !finalZoomPlayedRef.current
+      ) {
+
+        finalZoomPlayedRef.current =
+          true;
+
+        playSound(
+          finalZoomAudio
+        );
+
+      }
+
+
       const zoom =
         easeInCubic(
           range(
@@ -754,7 +937,7 @@ export default function SplashScreen({
           )
         );
 
-
+        
       const scale =
         lerp(
           1.08,
@@ -881,6 +1064,18 @@ export default function SplashScreen({
         time >= 250 &&
         time < 600
       ) {
+        if (
+  !loginExitPlayedRef.current
+) {
+
+  loginExitPlayedRef.current =
+    true;
+
+  playSound(
+    loginExitAudio
+  );
+
+}
         const charge =
           easeOutCubic(
             range(
@@ -1106,13 +1301,46 @@ export default function SplashScreen({
     // CLEANUP
     // ==================================================
 
-    return () => {
-      if (frameRef.current) {
-        cancelAnimationFrame(
-          frameRef.current
-        );
-      }
-    };
+return () => {
+
+  if (
+    frameRef.current
+  ) {
+
+    cancelAnimationFrame(
+      frameRef.current
+    );
+
+  }
+
+
+  flashBurstAudio.pause();
+  impactFlashAudio.pause();
+  textRevealAudio.pause();
+  energyChargeAudio.pause();
+  finalZoomAudio.pause();
+  loginExitAudio.pause();
+
+
+  flashBurstAudio.currentTime =
+    0;
+
+  impactFlashAudio.currentTime =
+    0;
+
+  textRevealAudio.currentTime =
+    0;
+
+  energyChargeAudio.currentTime =
+    0;
+
+  finalZoomAudio.currentTime =
+    0;
+
+  loginExitAudio.currentTime =
+    0;
+
+};
 
   }, [isExit, onComplete]);
 

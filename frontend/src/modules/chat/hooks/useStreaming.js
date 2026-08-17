@@ -23,6 +23,8 @@ export async function streamResponse({
 
   file,
 
+  files,
+
   history,
 
   messages,
@@ -102,6 +104,8 @@ export async function streamResponse({
       },
 
       file,
+
+      files,
 
       history,
 

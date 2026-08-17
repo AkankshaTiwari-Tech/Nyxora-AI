@@ -1,25 +1,57 @@
-import { Paperclip } from "lucide-react";
+import {
+  Paperclip,
+} from "lucide-react";
+
 
 export default function FileUploadButton({
   onSelect,
 }) {
 
-  const handleChange = (event) => {
 
-    const file =
-      event.target.files?.[0];
+  const handleChange =
+    (
+      event
+    ) => {
+
+      const files =
+        Array.from(
+          event.target.files ||
+          []
+        );
 
 
-    if (!file)
-      return;
+      if (
+        files.length ===
+        0
+      ) {
+
+        return;
+
+      }
 
 
-    onSelect(file);
+      // ====================================================
+      // KEEP BACKWARD COMPATIBILITY
+      //
+      // The first argument remains the first selected file
+      // so the current single-file ChatInput continues to
+      // work until we update it in the next step.
+      //
+      // The second argument contains all selected files.
+      // ====================================================
+
+      onSelect(
+        files[0],
+        files
+      );
 
 
-    event.target.value = "";
+      // Allow selecting the same file again.
 
-  };
+      event.target.value =
+        "";
+
+    };
 
 
   return (
@@ -40,7 +72,9 @@ export default function FileUploadButton({
       "
     >
 
-      <Paperclip size={20}/>
+      <Paperclip
+        size={20}
+      />
 
 
       <input
@@ -48,6 +82,8 @@ export default function FileUploadButton({
         type="file"
 
         className="hidden"
+
+        multiple
 
         accept="
           .pdf,
@@ -61,11 +97,14 @@ export default function FileUploadButton({
           image/webp
         "
 
-        onChange={handleChange}
+        onChange={
+          handleChange
+        }
 
       />
 
     </label>
 
   );
+
 }

@@ -975,6 +975,7 @@ async function streamFromModel(
   model,
   prompt,
   attachment = null,
+  attachments = [],
   history = [],
   memory = null
 ) {
@@ -1012,14 +1013,57 @@ ${memoryContext}
   // ATTACHMENT
   // ====================================================
 
-  const safeAttachment =
-    normalizeAttachment(
-      attachment
-    );
+const safeAttachments =
+  Array.isArray(
+    attachments
+  ) &&
+  attachments.length > 0
 
-  const attachmentInstruction =
-    createAttachmentInstruction(
-      safeAttachment
+    ? attachments
+        .map(
+          (
+            item
+          ) =>
+            normalizeAttachment(
+              item
+            )
+        )
+        .filter(
+          Boolean
+        )
+
+    : attachment
+      ? [
+          normalizeAttachment(
+            attachment
+          )
+        ].filter(
+          Boolean
+        )
+
+      : [];
+
+
+const safeAttachment =
+  safeAttachments[0] ||
+  null;
+
+
+const attachmentInstructions =
+  safeAttachments
+    .map(
+      (
+        item
+      ) =>
+        createAttachmentInstruction(
+          item
+        )
+    )
+    .filter(
+      Boolean
+    )
+    .join(
+      "\n\n"
     );
 
   // ====================================================
@@ -1340,14 +1384,15 @@ ${universalDiagramRules}
 ${contextBlock}
 
 ${
-  attachmentInstruction
+  attachmentInstructions
     ? `Attachment context:
 
-${attachmentInstruction}
+${attachmentInstructions}
 
 `
     : ""
 }
+
 
 Current user message:
 
@@ -1356,23 +1401,31 @@ ${prompt}
     },
   ];
 
-  // ====================================================
-  // GENERIC INLINE ATTACHMENT
-  // ====================================================
+// ====================================================
+// GENERIC INLINE ATTACHMENTS
+// ====================================================
 
-  if (safeAttachment) {
+safeAttachments.forEach(
+  (
+    selectedAttachment
+  ) => {
 
     parts.push({
+
       inlineData: {
+
         data:
-          safeAttachment.data,
+          selectedAttachment.data,
 
         mimeType:
-          safeAttachment.mimeType,
+          selectedAttachment.mimeType,
+
       },
+
     });
 
   }
+);
 
   // ====================================================
   // FINAL USER CONTENT
@@ -1406,8 +1459,10 @@ export async function*
 generateAIResponseStream(
   message,
   attachment = null,
+  attachments = [],
   history = [],
-  memory = null
+  memory = null,
+  mode = null
 ) {
 
   let lastError =
@@ -1429,22 +1484,49 @@ generateAIResponseStream(
       );
 
 
-      if (attachment) {
+if (
+  Array.isArray(
+    attachments
+  ) &&
+  attachments.length > 0
+) {
 
-        console.log(
-          `📎 Sending attachment: ${
-            attachment.name ||
-            "Attachment"
-          } (${
-            attachment.mimeType ||
-            "unknown"
-          })`
-        );
+  console.log(
+    "📎 Sending attachments:",
+    attachments.map(
+      (
+        selectedAttachment
+      ) => (
+        `${
+          selectedAttachment.name ||
+          "Attachment"
+        } (${
+          selectedAttachment.mimeType ||
+          "unknown"
+        })`
+      )
+    )
+  );
 
-      }
+}
+else if (
+  attachment
+) {
+
+  console.log(
+    `📎 Sending attachment: ${
+      attachment.name ||
+      "Attachment"
+    } (${
+      attachment.mimeType ||
+      "unknown"
+    })`
+  );
+
+}
 
 
-      const response =
+const response =
   await streamFromModel(
 
     apiKey,
@@ -1454,6 +1536,8 @@ generateAIResponseStream(
     message,
 
     attachment,
+
+    attachments,
 
     history,
 

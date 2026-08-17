@@ -279,6 +279,8 @@ export async function generateResponse(
 
   file = null,
 
+  files = [],
+
   history = [],
 
   userId = null,
@@ -320,10 +322,42 @@ export async function generateResponse(
     // cannot see.
     // ==================================================
 
-    const attachment =
-      await buildAttachment(
-        file
-      );
+const attachmentFiles =
+  Array.isArray(
+    files
+  ) &&
+  files.length > 0
+
+    ? files
+
+    : file
+      ? [
+          file
+        ]
+
+      : [];
+
+
+const attachments =
+  (
+    await Promise.all(
+      attachmentFiles.map(
+        (
+          selectedFile
+        ) =>
+          buildAttachment(
+            selectedFile
+          )
+      )
+    )
+  ).filter(
+    Boolean
+  );
+
+
+const attachment =
+  attachments[0] ||
+  null;
 
 
     // ==================================================
@@ -336,29 +370,38 @@ export async function generateResponse(
     // still remains available for compatibility.
     // ==================================================
 
-    let image =
-      null;
+let image =
+  null;
 
 
-    if (
-      attachment &&
-      attachment.mimeType
-        .startsWith(
+const firstImageAttachment =
+  attachments.find(
+    (
+      selectedAttachment
+    ) =>
+      selectedAttachment
+        ?.mimeType
+        ?.startsWith(
           "image/"
         )
-    ) {
+  );
 
-      image = {
 
-        data:
-          attachment.data,
+if (
+  firstImageAttachment
+) {
 
-        mimeType:
-          attachment.mimeType,
+  image = {
 
-      };
+    data:
+      firstImageAttachment.data,
 
-    }
+    mimeType:
+      firstImageAttachment.mimeType,
+
+  };
+
+}
 
 
     // ==================================================
@@ -416,6 +459,8 @@ export async function generateResponse(
               //   name
               // }
               attachment,
+
+              attachments,
 
 
               // Temporary backward compatibility

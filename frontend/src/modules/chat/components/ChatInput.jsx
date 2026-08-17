@@ -35,9 +35,15 @@ export default function ChatInput({
 
 
   const [
-    selectedFile,
-    setSelectedFile,
-  ] = useState(null);
+    selectedFiles,
+    setSelectedFiles,
+  ] = useState([]);
+
+
+  const [
+    localAttachmentError,
+    setLocalAttachmentError,
+  ] = useState("");
 
 
   const [
@@ -53,6 +59,19 @@ export default function ChatInput({
   // ====================================================
   // FILE TYPE HELPERS
   // ====================================================
+
+  const IMAGE_ATTACHMENT_LIMIT =
+    5;
+
+
+  const DOCUMENT_ATTACHMENT_LIMIT =
+    3;
+
+
+  const selectedFile =
+    selectedFiles[0] ||
+    null;
+
 
   const isPdf =
     selectedFile &&
@@ -72,30 +91,214 @@ export default function ChatInput({
       );
 
 
+  const isImageFile = (
+    file
+  ) => {
+
+    return Boolean(
+      file?.type?.startsWith(
+        "image/"
+      )
+    );
+
+  };
+
+
+  const getFileKey = (
+    file
+  ) => {
+
+    return [
+      file?.name || "",
+      file?.type || "",
+      Number(
+        file?.size || 0
+      ),
+      Number(
+        file?.lastModified || 0
+      ),
+    ].join(
+      "::"
+    );
+
+  };
+
+
   // ====================================================
   // FILE SELECT
   // ====================================================
 
   const handleFileSelect = (
-    file
+    file,
+    incomingFiles = []
   ) => {
 
-    if (!file) {
+    const files =
+      Array.isArray(
+        incomingFiles
+      ) &&
+      incomingFiles.length > 0
+        ? incomingFiles
+        : file
+          ? [file]
+          : [];
+
+
+    if (
+      files.length ===
+      0
+    ) {
 
       return;
 
     }
 
 
-    // Selecting another file automatically replaces
-    // the currently selected attachment.
-
-    setSelectedFile(
-      file
+    setLocalAttachmentError(
+      ""
     );
 
 
-    // Clear an error belonging to the previous file.
+    const existingKeys =
+      new Set(
+        selectedFiles.map(
+          getFileKey
+        )
+      );
+
+
+    const mergedFiles =
+      [
+        ...selectedFiles
+      ];
+
+
+    for (
+      const nextFile of files
+    ) {
+
+      if (!nextFile) {
+
+        continue;
+
+      }
+
+
+      const key =
+        getFileKey(
+          nextFile
+        );
+
+
+      if (
+        existingKeys.has(
+          key
+        )
+      ) {
+
+        continue;
+
+      }
+
+
+      existingKeys.add(
+        key
+      );
+
+
+      mergedFiles.push(
+        nextFile
+      );
+
+    }
+
+
+    const imageFiles =
+      mergedFiles.filter(
+        isImageFile
+      );
+
+
+    const documentFiles =
+      mergedFiles.filter(
+        (
+          nextFile
+        ) =>
+          !isImageFile(
+            nextFile
+          )
+      );
+
+
+    const acceptedImages =
+      imageFiles.slice(
+        0,
+        IMAGE_ATTACHMENT_LIMIT
+      );
+
+
+    const acceptedDocuments =
+      documentFiles.slice(
+        0,
+        DOCUMENT_ATTACHMENT_LIMIT
+      );
+
+
+    const rejectedImages =
+      Math.max(
+        0,
+        imageFiles.length -
+          IMAGE_ATTACHMENT_LIMIT
+      );
+
+
+    const rejectedDocuments =
+      Math.max(
+        0,
+        documentFiles.length -
+          DOCUMENT_ATTACHMENT_LIMIT
+      );
+
+
+    setSelectedFiles([
+      ...acceptedImages,
+      ...acceptedDocuments,
+    ]);
+
+
+    if (
+      rejectedImages >
+        0 &&
+      rejectedDocuments >
+        0
+    ) {
+
+      setLocalAttachmentError(
+        `You can attach up to ${IMAGE_ATTACHMENT_LIMIT} images and ${DOCUMENT_ATTACHMENT_LIMIT} documents per message. ${rejectedImages + rejectedDocuments} file(s) were not added.`
+      );
+
+    }
+    else if (
+      rejectedImages >
+      0
+    ) {
+
+      setLocalAttachmentError(
+        `You can attach up to ${IMAGE_ATTACHMENT_LIMIT} images per message. ${rejectedImages} image(s) were not added.`
+      );
+
+    }
+    else if (
+      rejectedDocuments >
+      0
+    ) {
+
+      setLocalAttachmentError(
+        `You can attach up to ${DOCUMENT_ATTACHMENT_LIMIT} documents per message. ${rejectedDocuments} document(s) were not added.`
+      );
+
+    }
+
 
     onClearAttachmentError?.();
 
@@ -110,38 +313,71 @@ export default function ChatInput({
   // Existing text-paste behaviour remains unchanged.
   // ====================================================
 
-  const handlePaste = (event) => {
+  const handlePaste = (
+    event
+  ) => {
 
     const items =
       event.clipboardData?.items ||
       [];
 
 
-    for (const item of items) {
+    const pastedImages =
+      [];
 
-      if (!item.type.startsWith("image/")) {
+
+    for (
+      const item of items
+    ) {
+
+      if (
+        !item.type.startsWith(
+          "image/"
+        )
+      ) {
+
         continue;
+
       }
 
 
-      const file =
+      const pastedFile =
         item.getAsFile();
 
 
-      if (!file) {
+      if (
+        !pastedFile
+      ) {
+
         continue;
+
       }
 
 
-      event.preventDefault();
-
-      handleFileSelect(
-        file
+      pastedImages.push(
+        pastedFile
       );
+
+    }
+
+
+    if (
+      pastedImages.length ===
+      0
+    ) {
 
       return;
 
     }
+
+
+    event.preventDefault();
+
+
+    handleFileSelect(
+      pastedImages[0],
+      pastedImages
+    );
 
   };
 
@@ -150,10 +386,27 @@ export default function ChatInput({
   // REMOVE FILE
   // ====================================================
 
-  const removeFile = () => {
+  const removeFile = (
+    fileIndex
+  ) => {
 
-    setSelectedFile(
-      null
+    setSelectedFiles(
+      (
+        previousFiles
+      ) =>
+        previousFiles.filter(
+          (
+            _,
+            index
+          ) =>
+            index !==
+            fileIndex
+        )
+    );
+
+
+    setLocalAttachmentError(
+      ""
     );
 
 
@@ -181,7 +434,8 @@ export default function ChatInput({
 
       if (
         !message.trim() &&
-        !selectedFile
+        selectedFiles.length ===
+          0
       ) {
 
         return;
@@ -200,14 +454,21 @@ export default function ChatInput({
         message;
 
 
+      const currentFiles =
+        [
+          ...selectedFiles
+        ];
+
+
       const currentFile =
-        selectedFile;
+        currentFiles[0] ||
+        null;
 
 
       // =================================================
       // CLEAR COMPOSER IMMEDIATELY
       //
-      // The attachment should move into the sent message
+      // The attachments should move into the sent message
       // instead of remaining inside the bottom composer
       // while Nyxora generates its response.
       // =================================================
@@ -215,8 +476,13 @@ export default function ChatInput({
       setMessage("");
 
 
-      setSelectedFile(
-        null
+      setSelectedFiles(
+        []
+      );
+
+
+      setLocalAttachmentError(
+        ""
       );
 
 
@@ -231,8 +497,17 @@ export default function ChatInput({
             message:
               currentMessage,
 
+            // Backward-compatible
+            // first attachment.
+
             file:
               currentFile,
+
+            // New multi-attachment
+            // payload.
+
+            files:
+              currentFiles,
 
           });
 
@@ -240,7 +515,7 @@ export default function ChatInput({
         // ================================================
         // SEND / VALIDATION FAILURE
         //
-        // Restore the original prompt and attachment.
+        // Restore the original prompt and attachments.
         //
         // This is especially important for:
         // - password-protected PDFs
@@ -258,13 +533,15 @@ export default function ChatInput({
           );
 
 
-          setSelectedFile(
-            currentFile
+          setSelectedFiles(
+            currentFiles
           );
 
         }
 
-      } catch (error) {
+      } catch (
+        error
+      ) {
 
         console.error(
           "Message send error:",
@@ -276,7 +553,7 @@ export default function ChatInput({
         // UNEXPECTED FAILURE
         //
         // Restore the unsent content so the user does not
-        // lose their prompt or selected attachment.
+        // lose their prompt or selected attachments.
         // ================================================
 
         setMessage(
@@ -284,8 +561,8 @@ export default function ChatInput({
         );
 
 
-        setSelectedFile(
-          currentFile
+        setSelectedFiles(
+          currentFiles
         );
 
       }
@@ -304,7 +581,9 @@ export default function ChatInput({
       window.webkitSpeechRecognition;
 
 
-    if (!SpeechRecognition) {
+    if (
+      !SpeechRecognition
+    ) {
 
       alert(
         "Voice input is not supported in this browser. Please use Chrome or Edge."
@@ -315,7 +594,9 @@ export default function ChatInput({
     }
 
 
-    if (isListening) {
+    if (
+      isListening
+    ) {
 
       recognitionRef
         .current
@@ -346,13 +627,14 @@ export default function ChatInput({
       recognition;
 
 
-    recognition.onstart = () => {
+    recognition.onstart =
+      () => {
 
-      setIsListening(
-        true
-      );
+        setIsListening(
+          true
+        );
 
-    };
+      };
 
 
     recognition.onresult = (
@@ -405,17 +687,18 @@ export default function ChatInput({
     };
 
 
-    recognition.onend = () => {
+    recognition.onend =
+      () => {
 
-      setIsListening(
-        false
-      );
+        setIsListening(
+          false
+        );
 
 
-      recognitionRef.current =
-        null;
+        recognitionRef.current =
+          null;
 
-    };
+      };
 
 
     recognition.start();
@@ -430,7 +713,9 @@ export default function ChatInput({
   const getAttachmentIcon =
     () => {
 
-      if (isPdf) {
+      if (
+        isPdf
+      ) {
 
         return (
 
@@ -444,7 +729,9 @@ export default function ChatInput({
       }
 
 
-      if (isImage) {
+      if (
+        isImage
+      ) {
 
         return (
 
@@ -497,11 +784,13 @@ export default function ChatInput({
 
     if (
       bytes <
-      1024 * 1024
+      1024 *
+      1024
     ) {
 
       return `${(
-        bytes / 1024
+        bytes /
+        1024
       ).toFixed(1)} KB`;
 
     }
@@ -522,16 +811,28 @@ export default function ChatInput({
   // UI
   // ====================================================
 
+  const visibleAttachmentError =
+    localAttachmentError ||
+    attachmentError;
+
+
   return (
 
-    <div className="border-t border-slate-800 bg-[#050816] p-5">
+    <div
+      className="
+        border-t
+        border-slate-800
+        bg-[#050816]
+        p-5
+      "
+    >
 
 
       {/* =============================================== */}
       {/* ATTACHMENT ERROR                               */}
       {/* =============================================== */}
 
-      {attachmentError && (
+      {visibleAttachmentError && (
 
         <div
           className="
@@ -558,7 +859,9 @@ export default function ChatInput({
           />
 
 
-          <div className="flex-1">
+          <div
+            className="flex-1"
+          >
 
             <p
               className="
@@ -568,7 +871,9 @@ export default function ChatInput({
               "
             >
 
-              {attachmentError}
+              {
+                visibleAttachmentError
+              }
 
             </p>
 
@@ -578,9 +883,15 @@ export default function ChatInput({
           <button
             type="button"
 
-            onClick={
-              onClearAttachmentError
-            }
+            onClick={() => {
+
+              setLocalAttachmentError(
+                ""
+              );
+
+              onClearAttachmentError?.();
+
+            }}
 
             className="
               shrink-0
@@ -589,12 +900,16 @@ export default function ChatInput({
               hover:text-white
             "
 
-            aria-label="Dismiss attachment warning"
+            aria-label=
+              "Dismiss attachment warning"
 
-            title="Dismiss warning"
+            title=
+              "Dismiss warning"
           >
 
-            <X size={18} />
+            <X
+              size={18}
+            />
 
           </button>
 
@@ -604,131 +919,225 @@ export default function ChatInput({
 
 
       {/* =============================================== */}
-      {/* SELECTED FILE                                  */}
+      {/* SELECTED FILES                                 */}
       {/* =============================================== */}
 
-      {selectedFile && (
+      {selectedFiles.length > 0 && (
 
         <div
           className="
             mb-3
             flex
-            items-center
-            justify-between
-            gap-3
-            rounded-xl
-            border
-            border-slate-700
-            bg-[#111827]
-            px-4
-            py-3
+            flex-col
+            gap-2
           "
         >
 
-          <div
-            className="
-              flex
-              min-w-0
-              items-center
-              gap-3
-            "
-          >
+          {selectedFiles.map(
+            (
+              file,
+              fileIndex
+            ) => {
 
-            <div className="shrink-0">
-
-              {getAttachmentIcon()}
-
-            </div>
-
-
-            <div className="min-w-0">
-
-              <p
-                className="
-                  truncate
-                  text-sm
-                  font-medium
-                  text-white
-                "
-              >
-
-                {selectedFile.name}
-
-              </p>
+              const fileIsPdf =
+                file &&
+                (
+                  file.type ===
+                    "application/pdf" ||
+                  file.name
+                    ?.toLowerCase()
+                    .endsWith(".pdf")
+                );
 
 
-              <div
-                className="
-                  mt-1
-                  flex
-                  flex-wrap
-                  items-center
-                  gap-2
-                  text-xs
-                  text-gray-400
-                "
-              >
-
-                <span>
-
-                  {selectedFile.type ||
-                    "Unknown file type"}
-
-                </span>
+              const fileIsImage =
+                file?.type
+                  ?.startsWith(
+                    "image/"
+                  );
 
 
-                {selectedFile.size > 0 && (
+              return (
 
-                  <>
+                <div
+                  key={
+                    getFileKey(
+                      file
+                    ) +
+                    "::" +
+                    fileIndex
+                  }
 
-                    <span>•</span>
+                  className="
+                    flex
+                    items-center
+                    justify-between
+                    gap-3
+                    rounded-xl
+                    border
+                    border-slate-700
+                    bg-[#111827]
+                    px-4
+                    py-3
+                  "
+                >
 
-                    <span>
+                  <div
+                    className="
+                      flex
+                      min-w-0
+                      items-center
+                      gap-3
+                    "
+                  >
 
-                      {formatFileSize(
-                        selectedFile.size
+                    <div
+                      className=
+                        "shrink-0"
+                    >
+
+                      {fileIsPdf ? (
+
+                        <FileText
+                          size={22}
+                          className=
+                            "text-red-400"
+                        />
+
+                      ) : fileIsImage ? (
+
+                        <ImageIcon
+                          size={22}
+                          className=
+                            "text-violet-400"
+                        />
+
+                      ) : (
+
+                        <File
+                          size={22}
+                          className=
+                            "text-blue-400"
+                        />
+
                       )}
 
-                    </span>
-
-                  </>
-
-                )}
-
-              </div>
-
-            </div>
-
-          </div>
+                    </div>
 
 
-          {/* REMOVE ATTACHMENT */}
+                    <div
+                      className=
+                        "min-w-0"
+                    >
 
-          <button
-            type="button"
+                      <p
+                        className="
+                          truncate
+                          text-sm
+                          font-medium
+                          text-white
+                        "
+                      >
 
-            onClick={
-              removeFile
+                        {
+                          file.name
+                        }
+
+                      </p>
+
+
+                      <div
+                        className="
+                          mt-1
+                          flex
+                          flex-wrap
+                          items-center
+                          gap-2
+                          text-xs
+                          text-gray-400
+                        "
+                      >
+
+                        <span>
+
+                          {
+                            file.type ||
+                            "Unknown file type"
+                          }
+
+                        </span>
+
+
+                        {file.size > 0 && (
+
+                          <>
+
+                            <span>
+                              •
+                            </span>
+
+                            <span>
+
+                              {
+                                formatFileSize(
+                                  file.size
+                                )
+                              }
+
+                            </span>
+
+                          </>
+
+                        )}
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+
+                  {/* REMOVE ATTACHMENT */}
+
+                  <button
+                    type="button"
+
+                    onClick={() =>
+                      removeFile(
+                        fileIndex
+                      )
+                    }
+
+                    className="
+                      shrink-0
+                      rounded-lg
+                      p-2
+                      text-gray-400
+                      transition
+                      hover:bg-white/10
+                      hover:text-white
+                    "
+
+                    aria-label={
+                      `Remove ${file.name}`
+                    }
+
+                    title=
+                      "Remove attachment"
+                  >
+
+                    <X
+                      size={18}
+                    />
+
+                  </button>
+
+                </div>
+
+              );
+
             }
-
-            className="
-              shrink-0
-              rounded-lg
-              p-2
-              text-gray-400
-              transition
-              hover:bg-white/10
-              hover:text-white
-            "
-
-            aria-label="Remove attached file"
-
-            title="Remove attachment"
-          >
-
-            <X size={18} />
-
-          </button>
+          )}
 
         </div>
 
@@ -771,15 +1180,23 @@ export default function ChatInput({
           }
 
           placeholder={
+
             isListening
 
               ? "Listening..."
 
-              : selectedFile
+              : selectedFiles.length >
+                0
 
-                ? "Ask Nyxora about this file..."
+                ? selectedFiles.length ===
+                  1
+
+                  ? "Ask Nyxora about this file..."
+
+                  : "Ask Nyxora about these files..."
 
                 : "Message Nyxora AI..."
+
           }
 
           onPaste={
@@ -798,6 +1215,17 @@ export default function ChatInput({
             ) {
 
               onClearAttachmentError?.();
+
+            }
+
+
+            if (
+              localAttachmentError
+            ) {
+
+              setLocalAttachmentError(
+                ""
+              );
 
             }
 
@@ -860,6 +1288,7 @@ export default function ChatInput({
             p-3
             text-white
             transition
+
             ${
               isListening
 
@@ -878,29 +1307,37 @@ export default function ChatInput({
           `}
 
           aria-label={
+
             isListening
 
               ? "Stop listening"
 
               : "Start voice input"
+
           }
 
           title={
+
             isListening
 
               ? "Stop listening"
 
               : "Voice input"
+
           }
         >
 
           {isListening ? (
 
-            <MicOff size={18} />
+            <MicOff
+              size={18}
+            />
 
           ) : (
 
-            <Mic size={18} />
+            <Mic
+              size={18}
+            />
 
           )}
 
@@ -929,46 +1366,61 @@ export default function ChatInput({
               hover:bg-red-600
             "
 
-            aria-label="Stop generating"
+            aria-label=
+              "Stop generating"
 
-            title="Stop generating"
+            title=
+              "Stop generating"
           >
 
-            <Square size={18} />
+            <Square
+              size={18}
+            />
 
           </button>
 
         ) : (
 
           <button
-  type="submit"
-  disabled={
-    !message.trim() &&
-    !selectedFile
-  }
-  className="
-    rounded-xl
-    bg-gradient-to-r
-    from-fuchsia-600
-    via-violet-600
-    to-cyan-500
-    p-3
-    text-white
-    transition-all
-    duration-300
-    hover:scale-105
-    hover:shadow-[0_0_22px_rgba(139,92,246,0.45)]
-    active:scale-95
-    disabled:cursor-not-allowed
-    disabled:opacity-40
-    disabled:hover:scale-100
-    disabled:hover:shadow-none
-  "
-  aria-label="Send message"
-  title="Send"
->
-  <Send size={18} />
-</button>
+            type="submit"
+
+            disabled={
+              !message.trim() &&
+              selectedFiles.length ===
+                0
+            }
+
+            className="
+              rounded-xl
+              bg-gradient-to-r
+              from-fuchsia-600
+              via-violet-600
+              to-cyan-500
+              p-3
+              text-white
+              transition-all
+              duration-300
+              hover:scale-105
+              hover:shadow-[0_0_22px_rgba(139,92,246,0.45)]
+              active:scale-95
+              disabled:cursor-not-allowed
+              disabled:opacity-40
+              disabled:hover:scale-100
+              disabled:hover:shadow-none
+            "
+
+            aria-label=
+              "Send message"
+
+            title=
+              "Send"
+          >
+
+            <Send
+              size={18}
+            />
+
+          </button>
 
         )}
 

@@ -1659,6 +1659,11 @@ export default function useChat({
   setThinkingText,
 ] = useState("");
 
+const attachmentCacheRef =
+  useRef(
+    new Map()
+  );
+
 const thinkingTimerRef =
   useRef(null);
 
@@ -1915,6 +1920,75 @@ ${extractedText}`;
       return userPrompt;
 
     };
+
+    // ======================================================
+// MULTIPLE ATTACHMENT PROMPT
+// ======================================================
+
+const buildPromptWithFiles =
+  async (
+    text,
+    selectedFiles = []
+  ) => {
+
+    let userPrompt =
+      cleanValue(
+        text
+      );
+
+
+    const documentFiles =
+      selectedFiles.filter(
+        (
+          selectedFile
+        ) =>
+          selectedFile &&
+          !selectedFile.type
+            ?.startsWith(
+              "image/"
+            )
+      );
+
+
+    for (
+      let index = 0;
+      index <
+        documentFiles.length;
+      index++
+    ) {
+
+      const selectedFile =
+        documentFiles[index];
+
+
+      const extractedText =
+        await extractFileContent(
+          selectedFile
+        );
+
+
+      if (
+        extractedText
+      ) {
+
+        userPrompt += `
+
+ATTACHED FILE ${index + 1} TEXT CONTENT:
+FILE NAME: ${
+          selectedFile.name ||
+          "Attachment"
+        }
+
+${extractedText}`;
+
+      }
+
+    }
+
+
+    return userPrompt;
+
+  };
 
 
   // ====================================================
@@ -2634,6 +2708,18 @@ ${userPrompt}
 
       };
 
+if (
+  files.length > 0 &&
+  userMessage.id
+) {
+
+  attachmentCacheRef.current.set(
+    userMessage.id,
+    files
+  );
+
+}
+
 
       const warningMessage = {
 
@@ -2796,24 +2882,38 @@ ${userPrompt}
             "";
 
 
-      const file =
-        typeof payload ===
-          "string"
+const files =
+  typeof payload ===
+    "string"
 
-          ? null
+    ? []
 
-          : payload?.file ||
-            null;
+    : Array.isArray(
+        payload?.files
+      )
+
+      ? payload.files.filter(
+          Boolean
+        )
+
+      : payload?.file
+        ? [
+            payload.file
+          ]
+
+        : [];
 
 
-      if (
-        !cleanValue(text) &&
-        !file
-      ) {
+const file =
+  files[0] ||
+  null;
 
-        return false;
-
-      }
+if (
+  !cleanValue(text) &&
+  files.length === 0
+) {
+  return false;
+}
 
 
       const currentChat =
@@ -2929,12 +3029,11 @@ ${userPrompt}
 
       try {
 
-        userPrompt =
-          await buildPromptWithFile(
-            cleanUserMessage,
-            file
-          );
-
+ userPrompt =
+  await buildPromptWithFiles(
+    cleanUserMessage,
+    files
+  );
       } catch (error) {
 
         return handleAttachmentError(
@@ -2994,34 +3093,58 @@ ${userPrompt}
         );
 
 
-      const fileMetadata =
-        buildFileMetadata(
-          file
-        );
+const fileMetadataList =
+  files.map(
+    (
+      selectedFile
+    ) =>
+      buildFileMetadata(
+        selectedFile
+      )
+  );
+
+
+const fileMetadata =
+  fileMetadataList[0] ||
+  null;
 
 
       const userMessage = {
 
-        id:
-          Date.now(),
+  id:
+    Date.now(),
 
-        role:
-          "user",
+  role:
+    "user",
 
-        message:
-          cleanUserMessage,
+  message:
+    cleanUserMessage,
 
-        ...(fileMetadata
+  pdfRequested:
+    pdfRequested,
 
-          ? {
-              file:
-                fileMetadata,
-            }
+  notesImageRequested:
+    notesImageRequested,
 
-          : {}),
+  notesImageTopic:
+    notesImageRequested
+      ? cleanUserMessage
+      : "",
 
-      };
+  ...(fileMetadata
+    ? {
+        file:
+          fileMetadata,
+      }
+    : {}),
 
+    ...(fileMetadataList.length > 0
+  ? {
+      files:
+        fileMetadataList,
+    }
+  : {}),
+};
 
 const aiMessage = {
 
@@ -3136,10 +3259,11 @@ notesImageTopic:
           memoryMessage:
             cleanUserMessage,
 
-          file,
+file,
 
-          history,
+files,
 
+history,
           messages:
             newMessages,
 
@@ -3284,6 +3408,9 @@ stopThinking();
           lastUser.message
         );
 
+        startThinking(
+  cleanUserMessage
+);
 
       // ================================================
       // PDF MODE REGENERATE PROTECTION
@@ -3616,13 +3743,20 @@ stopThinking();
         );
 
 
-      let finalFileMetadata =
-        originalMessage.file ||
-        null;
+let finalFileMetadata =
+  originalMessage.file ||
+  null;
+
+let filesForAI =
+  attachmentCacheRef.current.get(
+    lastUser.id
+  ) ||
+  [];
 
 
-      let fileForAI =
-        null;
+let fileForAI =
+  filesForAI[0] ||
+  null;
 
 
       if (
@@ -3635,17 +3769,30 @@ stopThinking();
           );
 
 
-        fileForAI =
-          newFile;
+filesForAI = [
+  newFile
+];
 
-      } else if (
-        removeFile
-      ) {
+fileForAI =
+  newFile;
 
-        finalFileMetadata =
-          null;
+            }    else if (
+  removeFile
+) {
 
-      }
+  finalFileMetadata =
+    null;
+
+  attachmentCacheRef.current.delete(
+    originalMessage.id
+  );
+
+}
+
+attachmentCacheRef.current.set(
+  originalMessage.id,
+  filesForAI
+);
 
 
       if (
@@ -3970,6 +4117,10 @@ stopThinking();
 
           file:
             fileForAI,
+
+
+files:
+  filesForAI,
 
           history:
             updatedMessages.slice(

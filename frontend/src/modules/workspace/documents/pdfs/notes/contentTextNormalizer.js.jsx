@@ -509,50 +509,43 @@ function normalizeLatexText(value = "") {
         );
 
     text =
-        replaceTwoBalancedCommand(
-            text,
-            "frac",
-            function(numerator, denominator){
-                return (
-                    "(" +
-                    normalizeLatexText(numerator) +
-                    ")/(" +
-                    normalizeLatexText(denominator) +
-                    ")"
-                );
-            }
-        );
+text =
+    replaceTwoBalancedCommand(
+        text,
+        "frac",
+        function(numerator, denominator){
+            return (
+                normalizeLatexText(numerator) +
+                "/" +
+                normalizeLatexText(denominator)
+            );
+        }
+    );
+text =
+    replaceTwoBalancedCommand(
+        text,
+        "dfrac",
+        function(numerator, denominator){
+            return (
+                normalizeLatexText(numerator) +
+                "/" +
+                normalizeLatexText(denominator)
+            );
+        }
+    );
 
     text =
-        replaceTwoBalancedCommand(
-            text,
-            "dfrac",
-            function(numerator, denominator){
-                return (
-                    "(" +
-                    normalizeLatexText(numerator) +
-                    ")/(" +
-                    normalizeLatexText(denominator) +
-                    ")"
-                );
-            }
+replaceTwoBalancedCommand(
+    text,
+    "tfrac",
+    function(numerator, denominator){
+        return (
+            normalizeLatexText(numerator) +
+            "/" +
+            normalizeLatexText(denominator)
         );
-
-    text =
-        replaceTwoBalancedCommand(
-            text,
-            "tfrac",
-            function(numerator, denominator){
-                return (
-                    "(" +
-                    normalizeLatexText(numerator) +
-                    ")/(" +
-                    normalizeLatexText(denominator) +
-                    ")"
-                );
-            }
-        );
-
+    }
+);
     [
         ["sqrt", function(value){
             return (

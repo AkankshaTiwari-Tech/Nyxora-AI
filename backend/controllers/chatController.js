@@ -349,25 +349,27 @@ export async function chatWithAI(
 
   try {
 
-    const {
+const {
+  message,
 
-      message,
+  memoryMessage,
 
-      memoryMessage,
+  attachment,
 
-      attachment,
+  // New multiple attachment support.
+  attachments,
 
-      // Keep legacy image support while the frontend
-      // migration is completed.
-      image,
+  // Keep legacy image support while the frontend
+  // migration is completed.
+  image,
 
-      history,
+  history,
 
-      userId,
+  userId,
 
-      mode,
+  mode,
 
-    } = req.body;
+} = req.body;
 
 
     // ==================================================
@@ -396,13 +398,35 @@ export async function chatWithAI(
     // Fall back to the old image field if necessary.
     // ==================================================
 
-    const safeAttachment =
-      normalizeAttachment(
-        attachment
-      ) ||
-      normalizeLegacyImage(
-        image
-      );
+const safeAttachments =
+  Array.isArray(
+    attachments
+  )
+
+    ? attachments
+        .map(
+          (
+            item
+          ) =>
+            normalizeAttachment(
+              item
+            )
+        )
+        .filter(
+          Boolean
+        )
+
+    : [];
+
+
+const safeAttachment =
+  safeAttachments[0] ||
+  normalizeAttachment(
+    attachment
+  ) ||
+  normalizeLegacyImage(
+    image
+  );
 
 
     // ==================================================
@@ -415,10 +439,11 @@ export async function chatWithAI(
       message.trim() !== "";
 
 
-    if (
-      !hasMessage &&
-      !safeAttachment
-    ) {
+if (
+  !hasMessage &&
+  safeAttachments.length === 0 &&
+  !safeAttachment
+) {
 
       return res
         .status(400)
@@ -459,6 +484,17 @@ export async function chatWithAI(
       );
 
     }
+
+    if (
+  safeAttachments.length > 0
+) {
+
+  console.log(
+    "📎 AI attachments:",
+    safeAttachments.length
+  );
+
+}
 
 
     // ==================================================
@@ -613,25 +649,27 @@ export async function chatWithAI(
     );
 
 
-    for await (
-      const chunk of
-        generateAIResponseStream(
+for await (
+  const chunk of
+    generateAIResponseStream(
 
-          message ||
-            "Analyze the attached file.",
+      message ||
+        "Analyze the attached file.",
 
-          safeAttachment,
+      safeAttachment,
 
-          Array.isArray(history)
-            ? history
-            : [],
+      safeAttachments,
 
-          userMemory,
+      Array.isArray(history)
+        ? history
+        : [],
 
-          mode
+      userMemory,
 
-        )
-    ) {
+      mode
+
+    )
+) {
 
       fullResponse +=
         chunk;
